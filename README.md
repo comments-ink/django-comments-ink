@@ -1,12 +1,14 @@
-#  django-comments-xtd [![example workflow](https://github.com/danirus/django-comments-xtd/workflows/tests/badge.svg)](https://github.com/danirus/django-comments-xtd/actions/workflows/ci-pipeline.yml)
+#  django-comments-ink [![example workflow](https://github.com/comments-ink/django-comments-ink/workflows/tests/badge.svg)](https://github.com/comments-ink/django-comments-ink/actions/workflows/ci-pipeline.yml)
+
+**Don't use it yet**: It's still under migration from django-comments-xtd to django-comments-ink.
 
 A Django pluggable application that adds comments to your project.
 
-The current master branch represents is a work-in-progress towards v3.0.0. It has not been released yet as a package in PyPI. The current stable version is based on the branch [v2](https://github.com/danirus/django-comments-xtd/tree/v2) and is [available at PyPI](https://pypi.org/project/django-comments-xtd/).
+The current master branch represents is a work-in-progress towards v3.0.0. It has not been released yet as a package in PyPI. The current stable version is based on the branch [v2](https://github.com/danirus/django-comments-ink/tree/v2) and is [available at PyPI](https://pypi.org/project/django-comments-ink/).
 
-Example of django-comments-xtd with one thread level and the default theme:
+Example of django-comments-ink with one thread level and the default theme:
 
-![Example image of using django-comments-xtd](https://github.com/danirus/django-comments-xtd/blob/rel-3.0.0/docs/images/cover.png)
+![Example image of using django-comments-ink](https://github.com/danirus/django-comments-ink/blob/main/docs/images/cover.png)
 
 It extends [django-contrib-comments](https://pypi.python.org/pypi/django-contrib-comments) with the following features:
 
@@ -33,13 +35,3 @@ Additional Dependencies:
 
 * django-contrib-comments >=2.1,<2.2
 * djangorestframework >=3.12,<3.14
-
-New documentation is going to be provided to cover the new functionalities of django-comments-xtd v3. The documentation for v2 is available [here](http://readthedocs.org/docs/django-comments-xtd/).
-
-## What has changed between v2 and v3
-
-Version 3 of django-comments-xtd is not backward compatible with version 2. Installing v3 will make a site using v2 to fail listing comments. Mainly because there is no `render_xtdcomment_tree` anymore, but rather `render_xtdcomment_list`.
-
-Also because v2's like/dislike flags are gone and replaced by a new `CommentReaction` model.
-
-TODO: There has to be a simple to follow list of steps to migrate from v2 to v3. Write a command line tool if needed. There should be a single page for it in the documentation.
