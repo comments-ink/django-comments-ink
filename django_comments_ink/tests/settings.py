@@ -104,6 +104,11 @@ INSTALLED_APPS = [
 ]
 COMMENTS_APP = "django_comments_ink"
 
+# Default primary key field type
+# https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 DEFAULT_FROM_EMAIL = "Alice Bloggs <alice@example.com>"
 
 COMMENTS_HIDE_REMOVED = True

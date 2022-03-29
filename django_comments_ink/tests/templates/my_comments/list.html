@@ -1,6 +1,6 @@
 {% load i18n %}
 {% load comments %}
-{% load comments_xtd %}
+{% load comments_ink %}
 
 <div
   id="comments"
@@ -8,7 +8,7 @@
   {% if comment_reactions_enabled %}
     data-dcx="config"
     {% if user.is_authenticated %}
-      data-reactions-url="{% url 'comments-xtd-api-react' %}"
+      data-reactions-url="{% url 'comments-ink-api-react' %}"
     {% else %}
       data-login-url="{% url 'login' %}"
     {% endif %}

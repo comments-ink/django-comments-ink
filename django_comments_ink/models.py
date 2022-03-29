@@ -269,7 +269,7 @@ def on_comment_deleted(sender, instance, using, **kwargs):
     get_model().objects.filter(pk__in=nested)._raw_delete(using)
 
 
-post_delete.connect(on_comment_deleted, sender=Comment)
+post_delete.connect(on_comment_deleted, sender=InkComment)
 
 # ----------------------------------------------------------------------
 
@@ -306,8 +306,8 @@ class TmpInkComment(dict):
         pass
 
     def _get_pk_val(self):
-        if self.comment:
-            return self.comment._get_pk_val()
+        if self.ink_comment:
+            return self.ink_comment._get_pk_val()
         else:
             content_type = "%s.%s" % self.content_type.natural_key()
             return signing.dumps("%s:%s" % (content_type, self.object_pk))
