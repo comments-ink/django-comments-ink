@@ -14,7 +14,7 @@ from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 from django.views.defaults import bad_request
 
-from django_comments_xtd import signed, get_model
+from django_comments_ink import signed, get_model
 
 from . import forget_me, remember_me
 from .decorators import not_authenticated
@@ -57,7 +57,7 @@ def user_register(request):
         form = RegisterStep1Form(request.POST)
         if form.is_valid():
             key = signed.dumps(request.POST, compress=True,
-                               extra_key=settings.COMMENTS_XTD_SALT)
+                               extra_key=settings.COMMENTS_INK_SALT)
             site = get_current_site(request)
             scheme = request.is_secure() and "https" or "http"
             send_confirm_user_registration_request(form, key, site, scheme)
@@ -72,7 +72,7 @@ def user_register_confirm(request, key):
     login_redirect = HttpResponseRedirect(settings.LOGIN_URL)
     if request.method == "GET":
         try:
-            data = signed.loads(str(key), extra_key=settings.COMMENTS_XTD_SALT)
+            data = signed.loads(str(key), extra_key=settings.COMMENTS_INK_SALT)
             form = RegisterStep1Form(data)
             if form.is_valid():
                 email = form.cleaned_data.get("email")
@@ -130,7 +130,7 @@ def edit_profile(request):
                 key = signed.dumps(
                     form.cleaned_data['email'],
                     compress=True,
-                    extra_key=settings.COMMENTS_XTD_SALT
+                    extra_key=settings.COMMENTS_INK_SALT
                 )
                 site = get_current_site(request)
                 scheme = request.is_secure() and "https" or "http"
@@ -158,7 +158,7 @@ def edit_profile(request):
 @login_required
 def confirm_change_email(request, key):
     try:
-        email = signed.loads(key, extra_key=settings.COMMENTS_XTD_SALT)
+        email = signed.loads(key, extra_key=settings.COMMENTS_INK_SALT)
     except (ValueError, signed.BadSignature) as exc:
         return bad_request(request, exc)
 
@@ -207,7 +207,7 @@ def user_delete(request):
             ])
             post_dict['email'] = request.user.email
             key = signed.dumps(post_dict, compress=True,
-                               extra_key=settings.COMMENTS_XTD_SALT)
+                               extra_key=settings.COMMENTS_INK_SALT)
             site = get_current_site(request)
             send_confirm_account_deletion_request(request.user, key, site)
             return render(request, 'users/delete_step_1_confirm.html')
@@ -220,7 +220,7 @@ def user_delete(request):
 @login_required
 def user_delete_confirm(request, key):
     try:
-        data = signed.loads(str(key), extra_key=settings.COMMENTS_XTD_SALT)
+        data = signed.loads(str(key), extra_key=settings.COMMENTS_INK_SALT)
         if data.get("email") != request.user.email:
             raise ValueError("The deletion request was generated for %s, "
                              "but the current active account email is %s.?!?",

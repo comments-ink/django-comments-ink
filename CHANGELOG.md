@@ -1,9 +1,11 @@
 # Change Log
 
-## [3.0.0] -
+## [1.0.0] -
 
-   * Fixes issue #194, about setting COMMENTS_HIDE_REMOVED and the new setting COMMENTS_XTD_PUBLISH_OR_WITHHOLD_NESTED. Up until v3.0.0 removed comments were listed but their content were not displayed. They showed a "comment has been removed" message instead. That behaviour didn't comply with parent's app setting COMMENTS_HIDE_REMOVED. COMMENTS_HIDE_REMOVED is True by default, what has the effect of hiding removed comments. As of v3.0.0 this is also the behaviour of django-comments-xtd. Additionally a new setting COMMENTS_XTD_PUBLISH_OR_WITHHOLD_NESTED has been created to control whether nested comments of a comment being removed or approved will be withhold or published.
+   * Fixes issue #194, about setting COMMENTS_HIDE_REMOVED and the new setting COMMENTS_INK_PUBLISH_OR_WITHHOLD_NESTED. Up until v3.0.0 removed comments were listed but their content were not displayed. They showed a "comment has been removed" message instead. That behaviour didn't comply with parent's app setting COMMENTS_HIDE_REMOVED. COMMENTS_HIDE_REMOVED is True by default, what has the effect of hiding removed comments. As of v3.0.0 this is also the behaviour of django-comments-ink. Additionally a new setting COMMENTS_INK_PUBLISH_OR_WITHHOLD_NESTED has been created to control whether nested comments of a comment being removed or approved will be withhold or published.
    * Fixes issue #210, about listing top comments. Since v3.0.0 there is a new way to receive user feedback on comments. The model `CommentFlag` is no longer used to store such feedback. There is a new model `CommentReaction` that stores user reactions to comments. For each pair reaction/comment there is a counter and a list of reaction authors, this way it is possible to retrieve most liked comments or any other query related with user reactions. In addition there is new frontend code to handle user reactions. To get aligned with issue #161, the new frontend code doesn't depend on React or Twitter-Bootstrap. It is vanilla JavaScript and vanilla CSS.
+
+# Change Log inherited from django-comments-xtd
 
 ## [2.9.5] - 2021-12-13
 
@@ -39,7 +41,7 @@
     * Requires django-contrib-comments >= 2.1, and djangorestframework >= 3.12.
     * Fixes warning when generating the OpenAPI schema. Thanks to @ivanychev. Seee[PR-296](https://github.com/danirus/django-comments-xtd/pull/296).
     * Fixes issue with `render_xtdcomment_tree` templatetag, thanks to @dest81. See [PR-295](https://github.com/danirus/django-comments-xtd/pull/295).
-    * Fixes issue #291, about the frontend plugin not being aware of the setting COMMENTS_XTD_DEFAULT_FOLLOWUP. It also fixes the content of the `login_url` props attribute. Its value is now the content of `settings.LOGIN_URL`.
+    * Fixes issue #291, about the frontend plugin not being aware of the setting COMMENTS_INK_DEFAULT_FOLLOWUP. It also fixes the content of the `login_url` props attribute. Its value is now the content of `settings.LOGIN_URL`.
     * Fixes issue #284, about sending a comment twice by clicking the comment send button twice. It happened when not using the JavaScript plugin.
 
 ## [2.8.5] - 2021-03-02
@@ -54,7 +56,7 @@
 
 ## [2.8.3] - 2021-02-07
 
-    * Adds new setting COMMENTS_XTD_DEFAULT_FOLLOWUP, which is used to
+    * Adds new setting COMMENTS_INK_DEFAULT_FOLLOWUP, which is used to
       initialize the follow-up form field. By default its value is False. Thanks to @drholera. Closes ticket #206.
     * Fixes issue #274, about wrong validation of fields name and email in the
       WriteCommentSerializer. Thanks to @dest81.
@@ -317,7 +319,7 @@
 	    accepting a string specifying the `app_label.permission` being
 	    checked. It returns `True` if the user has the given permission,
 	    otherwise returns False.
-	* Setting `COMMENTS_XTD_API_USER_REPR` defines a lambda function to
+	* Setting `COMMENTS_INK_API_USER_REPR` defines a lambda function to
 	  return the user string representation used by the web API in response
 	  objects.
 	* Setting `COMMENTS_XTD_APP_MODEL_PERMISSIONS` to explicitly define what

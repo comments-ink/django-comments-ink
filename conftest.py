@@ -3,13 +3,13 @@ import sys
 
 
 my_plugins = [
-    "django_comments_xtd.tests.pytest_fixtures.base",
+    "django_comments_ink.tests.pytest_fixtures.base",
 ]
 
 
 def pytest_configure(config):
     try:
-        os.chdir("django_comments_xtd")
+        os.chdir("django_comments_ink")
         sys.path.insert(0, os.getcwd())
     except:
         pass

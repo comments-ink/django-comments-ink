@@ -32,21 +32,23 @@ with open(BASE_DIR / "requirements-dev.txt", "r") as req_file:
 
 
 setup(
-    name="django-comments-xtd",
-    version="3.0.0",
+    name="django-comments-ink",
+    version="1.0.0",
     packages=find_packages(),
     include_package_data=True,
     license="MIT",
-    description=("Django comments framework extension app with thread "
-                 "support, follow up notifications and email "
-                 "confirmations."),
+    description=(
+        "Django pluggable commenting app with comment threads, follow-up "
+        "notifications, mail confirmation, comment reactions and votes, and "
+        "comment moderation. It supersedes django-comments-xtd."
+    ),
     long_description=readme,
     long_description_content_type="text/x-rst",
     author="Daniela Rus Morales",
     author_email="danirus@eml.cc",
     maintainer="Daniela Rus Morales",
     maintainer_email="danirus@eml.cc",
-    url="http://pypi.python.org/pypi/django-comments-xtd",
+    url="http://pypi.python.org/pypi/django-comments-ink",
     install_requires=requirements,
     extras_requires={
         'tests': tests_requirements,

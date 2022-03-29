@@ -7,7 +7,7 @@ Control logic
 Following is the application control logic described in 4 actions:
 
 1. The user visits a page that accepts comments. Your app or a 3rd. party app handles the request:
- 
+
  a. Your template shows content that accepts comments. It loads the ``comments`` templatetag and using tags as ``render_comment_list`` and ``render_comment_form`` the template shows the current list of comments and the *post your comment* form.
 
 2. The user **clicks on preview**. Django Comments Framework ``post_comment`` view handles the request:
@@ -16,7 +16,7 @@ Following is the application control logic described in 4 actions:
 
 3. The user **clicks on post**. Django Comments Framework ``post_comment`` view handles the request:
 
- a. If there were form errors it does the same as in point 2. 
+ a. If there were form errors it does the same as in point 2.
 
  b. Otherwise creates an instance of ``TmpXtdComment`` model: an in-memory representation of the comment.
 
@@ -39,7 +39,7 @@ Following is the application control logic described in 4 actions:
 4. The user **clicks on the confirmation link**, in the email message. *Django-comments-xtd* ``confirm`` view handles the request:
 
  a. Checks the secured token in the URL. If it's wrong returns a 404 code.
- 
+
  b. Otherwise checks whether the comment was already confirmed, in such a case returns a 404 code.
 
  c. Otherwise sends a ``confirmation_received`` signal. You can register a receiver to this signal to do some extra process before approving the comment. See :ref:`signal-and-receiver-label`. If any receiver returns False the comment will be rejected and the template ``django_comments_xtd/discarded.html`` will be rendered.
@@ -50,12 +50,12 @@ Following is the application control logic described in 4 actions:
 
 
 .. _the-secure-token-label:
-     
+
 
 Creating the secure token for the confirmation URL
 ==================================================
 
-The Confirmation URL sent by email to the user has a secured token with the comment. To create the token Django-comments-xtd uses the module ``signed.py`` authored by Simon Willison and provided in `Django-OpenID <http://github.com/simonw/django-openid>`_. 
+The Confirmation URL sent by email to the user has a secured token with the comment. To create the token Django-comments-xtd uses the module ``signed.py`` authored by Simon Willison and provided in `Django-OpenID <http://github.com/simonw/django-openid>`_.
 
 ``django_openid.signed`` offers two high level functions:
 
@@ -113,7 +113,7 @@ You might want to register a receiver for ``confirmation_received``. An example 
 Extending the demo site with the following code will do the job:
 
    .. code-block:: python
-  
+
        #----------------------------------------
        # append the below code to demos/simple/views.py:
 
@@ -126,8 +126,8 @@ Extending the demo site with the following code will do the job:
 	           return False
 
        signals.confirmation_received.connect(check_submit_date_is_within_last_7days)
-    
-    
+
+
        #-----------------------------------------------------
        # change get_comment_create_data in django_comments_xtd/forms.py to cheat a
        # bit and make Django believe that the comment was submitted 7 days ago:
@@ -137,7 +137,7 @@ Extending the demo site with the following code will do the job:
 
            data = super(CommentForm, self).get_comment_create_data()
            data['followup'] = self.cleaned_data['followup']
-           if settings.COMMENTS_XTD_CONFIRM_EMAIL:
+           if settings.COMMENTS_INK_CONFIRM_EMAIL:
                # comment must be verified before getting approved
                data['is_public'] = False
                data['submit_date'] = datetime.datetime.now() - timedelta(days=8)  # ADD THIS
@@ -158,16 +158,16 @@ Maximum Thread Level
 
 Nested comments are disabled by default, to enable them use the following settings:
 
- * ``COMMENTS_XTD_MAX_THREAD_LEVEL``: an integer value
- * ``COMMENTS_XTD_MAX_THREAD_LEVEL_BY_APP_MODEL``: a dictionary
+ * ``COMMENTS_INK_MAX_THREAD_LEVEL``: an integer value
+ * ``COMMENTS_INK_MAX_THREAD_LEVEL_BY_APP_MODEL``: a dictionary
 
 Django-comments-xtd inherits the flexibility of `django-contrib-comments framework <https://docs.djangoproject.com/en/1.4/ref/contrib/comments/>`_, so that developers can plug it to support comments on as many models as they want in their projects. It is as suitable for one model based project, like comments posted to stories in a simple blog, as for a project with multiple applications and models.
 
-The configuration of the maximum thread level on a simple project is done by declaring the ``COMMENTS_XTD_MAX_THREAD_LEVEL`` in the ``settings.py`` file:
+The configuration of the maximum thread level on a simple project is done by declaring the ``COMMENTS_INK_MAX_THREAD_LEVEL`` in the ``settings.py`` file:
 
    .. code-block:: python
 
-       COMMENTS_XTD_MAX_THREAD_LEVEL = 2
+       COMMENTS_INK_MAX_THREAD_LEVEL = 2
 
 
 Comments then could be nested up to level 2:
@@ -186,8 +186,8 @@ On a project that allows users posting comments to instances of different models
 
    .. code-block:: python
 
-       COMMENTS_XTD_MAX_THREAD_LEVEL = 1
-       COMMENTS_XTD_MAX_THREAD_LEVEL_BY_APP_MODEL = {
+       COMMENTS_INK_MAX_THREAD_LEVEL = 1
+       COMMENTS_INK_MAX_THREAD_LEVEL_BY_APP_MODEL = {
            'blog.story': 5,
            'blog.quote': 5,
        }

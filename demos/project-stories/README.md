@@ -21,9 +21,9 @@ Create a virtual environment:
     $ source psenv/bin/activate
     $ pip install -r requirements.txt
 
-### Install django-comments-xtd
+### Install django-comments-ink
 
-Install django-comments-xtd passing the path back to the root of the package (where pip can find the setup.py):
+Install django-comments-ink passing the path back to the root of the package (where pip can find the setup.py):
 
     $ pip install -e ../..
 
@@ -31,7 +31,7 @@ Install django-comments-xtd passing the path back to the root of the package (wh
 
 Run Django's `migrate` command and load the fixture data:
 
-    $ cd project_quotes
+    $ cd project_stories
     $ python manage.py migrate
     $ python manage.py loaddata ../fixtures/sites.json
     $ python manage.py loaddata ../fixtures/users.json

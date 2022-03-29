@@ -1,0 +1,158 @@
+.comment {
+    position: relative;
+}
+
+.reactions-panel {
+    display: none;
+    opacity: 0;
+    position: absolute;
+    z-index: 1;
+    min-width: 150px;
+    margin-bottom: 0.5rem;
+    /* Space for arrow. */
+    background-color: white;
+    border: 1px solid rgba(0, 0, 0, .2);
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2), 0 3px 10px 0 rgba(0, 0, 0, 0.19);
+    border-radius: .3rem;
+    left: 20px;
+}
+
+.reactions-panel>h3 {
+    padding: .5rem .75rem;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    font-size: .825rem;
+    background-color: #f7f7f7;
+    border-bottom: 1px solid #ebebeb;
+    border-top-left-radius: calc(.3rem - 1px);
+    border-top-right-radius: calc(.3rem - 1px);
+}
+
+.reactions-panel>p {
+    margin: 0;
+    padding: 8px;
+    text-align: center;
+}
+
+button.emoji {
+    margin: 0px;
+    padding: 2px 10px;
+    border: 0;
+    outline: none;
+    background: white;
+    font-size: 1.2rem;
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
+button.emoji:hover, button.emoji:focus {
+    margin-top: 0;
+    border-bottom-width: 0px;
+    background: #f7f7f7;
+    outline: none;
+}
+
+.reactions-panel .arrow {
+    position: absolute;
+    display: block;
+    width: 1rem;
+    height: 0.5rem;
+    margin: 0 0 0 -0.5rem;
+    bottom: calc((0.5rem + 1px) * -1);
+}
+
+.reactions-panel .arrow::before, .reactions-panel .arrow::after {
+    position: absolute;
+    display: block;
+    content: "";
+    border-color: transparent;
+    border-style: solid;
+}
+
+.reactions-panel .arrow::before {
+    bottom: 0;
+    border-width: 0.5rem 0.5rem 0;
+    border-top-color: rgba(0, 0, 0, 0.25);
+}
+
+.reactions-panel .arrow::after {
+    bottom: 1px;
+    border-width: 0.5rem 0.5rem 0;
+    border-top-color: #fff;
+}
+
+.reactions, .active-reactions {
+    display: inline-block
+}
+
+.reaction .emoji {
+    padding: 0 0 0 3px;
+    font-size: .65rem;
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
+.reaction {
+    position: relative;
+    display: inline-block;
+    padding-left: 2px;
+    padding-right: 2px;
+    cursor: pointer;
+}
+
+.reaction .reaction_tooltip {
+    visibility: hidden;
+    width: 180px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    padding: 8px;
+    border-radius: 6px;
+
+    /* Position the tooltip text */
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -90px;
+
+    /* Fade in tooltip */
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.reaction .reaction_tooltip::after {
+    /* Tooltip arrow. */
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #555 transparent transparent transparent;
+}
+
+/* Show the tooltip text when you mouse over the tooltip container */
+.reaction:hover .reaction_tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* ----------------------------------------------------- */
+.reactions-list {
+    display: flex;
+    justify-content: center;
+}
+
+.reaction-form div {
+    display: flex;
+    justify-content: center;
+}
+
+.reaction-form div button {
+    margin: 2px;
+}
+
+.reaction-form .emoji {
+    font-size: 1rem;
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}

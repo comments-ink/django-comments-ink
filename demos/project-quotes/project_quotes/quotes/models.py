@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 
-from django_comments_xtd.moderation import moderator, SpamModerator
+from django_comments_ink.moderation import moderator, SpamModerator
 
 
 class PublicManager(models.Manager):

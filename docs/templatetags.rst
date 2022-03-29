@@ -30,4 +30,4 @@ Filter syntax::
   {{ object|can_receive_comments_from:user }}
 
 Returns True depending on the value of the ``'who_can_post'`` entry in the
-:setting:`COMMENTS_XTD_APP_MODEL_OPTIONS`.
+:setting:`COMMENTS_INK_APP_MODEL_OPTIONS`.

@@ -148,7 +148,7 @@ different value.
 Comment confirmation
 --------------------
 
-Before we go any further we need to set up the :setting:`COMMENTS_XTD_SALT`
+Before we go any further we need to set up the :setting:`COMMENTS_INK_SALT`
 setting. This setting plays an important role during the comment confirmation
 by mail. It helps obfuscating the comment before the user approves its
 publication.
@@ -160,7 +160,7 @@ for confirmation by mail. Only when the user clicks the confirmation URL the
 comment lands in the database.
 
 This behaviour is disabled for authenticated users, and can be disabled for
-anonymous users too by simply setting :setting:`COMMENTS_XTD_CONFIRM_EMAIL` to
+anonymous users too by simply setting :setting:`COMMENTS_INK_CONFIRM_EMAIL` to
 ``False``.
 
 Now let's append the following entries to the tutorial settings module:
@@ -168,14 +168,14 @@ Now let's append the following entries to the tutorial settings module:
    .. code-block:: python
 
        #  To help obfuscating comments before they are sent for confirmation.
-       COMMENTS_XTD_SALT = (b"Timendi causa est nescire. "
+       COMMENTS_INK_SALT = (b"Timendi causa est nescire. "
                             b"Aequam memento rebus in arduis servare mentem.")
 
        # Source mail address used for notifications.
-       COMMENTS_XTD_FROM_EMAIL = "webmaster@example.com"
+       COMMENTS_INK_FROM_EMAIL = "webmaster@example.com"
 
        # Contact mail address to show in messages.
-       COMMENTS_XTD_CONTACT_EMAIL = "helpdesk@example.com"
+       COMMENTS_INK_CONTACT_EMAIL = "helpdesk@example.com"
 
 
 Comments tags
@@ -301,7 +301,7 @@ copy the link and paste it in the location bar of the browser.
 
 .. image:: images/comments-enabled.png
 
-The setting :setting:`COMMENTS_XTD_MAX_THREAD_LEVEL` is ``0`` by default, which
+The setting :setting:`COMMENTS_INK_MAX_THREAD_LEVEL` is ``0`` by default, which
 means comments can not be nested. Later in the threads section we will enable
 nested comments. Now we will set up comment moderation.
 
@@ -425,7 +425,7 @@ file and add:
 
    .. code-block:: python
 
-       COMMENTS_XTD_CONFIRM_EMAIL = False
+       COMMENTS_INK_CONFIRM_EMAIL = False
 
 
 django-comments-xtd comes with a **Moderator** class that inherits from
@@ -477,7 +477,7 @@ the ``settings.py`` file:
 
    .. code-block:: python
 
-       COMMENTS_XTD_CONFIRM_EMAIL = False
+       COMMENTS_INK_CONFIRM_EMAIL = False
 
 
 Now edit ``blog/models.py`` and add the code corresponding to our new
@@ -555,16 +555,16 @@ Threads
 
 Up until this point in the tutorial django-comments-xtd has been configured to
 disallow nested comments. Every comment is at thread level 0. It is so because
-by default the setting :setting:`COMMENTS_XTD_MAX_THREAD_LEVEL` is set to 0.
+by default the setting :setting:`COMMENTS_INK_MAX_THREAD_LEVEL` is set to 0.
 
-When the :setting:`COMMENTS_XTD_MAX_THREAD_LEVEL` is greater than 0, comments
+When the :setting:`COMMENTS_INK_MAX_THREAD_LEVEL` is greater than 0, comments
 below the maximum thread level may receive replies that will nest inside each
 other up to the maximum thread level. A comment in a the thread level below
-the :setting:`COMMENTS_XTD_MAX_THREAD_LEVEL` can show a **Reply** link that
+the :setting:`COMMENTS_INK_MAX_THREAD_LEVEL` can show a **Reply** link that
 allows users to send nested comments.
 
 In this section we will enable nested comments by modifying
-:setting:`COMMENTS_XTD_MAX_THREAD_LEVEL` and apply some changes to
+:setting:`COMMENTS_INK_MAX_THREAD_LEVEL` and apply some changes to
 our ``blog_detail.html`` template.
 
 We can make use of two template tags, :ttag:`render_xtdcomment_tree` and
@@ -572,7 +572,7 @@ We can make use of two template tags, :ttag:`render_xtdcomment_tree` and
 while the latter put the comments in a nested data structure in the context of
 the template.
 
-We will also introduce the setting :setting:`COMMENTS_XTD_LIST_ORDER`, that
+We will also introduce the setting :setting:`COMMENTS_INK_LIST_ORDER`, that
 allows altering the default order in which the comments are sorted in the list.
 By default comments are sorted by thread and their position inside the thread,
 which turns out to be in ascending datetime of arrival. In this example we will
@@ -583,8 +583,8 @@ level to 1 and a comment ordering such that newer comments are retrieve first:
 
    .. code-block:: python
 
-       COMMENTS_XTD_MAX_THREAD_LEVEL = 1  # default is 0
-       COMMENTS_XTD_LIST_ORDER = ('-thread_id', 'order')  # default is ('thread_id', 'order')
+       COMMENTS_INK_MAX_THREAD_LEVEL = 1  # default is 0
+       COMMENTS_INK_LIST_ORDER = ('-thread_id', 'order')  # default is ('thread_id', 'order')
 
 Now we have to modify the blog post detail template to load the ``comments_xtd``
 templatetag and make use of :ttag:`render_xtdcomment_tree`. We also want to move
@@ -641,7 +641,7 @@ The tag :ttag:`render_xtdcomment_tree` renders the template
 Now visit any of the blog posts to which you have already sent comments and see
 that a new `Reply` link shows up below each comment. Click on the link and post
 a new comment. It will appear nested inside the parent comment. The new comment
-will not show a `Reply` link because :setting:`COMMENTS_XTD_MAX_THREAD_LEVEL`
+will not show a `Reply` link because :setting:`COMMENTS_INK_MAX_THREAD_LEVEL`
 has been set to 1. Raise it to 2 and reload the page to offer the chance to
 nest comments inside one level deeper.
 
@@ -655,8 +655,8 @@ There might be cases in which nested comments have a lot of sense and others
 in which we would prefer a plain comment sequence. We can handle both scenarios
 under the same Django project.
 
-We just have to use both settings, :setting:`COMMENTS_XTD_MAX_THREAD_LEVEL`
-and :setting:`COMMENTS_XTD_MAX_THREAD_LEVEL_BY_APP_MODEL`. The former
+We just have to use both settings, :setting:`COMMENTS_INK_MAX_THREAD_LEVEL`
+and :setting:`COMMENTS_INK_MAX_THREAD_LEVEL_BY_APP_MODEL`. The former
 establishes the default maximum thread level site wide, while the latter
 sets the maximum thread level on `app.model` basis.
 
@@ -666,8 +666,8 @@ up to level one for blog posts, we would set it up as follows in our
 
    .. code-block:: python
 
-       COMMENTS_XTD_MAX_THREAD_LEVEL = 0  # site wide default
-       COMMENTS_XTD_MAX_THREAD_LEVEL_BY_APP_MODEL = {
+       COMMENTS_INK_MAX_THREAD_LEVEL = 0  # site wide default
+       COMMENTS_INK_MAX_THREAD_LEVEL_BY_APP_MODEL = {
            # Objects of the app blog, model post, can be nested
            # up to thread level 1.
    	       'blog.post': 1,
@@ -710,7 +710,7 @@ Commenting options
 ------------------
 
 As of version 2.0 django-comments-xtd has a new setting
-:setting:`COMMENTS_XTD_APP_MODEL_OPTIONS` that must be used to allow comment
+:setting:`COMMENTS_INK_APP_MODEL_OPTIONS` that must be used to allow comment
 flagging. The purpose of it is to give an additional level of control about what
 actions users can perform on comments: flag them as inappropriate, like/dislike them, retrieve the list of users who liked/disliked them, and whether visitors can post comments or only registered users can do it.
 
@@ -718,7 +718,7 @@ It defaults to:
 
    .. code-block:: python
 
-       COMMENTS_XTD_APP_MODEL_OPTIONS = {
+       COMMENTS_INK_APP_MODEL_OPTIONS = {
            'default': {
                'allow_flagging': False,
                'allow_feedback': False,
@@ -752,7 +752,7 @@ module and enable the ``allow_flagging`` option for the ``blog.post``:
 
    .. code-block:: python
 
-       COMMENTS_XTD_APP_MODEL_OPTIONS = {
+       COMMENTS_INK_APP_MODEL_OPTIONS = {
            'blog.post': {
                'allow_flagging': True,
                'allow_feedback': False,
@@ -851,7 +851,7 @@ module and enable the ``allow_feedback`` option for the ``blog.post``
 
    .. code-block:: python
 
-       COMMENTS_XTD_APP_MODEL_OPTIONS = {
+       COMMENTS_INK_APP_MODEL_OPTIONS = {
            'blog.post': {
                'allow_flagging': True,
                'allow_feedback': True,
@@ -914,7 +914,7 @@ Also change the settings and enable the ``show_feedback`` option for
 
    .. code-block:: python
 
-       COMMENTS_XTD_APP_MODEL_OPTIONS = {
+       COMMENTS_INK_APP_MODEL_OPTIONS = {
            'blog.post': {
                'allow_flagging': True,
                'allow_feedback': True,
@@ -1035,7 +1035,7 @@ To know more about the Web API provided by django-comments-xtd read on the
 Enable app.model options
 ------------------------
 
-Be sure :setting:`COMMENTS_XTD_APP_MODEL_OPTIONS` includes the options we want
+Be sure :setting:`COMMENTS_INK_APP_MODEL_OPTIONS` includes the options we want
 to enable for comments sent to Blog posts. In this case we will allow users to
 flag comments for removal (allow_flagging option), to like/dislike comments
 (allow_feedback), and we want users to see the list of people who
@@ -1043,7 +1043,7 @@ liked/disliked comments:
 
    .. code-block:: python
 
-       COMMENTS_XTD_APP_MODEL_OPTIONS = {
+       COMMENTS_INK_APP_MODEL_OPTIONS = {
            'blog.post': {
                'allow_flagging': True,
                'allow_feedback': True,

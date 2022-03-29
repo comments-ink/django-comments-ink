@@ -23,6 +23,6 @@ urlpatterns = [
     path('', views.home, name="homepage"),
     path('user/', include('users.urls')),
     path('quotes/', include('quotes.urls')),
-    path('comments/', include('django_comments_xtd.urls')),
+    path('comments/', include('django_comments_ink.urls')),
     path('admin/', admin.site.urls),
 ]

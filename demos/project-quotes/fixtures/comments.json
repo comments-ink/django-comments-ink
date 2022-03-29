@@ -504,7 +504,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 1,
     "fields": {
         "thread_id": 1,
@@ -516,7 +516,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 2,
     "fields": {
         "thread_id": 1,
@@ -528,7 +528,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 3,
     "fields": {
         "thread_id": 3,
@@ -540,7 +540,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 4,
     "fields": {
         "thread_id": 3,
@@ -552,7 +552,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 5,
     "fields": {
         "thread_id": 3,
@@ -564,7 +564,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 6,
     "fields": {
         "thread_id": 6,
@@ -576,7 +576,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 7,
     "fields": {
         "thread_id": 6,
@@ -588,7 +588,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 8,
     "fields": {
         "thread_id": 6,
@@ -600,7 +600,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 9,
     "fields": {
         "thread_id": 6,
@@ -612,7 +612,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 10,
     "fields": {
         "thread_id": 10,
@@ -624,7 +624,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 11,
     "fields": {
         "thread_id": 10,
@@ -636,7 +636,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 12,
     "fields": {
         "thread_id": 12,
@@ -648,7 +648,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 13,
     "fields": {
         "thread_id": 13,
@@ -660,7 +660,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 14,
     "fields": {
         "thread_id": 14,
@@ -672,7 +672,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 15,
     "fields": {
         "thread_id": 12,
@@ -684,7 +684,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 16,
     "fields": {
         "thread_id": 12,
@@ -696,7 +696,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 17,
     "fields": {
         "thread_id": 14,
@@ -708,7 +708,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 18,
     "fields": {
         "thread_id": 12,
@@ -720,7 +720,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 19,
     "fields": {
         "thread_id": 19,
@@ -732,7 +732,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 20,
     "fields": {
         "thread_id": 13,
@@ -744,7 +744,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 21,
     "fields": {
         "thread_id": 12,
@@ -756,7 +756,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 22,
     "fields": {
         "thread_id": 13,
@@ -768,7 +768,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 23,
     "fields": {
         "thread_id": 14,
@@ -780,7 +780,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 24,
     "fields": {
         "thread_id": 19,
@@ -792,7 +792,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 25,
     "fields": {
         "thread_id": 25,
@@ -804,7 +804,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 26,
     "fields": {
         "thread_id": 12,
@@ -816,7 +816,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 27,
     "fields": {
         "thread_id": 25,
@@ -828,7 +828,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.xtdcomment",
+    "model": "django_comments_ink.inkcomment",
     "pk": 28,
     "fields": {
         "thread_id": 13,
@@ -840,7 +840,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.commentreaction",
+    "model": "django_comments_ink.commentreaction",
     "pk": 2,
     "fields": {
         "reaction": "+",
@@ -852,7 +852,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.commentreaction",
+    "model": "django_comments_ink.commentreaction",
     "pk": 3,
     "fields": {
         "reaction": "+",
@@ -865,7 +865,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.commentreaction",
+    "model": "django_comments_ink.commentreaction",
     "pk": 4,
     "fields": {
         "reaction": "+",
@@ -877,7 +877,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.commentreaction",
+    "model": "django_comments_ink.commentreaction",
     "pk": 5,
     "fields": {
         "reaction": "+",
@@ -889,7 +889,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.commentreaction",
+    "model": "django_comments_ink.commentreaction",
     "pk": 6,
     "fields": {
         "reaction": "-",
@@ -901,7 +901,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.commentreaction",
+    "model": "django_comments_ink.commentreaction",
     "pk": 7,
     "fields": {
         "reaction": "+",
@@ -913,7 +913,7 @@
     }
 },
 {
-    "model": "django_comments_xtd.commentreaction",
+    "model": "django_comments_ink.commentreaction",
     "pk": 8,
     "fields": {
         "reaction": "+",

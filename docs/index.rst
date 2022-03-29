@@ -100,7 +100,7 @@ Change Log
 [3.0.0] -
 --------------------
 
-    * Fixes issue `#194 <https://github.com/danirus/django-comments-xtd/issues/221>`_, about the :setting:`COMMENTS_HIDE_REMOVED` setting and the new :setting:`COMMENTS_XTD_PUBLISH_OR_WITHHOLD_NESTED`. Up until v3.0.0 removed comments were listed but their content were not displayed. They showed a "comment has been removed" message instead. That behaviour didn't fully comply with the :setting:`COMMENTS_HIDE_REMOVED` setting of django-comments, the parent app. By default :setting:`COMMENTS_HIDE_REMOVED` is ``True``, which has the effect of hiding removed comments. As of v3.0.0 this is also the behaviour of django-comments-xtd. Additionally a new setting :setting:`COMMENTS_XTD_PUBLISH_OR_WITHHOLD_NESTED` has been created to control whether nested comments of a comment being removed or approved will be withhold or published.
+    * Fixes issue `#194 <https://github.com/danirus/django-comments-xtd/issues/221>`_, about the :setting:`COMMENTS_HIDE_REMOVED` setting and the new :setting:`COMMENTS_INK_PUBLISH_OR_WITHHOLD_NESTED`. Up until v3.0.0 removed comments were listed but their content were not displayed. They showed a "comment has been removed" message instead. That behaviour didn't fully comply with the :setting:`COMMENTS_HIDE_REMOVED` setting of django-comments, the parent app. By default :setting:`COMMENTS_HIDE_REMOVED` is ``True``, which has the effect of hiding removed comments. As of v3.0.0 this is also the behaviour of django-comments-xtd. Additionally a new setting :setting:`COMMENTS_INK_PUBLISH_OR_WITHHOLD_NESTED` has been created to control whether nested comments of a comment being removed or approved will be withhold or published.
 
 [2.9.5] - 2021-12-14
 --------------------
@@ -141,7 +141,7 @@ Change Log
     * Requires django-contrib-comments >= 2.1, and djangorestframework >= 3.12.
     * Fixes warning when generating the OpenAPI schema. Thanks to @ivanychev. See `PR-296 <https://github.com/danirus/django-comments-xtd/pull/296>`_.
     * Fixes issue with `render_xtdcomment_tree` templatetag, thanks to @dest81. See `PR-295 <https://github.com/danirus/django-comments-xtd/pull/295>`_.
-    * Fixes issue `#291 <https://github.com/danirus/django-comments-xtd/issues/291>`_, about the frontend plugin not being aware of the setting COMMENTS_XTD_DEFAULT_FOLLOWUP. It also fixes the content of the `login_url` props attribute. Its value is now the content of `settings.LOGIN_URL`.
+    * Fixes issue `#291 <https://github.com/danirus/django-comments-xtd/issues/291>`_, about the frontend plugin not being aware of the setting COMMENTS_INK_DEFAULT_FOLLOWUP. It also fixes the content of the `login_url` props attribute. Its value is now the content of `settings.LOGIN_URL`.
     * Fixes issue `#284 <https://github.com/danirus/django-comments-xtd/issues/284>`_, about sending a comment twice by clicking the comment send button twice. It happened when not using the JavaScript plugin.
 
 [2.8.5] - 2021-03-02
@@ -159,7 +159,7 @@ Change Log
 [2.8.3] - 2021-02-07
 --------------------
 
-    * Adds new setting COMMENTS_XTD_DEFAULT_FOLLOWUP, which is used to initialise the follow-up form field. By default its value is False. Thanks to @drholera. Closes ticket `#206 <https://github.com/danirus/django-comments-xtd/issues/206>`_.
+    * Adds new setting COMMENTS_INK_DEFAULT_FOLLOWUP, which is used to initialise the follow-up form field. By default its value is False. Thanks to @drholera. Closes ticket `#206 <https://github.com/danirus/django-comments-xtd/issues/206>`_.
     * Fixes issue `#274 <https://github.com/danirus/django-comments-xtd/issues/274>`_, about wrong validation of fields name and email in the WriteCommentSerializer. Thanks to @dest81.
 
 [2.8.2] - 2021-01-24
@@ -367,7 +367,7 @@ Change Log
 	  * Send feedback flags (like/dislike) on comments.
 	  * Send report flag (removal suggestion) for a comment.
 	  * Template filter ``has_permission`` applicable to a user object and accepting a string specifying the ``app_label.permission`` being checked. It returns ``True`` if the user has the given permission, otherwise returns ``False``.
-	* Setting ``COMMENTS_XTD_API_USER_REPR`` defines a lambda function to return the user string representation used by the web API in response objects.
+	* Setting ``COMMENTS_INK_API_USER_REPR`` defines a lambda function to return the user string representation used by the web API in response objects.
 	* Setting ``COMMENTS_XTD_APP_MODEL_PERMISSIONS`` to explicitly define what commenting features are enabled on per app.model basis.
 	* Templates ``comments/delete.html`` and ``comments/deleted.html`` matching django-comments-xtd default twitter-bootstrap styling.
 	* Dependencies on Python packages: djangorestframework.

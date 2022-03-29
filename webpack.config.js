@@ -12,7 +12,7 @@ const ver = package_json.version;
 const devMode = process.env.NODE_ENV !== 'production';
 
 const PRJ_PATH = path.resolve(
-    __dirname, 'django_comments_xtd', 'static', 'django_comments_xtd'
+    __dirname, 'django_comments_ink', 'static', 'django_comments_ink'
 );
 
 
@@ -31,7 +31,7 @@ module.exports = {
     devtool: 'source-map',
 
     entry: {
-        dcx: path.resolve(PRJ_PATH, "js/index.js")
+        dci: path.resolve(PRJ_PATH, "js/index.js")
     },
 
     output: {

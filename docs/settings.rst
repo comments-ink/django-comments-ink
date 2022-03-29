@@ -18,28 +18,28 @@ behaviour.
    :local:
 
 
-.. setting:: COMMENTS_XTD_MAX_THREAD_LEVEL
+.. setting:: COMMENTS_INK_MAX_THREAD_LEVEL
 
-``COMMENTS_XTD_MAX_THREAD_LEVEL``
+``COMMENTS_INK_MAX_THREAD_LEVEL``
 =================================
 
 **Optional**. Indicates the **Maximum thread level** for comments. In other
 words, whether comments can be nested. This setting established the default
 value for comments posted to instances of every model instance in Django. It
 can be overriden on per app.model basis using the
-:setting:`COMMENTS_XTD_MAX_THREAD_LEVEL_BY_APP_MODEL`, introduced right after
+:setting:`COMMENTS_INK_MAX_THREAD_LEVEL_BY_APP_MODEL`, introduced right after
 this section.
 
 An example::
 
-     COMMENTS_XTD_MAX_THREAD_LEVEL = 8
+     COMMENTS_INK_MAX_THREAD_LEVEL = 8
 
 It defaults to ``0``. What means nested comments are not permitted.
 
 
-.. setting:: COMMENTS_XTD_MAX_THREAD_LEVEL_BY_APP_MODEL
+.. setting:: COMMENTS_INK_MAX_THREAD_LEVEL_BY_APP_MODEL
 
-``COMMENTS_XTD_MAX_THREAD_LEVEL_BY_APP_MODEL``
+``COMMENTS_INK_MAX_THREAD_LEVEL_BY_APP_MODEL``
 ==============================================
 
 **Optional**. The **Maximum thread level on per app.model basis** is a
@@ -49,12 +49,12 @@ definition of max comment thread level on a per `app_label.model` basis.
 
 An example::
 
-    COMMENTS_XTD_MAX_THREAD_LEVEL = 0
-    COMMENTS_XTD_MAX_THREAD_LEVEL_BY_APP_MODEL = {
+    COMMENTS_INK_MAX_THREAD_LEVEL = 0
+    COMMENTS_INK_MAX_THREAD_LEVEL_BY_APP_MODEL = {
         'projects.release': 2,
 	    'blog.stories': 8,
         'blog.quotes': 8,
-	    'blog.diarydetail': 0 # Omit, defaults to COMMENTS_XTD_MAX_THREAD_LEVEL
+	    'blog.diarydetail': 0 # Omit, defaults to COMMENTS_INK_MAX_THREAD_LEVEL
     }
 
 In the example, comments posted to ``projects.release`` instances can go up to
@@ -66,12 +66,12 @@ level 2::
 
 
 It defaults to ``{}``. What means the maximum thread level is setup
-with :setting:`COMMENTS_XTD_MAX_THREAD_LEVEL`.
+with :setting:`COMMENTS_INK_MAX_THREAD_LEVEL`.
 
 
-.. setting:: COMMENTS_XTD_CONFIRM_EMAIL
+.. setting:: COMMENTS_INK_CONFIRM_EMAIL
 
-``COMMENTS_XTD_CONFIRM_EMAIL``
+``COMMENTS_INK_CONFIRM_EMAIL``
 ==============================
 
 **Optional**. It specifies the **confirm comment post by mail** setting,
@@ -88,14 +88,14 @@ Read about the :ref:`moderation` topic in the tutorial.
 
 An example::
 
-     COMMENTS_XTD_CONFIRM_EMAIL = True
+     COMMENTS_INK_CONFIRM_EMAIL = True
 
 It defaults to ``True``.
 
 
-.. setting:: COMMENTS_XTD_FROM_EMAIL
+.. setting:: COMMENTS_INK_FROM_EMAIL
 
-``COMMENTS_XTD_FROM_EMAIL``
+``COMMENTS_INK_FROM_EMAIL``
 ===========================
 
 **Optional**. It specifies the **from mail address** setting used in the
@@ -103,14 +103,14 @@ It defaults to ``True``.
 
 An example::
 
-     COMMENTS_XTD_FROM_EMAIL = "noreply@yoursite.com"
+     COMMENTS_INK_FROM_EMAIL = "noreply@yoursite.com"
 
 It defaults to ``settings.DEFAULT_FROM_EMAIL``.
 
 
-.. setting:: COMMENTS_XTD_CONTACT_EMAIL
+.. setting:: COMMENTS_INK_CONTACT_EMAIL
 
-``COMMENTS_XTD_CONTACT_EMAIL``
+``COMMENTS_INK_CONTACT_EMAIL``
 ==============================
 
 **Optional. It specifies a **contact mail address** the user could use to get
@@ -120,14 +120,14 @@ from the **templates/django_comments_xtd** directory.
 
 An example::
 
-     COMMENTS_XTD_FROM_EMAIL = "helpdesk@yoursite.com"
+     COMMENTS_INK_FROM_EMAIL = "helpdesk@yoursite.com"
 
 It defaults to ``settings.DEFAULT_FROM_EMAIL``.
 
 
-.. setting:: COMMENTS_XTD_FORM_CLASS
+.. setting:: COMMENTS_INK_FORM_CLASS
 
-``COMMENTS_XTD_FORM_CLASS``
+``COMMENTS_INK_FORM_CLASS``
 ===========================
 
 **Optional**, form class to use when rendering comment forms. It's a string
@@ -135,15 +135,15 @@ with the class path to the form class that will be used for comments.
 
 An example::
 
-     COMMENTS_XTD_FORM_CLASS = "mycomments.forms.MyCommentForm"
+     COMMENTS_INK_FORM_CLASS = "mycomments.forms.MyCommentForm"
 
 
 It defaults to `"django_comments_xtd.forms.XtdCommentForm"`.
 
 
-.. setting:: COMMENTS_XTD_MODEL
+.. setting:: COMMENTS_INK_MODEL
 
-``COMMENTS_XTD_MODEL``
+``COMMENTS_INK_MODEL``
 ======================
 
 **Optional**, represents the model class to use for comments. It's a string
@@ -151,15 +151,15 @@ with the class path to the model that will be used for comments.
 
 An example::
 
-     COMMENTS_XTD_MODEL = "mycomments.models.MyCommentModel"
+     COMMENTS_INK_MODEL = "mycomments.models.MyCommentModel"
 
 
 Defaults to `"django_comments_xtd.models.XtdComment"`.
 
 
-.. setting:: COMMENTS_XTD_LIST_ORDER
+.. setting:: COMMENTS_INK_LIST_ORDER
 
-``COMMENTS_XTD_LIST_ORDER``
+``COMMENTS_INK_LIST_ORDER``
 ===========================
 
 **Optional**, represents the field ordering in which comments are retrieve, a
@@ -186,9 +186,9 @@ An example::
 It defaults to ``None``.
 
 
-.. setting:: COMMENTS_XTD_SALT
+.. setting:: COMMENTS_INK_SALT
 
-``COMMENTS_XTD_SALT``
+``COMMENTS_INK_SALT``
 =====================
 
 **Optional**, it is the **extra key to salt the comment form**. It establishes
@@ -198,14 +198,14 @@ sending it for confirmation within a URL.
 
 An example::
 
-     COMMENTS_XTD_SALT = 'G0h5gt073h6gH4p25GS2g5AQ2Tm256yGt134tMP5TgCX$&HKOYRV'
+     COMMENTS_INK_SALT = 'G0h5gt073h6gH4p25GS2g5AQ2Tm256yGt134tMP5TgCX$&HKOYRV'
 
 It defaults to an empty string.
 
 
-.. setting:: COMMENTS_XTD_SEND_HTML_EMAIL
+.. setting:: COMMENTS_INK_SEND_HTML_EMAIL
 
-``COMMENTS_XTD_SEND_HTML_EMAIL``
+``COMMENTS_INK_SEND_HTML_EMAIL``
 ================================
 
 **Optional**, enable/disable HTML mail messages. This boolean setting
@@ -215,14 +215,14 @@ setting, mail messages will be sent only in text format.
 
 An example::
 
-    COMMENTS_XTD_SEND_HTML_EMAIL = False
+    COMMENTS_INK_SEND_HTML_EMAIL = False
 
 It defaults to True.
 
 
-.. setting:: COMMENTS_XTD_THREADED_EMAILS
+.. setting:: COMMENTS_INK_THREADED_EMAILS
 
-``COMMENTS_XTD_THREADED_EMAILS``
+``COMMENTS_INK_THREADED_EMAILS``
 ================================
 
 **Optional**, enable/disable sending mails in separated threads. For low
@@ -233,14 +233,14 @@ from the request-response HTTP loop.
 
 An example::
 
-    COMMENTS_XTD_THREADED_EMAILS = False
+    COMMENTS_INK_THREADED_EMAILS = False
 
 Defaults to ``True``.
 
 
-.. setting:: COMMENTS_XTD_APP_MODEL_OPTIONS
+.. setting:: COMMENTS_INK_APP_MODEL_OPTIONS
 
-``COMMENTS_XTD_APP_MODEL_OPTIONS``
+``COMMENTS_INK_APP_MODEL_OPTIONS``
 ==================================
 
 **Optional**. Allow enabling/disabling commenting options on per
@@ -250,7 +250,7 @@ Defaults to ``True``.
  * ``allow_feedback``: Allow registered users to like/dislike comments.
  * ``show_feedback``: Allow django-comments-xtd to report the list of users who
    liked/disliked the comment. The representation of each user in the list
-   depends on the next setting :setting::`COMMENTS_XTD_API_USER_REPR`.
+   depends on the next setting :setting::`COMMENTS_INK_API_USER_REPR`.
  * ``who_can_post``: Can be either 'all' or 'users'. When it is 'all', all
    users can post, whether registered users or mere visitors. When it is
    'users', only registered users can post. Read the use case
@@ -261,7 +261,7 @@ An example use:
 
    .. code-block:: python
 
-       COMMENTS_XTD_APP_MODEL_OPTIONS = {
+       COMMENTS_INK_APP_MODEL_OPTIONS = {
            'blog.post': {
                'allow_flagging': True,
                'allow_feedback': True,
@@ -274,7 +274,7 @@ Defaults to:
 
    .. code-block:: python
 
-       COMMENTS_XTD_APP_MODEL_OPTIONS = {
+       COMMENTS_INK_APP_MODEL_OPTIONS = {
            'default': {
                'allow_flagging': False,
                'allow_feedback': False,
@@ -284,9 +284,9 @@ Defaults to:
        }
 
 
-.. setting:: COMMENTS_XTD_API_USER_REPR
+.. setting:: COMMENTS_INK_API_USER_REPR
 
-``COMMENTS_XTD_API_USER_REPR``
+``COMMENTS_INK_API_USER_REPR``
 ==============================
 
 **Optional**. Function that receives a user object and returns its string
@@ -296,13 +296,13 @@ full name:
 
    .. code-block:: python
 
-       COMMENTS_XTD_API_USER_REPR = lambda u: u.get_full_name()
+       COMMENTS_INK_API_USER_REPR = lambda u: u.get_full_name()
 
 Defaults to:
 
    .. code-block:: python
 
-       COMMENTS_XTD_API_USER_REPR = lambda u: u.username
+       COMMENTS_INK_API_USER_REPR = lambda u: u.username
 
 
 .. setting:: COMMENTS_XTD_API_GET_USER_AVATAR
@@ -325,23 +325,23 @@ The function used by default, **get_user_avatar** in ``django_comments_xtd/utils
      COMMENTS_XTD_API_GET_USER_AVATAR = "django_comments_xtd.utils.get_user_avatar"
 
 
-.. setting:: COMMENTS_XTD_DEFAULT_FOLLOWUP
+.. setting:: COMMENTS_INK_DEFAULT_FOLLOWUP
 
-``COMMENTS_XTD_DEFAULT_FOLLOWUP``
+``COMMENTS_INK_DEFAULT_FOLLOWUP``
 ====================================
 
 **Optional**. Makes the "Notify about subsequent comments" checkbox checked/unchecked by default.
 
 An example::
 
-    COMMENTS_XTD_DEFAULT_FOLLOWUP = True
+    COMMENTS_INK_DEFAULT_FOLLOWUP = True
 
 Defaults to ``False``.
 
 
-.. setting:: COMMENTS_XTD_PUBLISH_OR_WITHHOLD_NESTED
+.. setting:: COMMENTS_INK_PUBLISH_OR_WITHHOLD_NESTED
 
-``COMMENTS_XTD_PUBLISH_OR_WITHHOLD_NESTED``
+``COMMENTS_INK_PUBLISH_OR_WITHHOLD_NESTED``
 ===========================================
 
 **Optional**. When ``True``, a removal or approval operation on a comment will
@@ -351,7 +351,7 @@ Defaults to:
 
    .. code-block:: python
 
-       COMMENTS_XTD_PUBLISH_OR_WITHHOLD_NESTED = True
+       COMMENTS_INK_PUBLISH_OR_WITHHOLD_NESTED = True
 
 This setting has to be considered in combination with :setting:`COMMENTS_HIDE_REMOVED`. The following table draws the relationship. Each case is explained below.
 

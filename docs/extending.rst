@@ -7,8 +7,8 @@ Customizing django-comments-xtd
 django-comments-xtd can be extended in the same way as django-contrib-comments. There are three points to observe:
 
  1. The setting ``COMMENTS_APP`` must be ``'django_comments_xtd'``.
- 2. The setting ``COMMENTS_XTD_MODEL`` must be your model class name, i.e.: ``'mycomments.models.MyComment'``.
- 3. The setting ``COMMENTS_XTD_FORM_CLASS`` must be your form class name, i.e.: ``'mycomments.forms.MyCommentForm'``.
+ 2. The setting ``COMMENTS_INK_MODEL`` must be your model class name, i.e.: ``'mycomments.models.MyComment'``.
+ 3. The setting ``COMMENTS_INK_FORM_CLASS`` must be your form class name, i.e.: ``'mycomments.forms.MyCommentForm'``.
 
 
 In addition to that, write an ``admin.py`` module to see the new comment class in the admin interface. Inherit from ``django_commensts_xtd.admin.XtdCommentsAdmin``. You might want to add your new comment fields to the comment list view, by rewriting the ``list_display`` attribute of your admin class. Or change the details view customizing the ``fieldsets`` attribute.
@@ -35,8 +35,8 @@ The ``settings.py`` module contains the following customizations::
   )
 
   COMMENTS_APP = "django_comments_xtd"
-  COMMENTS_XTD_MODEL = 'mycomments.models.MyComment'
-  COMMENTS_XTD_FORM_CLASS = 'mycomments.forms.MyCommentForm'
+  COMMENTS_INK_MODEL = 'mycomments.models.MyComment'
+  COMMENTS_INK_FORM_CLASS = 'mycomments.forms.MyCommentForm'
 
 ``models`` Module
 -----------------
@@ -74,7 +74,7 @@ The forms module extends ``XtdCommentForm`` and rewrites the method ``get_commen
           data.update({'title': self.cleaned_data['title']})
           return data
 
-          
+
 ``admin`` Module
 ----------------
 
@@ -94,7 +94,7 @@ The admin module provides a new class MyCommentAdmin that inherits from XtdComme
       list_display_links = ('cid', 'title')
       fieldsets = (
           (None,          {'fields': ('content_type', 'object_pk', 'site')}),
-          (_('Content'),  {'fields': ('title', 'user', 'user_name', 'user_email', 
+          (_('Content'),  {'fields': ('title', 'user', 'user_name', 'user_email',
                                     'user_url', 'comment', 'followup')}),
           (_('Metadata'), {'fields': ('submit_date', 'ip_address',
                                       'is_public', 'is_removed')}),
@@ -122,7 +122,7 @@ Here's an example of how to access the underlying model storing your comments::
 
     from django_comments_xtd.models import XtdComment
     from django.contrib.contenttypes.models import ContentType
-    
+
     def unbsubscribe_everyone(model_instance):
         content_type = ContentType.objects.get_for_model(model_instance)
 

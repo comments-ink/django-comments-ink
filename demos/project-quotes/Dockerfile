@@ -18,9 +18,9 @@ RUN pip install -r requirements-docker.txt
 COPY /demos/project-quotes/dist/dcx-project-quotes-${DEMO_QUOTES_VER}.tar.gz .
 RUN tar -xzf dcx-project-quotes-${DEMO_QUOTES_VER}.tar.gz
 
-COPY /dist/django-comments-xtd-${APP_VER}.tar.gz .
-RUN tar -xzf django-comments-xtd-${APP_VER}.tar.gz
-RUN cd django-comments-xtd-${APP_VER} && pip install .
+COPY /dist/django-comments-ink-${APP_VER}.tar.gz .
+RUN tar -xzf django-comments-ink-${APP_VER}.tar.gz
+RUN cd django-comments-ink-${APP_VER} && pip install .
 
 
 FROM python:3.9.9-slim-buster AS build-image

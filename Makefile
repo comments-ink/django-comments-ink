@@ -4,7 +4,7 @@
 
 coverage:  ## Run tests with coverage.
 	coverage erase
-	coverage run --source=django_comments_xtd \
+	coverage run --source=django_comments_ink \
 		--omit=*migrations*,*tests* -m pytest -ra
 	coverage report -m
 
@@ -13,18 +13,18 @@ deps:  ## Install dependencies.
 	pip install -r requirements.txt
 
 pep8:  ## Check PEP8 compliance.
-	flake8 --exclude=.tox,docs,django_comments_xtd/tests,django_comments_xtd/__init__.py,django_comments_xtd/migrations --max-line-length=80 --extend-ignore=E203 django_comments_xtd
+	flake8 --exclude=.tox,docs,django_comments_ink/tests,django_comments_ink/__init__.py,django_comments_ink/migrations --max-line-length=80 --extend-ignore=E203 django_comments_ink
 
 check-syntax:
-	ufmt check django_comments_xtd/
+	ufmt check django_comments_ink/
 
 format-syntax:
-	ufmt format django_comments_xtd/
+	ufmt format django_comments_ink/
 
 tox:  ## Run tox.
 	python -m tox
 
-sdist-project-quotes:  # Create source tarballs for django-comments-xtd and demos projects.
+sdist-project-quotes:  # Create source tarballs for django-comments-ink and demos projects.
 	. venv/bin/activate && python setup.py sdist && deactivate
 	cd demos/project-quotes/ && . pqenv/bin/activate && python setup.py sdist && deactivate
 

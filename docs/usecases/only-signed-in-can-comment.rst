@@ -32,12 +32,12 @@ illustrate the functionality.
 
 If you have already setup the :ref:`example-simple`, and have sent a few
 testing comments to see that visitors and registered users can comment, add the
-:setting:`COMMENTS_XTD_APP_MODEL_OPTIONS` entry at the bottom of the
+:setting:`COMMENTS_INK_APP_MODEL_OPTIONS` entry at the bottom of the
 ``settings.py`` module to allow only registered users to post comments:
 
    .. code-block:: python
 
-       COMMENTS_XTD_APP_MODEL_OPTIONS = {
+       COMMENTS_INK_APP_MODEL_OPTIONS = {
            'default': {
                'allow_flagging': False,
                'allow_feedback': False,
@@ -104,13 +104,13 @@ Customize the quotes app
 
 If you have already setup the :ref:`example-comp`, and have sent a few
 testing comments to see that visitors and registered users can comment, edit
-the :setting:`COMMENTS_XTD_APP_MODEL_OPTIONS` at the bottom of the
+the :setting:`COMMENTS_INK_APP_MODEL_OPTIONS` at the bottom of the
 ``settings.py`` and append the pair ``'who_can_post': 'users'`` to the
 quotes app dictionary:
 
    .. code-block:: python
 
-       COMMENTS_XTD_APP_MODEL_OPTIONS = {
+       COMMENTS_INK_APP_MODEL_OPTIONS = {
            'quotes.quote': {
                'allow_flagging': True,
                'allow_feedback': True,
@@ -158,7 +158,7 @@ browsing the site is a mere visitor. The following changes will make it:
     See that in the previous snippet we use the template filter
     :ttag:`can_receive_comments_from`. Using this filter you could change the
     setting ``'who_can_post'`` to ``'all'`` in your
-    :setting:`COMMENTS_XTD_APP_MODEL_OPTIONS` to allow mere visitors to post
+    :setting:`COMMENTS_INK_APP_MODEL_OPTIONS` to allow mere visitors to post
     comments, and your template would do as expected without further changes.
 
     If we rather had used ``{% if user.is_authenticated %}`` the template would
@@ -176,7 +176,7 @@ Customize the articles app of the comp project
 
 The articles app uses the JavaScript plugin. The only change required consist of
 adding the pair ``'who_can_post': 'users'`` to the ``'articles.article'``
-dictionary entry of the :setting:`COMMENTS_XTD_APP_MODEL_OPTIONS`, as we did
+dictionary entry of the :setting:`COMMENTS_INK_APP_MODEL_OPTIONS`, as we did
 with the quotes app. That will make it work.
 
 Run the site and check that as a mere visitor (`logout

@@ -1,0 +1,808 @@
+.dci .comment-list > div.narrow-comment-box { margin-top: 8px; }
+.dci .comment-list > div.level-1,
+.dci .comment-list > div.level-2,
+.dci .comment-list > div.level-3 { margin-top: 0px; }
+.dci .comment-list > div:first-child { margin-top: 0 }
+
+.dci .in-preview-header {
+   border-bottom: 2px solid rgba(0, 0, 0, .1);
+}
+
+.dci .user-avatar IMG {
+    border-radius: 3px;
+}
+
+/* ----------------------------------------------------- */
+/* narrow-comment-box is used to show a shorter comment, with a small
+ * user-avatar, the comment header (including the link to the comment, the name
+ * of the person who posted the comment, and the datetime), the comment body,
+ * and no comment footer.
+ *
+ * The .narrow-comment-box has the following layout:
+ *  |----------------------------------------------------------------|
+ *  | .header (flex, direction: row)                                 |
+ *  | |------------------------------------------------------------| |
+ *  | | .user-avatar  |  name, datetime, permalink                 | |
+ *  | |------------------------------------------------------------| |
+ *  | .body (comment content)                                        |
+ *  |----------------------------------------------------------------|
+ */
+.dci .narrow-comment-box {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(0, 0, 0, .1);
+    border-radius: 0.3rem;
+    padding: 10px;
+}
+
+.dci .narrow-comment-box       A.permalink { display: none }
+.dci .narrow-comment-box:hover A.permalink { display: inline }
+
+.dci .narrow-comment-box .header {
+    display: flex;
+    flex-direction: row;
+    font-size: 0.7rem;
+}
+
+.dci .narrow-comment-box .user-avatar {
+    padding-right: 16px;
+}
+
+.dci .narrow-comment-box .body {
+    font-size: 0.8rem;
+}
+
+.dci .narrow-comment-box .body > P  { margin: .5rem; }
+.dci .narrow-comment-box .body > P + P { margin-top: 0; }
+
+
+/* ------------------------------------------------------------------------- */
+/* comment-box is used to show the complete comment, with a user-avatar,
+ * a comment header (with name, post datetime, and permalink), the comment
+ * content, and a comment footer with the feedback block (comment reaction
+ * buttons, and possible reply link when nested comments are allowed).
+ *
+ * The .comment-box has the following layout:
+ *  |----------------------------------------------------------------|
+ *  | .user-avatar   |  .comment (flex, direction: column)           |
+ *  |                | |-------------------------------------------| |
+ *  |                | | .header (name, datetime, permalink)       | |
+ *  |                | |-------------------------------------------| |
+ *  |                | | .body                                     | |
+ *  |                | |-------------------------------------------| |
+ *  |                | | .feedback (reaction-buttons, reply-link)  | |
+ *  |                | |-------------------------------------------| |
+ *  |----------------------------------------------------------------|
+ */
+.dci .comment-box,
+.dci .comment-box-img {
+    position: relative;
+    display: flex;
+    padding: 8px 0;
+    margin-left: 0;
+}
+
+.dci .comment-box-img {
+    margin-left: 16px;
+}
+
+@media screen and (max-width: 839px) {
+    .dci .comment-box     { margin-left: 0 }
+    .dci .comment-box-img { margin-left: 8px }
+
+}
+
+.dci .comment-box .level-1, .dci .comment-box-img .level-1,
+.dci .comment-box .level-2, .dci .comment-box-img .level-2,
+.dci .comment-box .level-3, .dci .comment-box-img .level-3 {
+    display: block;
+    width: 24px;
+    flex-grow: 0;
+    flex-shrink: 0;
+}
+
+.dci .comment-box-img .level-1,
+.dci .comment-box-img .level-2,
+.dci .comment-box-img .level-3 {
+    width: 52px;
+}
+
+@media screen and (max-width: 839px) {
+    .dci .comment-box .level-1,
+    .dci .comment-box .level-2,
+    .dci .comment-box .level-3 {
+        width: 16px
+    }
+
+    .dci .comment-box-img .level-1,
+    .dci .comment-box-img .level-2,
+    .dci .comment-box-img .level-3 {
+        width: 24px
+    }
+}
+
+.dci .comment-box.l0-ini:after {
+    position: absolute;
+    content: "";
+    top: 7px;
+    left: -5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 6px;
+    border: 2px solid hsl(207deg 90% 34%);
+    background-color: #ffffff;
+}
+
+.dci .comment-box.l0-ini:before, .dci .comment-box-img.l0-ini:before,
+.dci .comment-box.l0-mid:before, .dci .comment-box-img.l0-mid:before {
+    position: absolute;
+    top: 0px;
+    bottom: 0;
+    left: 0;
+    display: block;
+    width: 2px;
+    content: "";
+    background-color: hsl(207deg 90% 34%);
+}
+.dci .comment-box.l0-ini:before,
+.dci .comment-box-img.l0-ini:before {
+    top: 16px
+}
+
+.dci .comment-box.l1-ini .level-1:after {
+    position: absolute;
+    content: "";
+    top: 7px;
+    left: 19px;
+    width: 12px;
+    height: 12px;
+    border-radius: 6px;
+    border: 2px solid hsl(207deg 90% 54%);
+    background-color: #ffffff;
+}
+
+.dci .comment-box.l1-ini .level-1:before,
+.dci .comment-box-img.l1-ini .level-1:before,
+.dci .comment-box.l1-mid .level-1:before,
+.dci .comment-box-img.l1-mid .level-1:before {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 24px;
+    display: block;
+    width: 2px;
+    content: "";
+    background-color: hsl(207deg 90% 54%);
+}
+
+.dci .comment-box-img.l1-ini .level-1:before,
+.dci .comment-box-img.l1-mid .level-1:before {
+    left: 52px;
+}
+
+.dci .comment-box.l1-ini .level-1:before,
+.dci .comment-box-img.l1-ini .level-1:before { top: 16px }
+
+@media screen and (max-width: 839px) {
+    .dci .comment-box.l1-ini .level-1:before,
+    .dci .comment-box.l1-mid .level-1:before {
+        left: 16px
+    }
+
+    .dci .comment-box-img.l1-ini .level-1:before,
+    .dci .comment-box-img.l1-mid .level-1:before {
+        left: 24px
+    }
+}
+
+.dci .comment-box.l2-ini .level-2:after {
+    position: absolute;
+    content: "";
+    top: 7px;
+    left: 43px;
+    width: 12px;
+    height: 12px;
+    border-radius: 6px;
+    border: 2px solid hsl(207deg 90% 74%);
+    background-color: #ffffff;
+}
+
+.dci .comment-box.l2-ini .level-2:before,
+.dci .comment-box-img.l2-ini .level-2:before,
+.dci .comment-box.l2-mid .level-2:before,
+.dci .comment-box-img.l2-mid .level-2:before {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 48px;
+    display: block;
+    width: 2px;
+    content: "";
+    background-color: hsl(207deg 90% 74%);
+}
+
+.dci .comment-box-img.l2-ini .level-2:before,
+.dci .comment-box-img.l2-mid .level-2:before {
+    left: 104px;
+}
+
+.dci .comment-box.l2-ini .level-2:before,
+.dci .comment-box-img.l2-ini .level-2:before { top: 8px }
+
+@media screen and (max-width: 839px) {
+    .dci .comment-box.l2-ini .level-2:before,
+    .dci .comment-box.l2-mid .level-2:before {
+        left: 32px;
+    }
+
+    .dci .comment-box-img.l2-ini .level-2:before,
+    .dci .comment-box-img.l2-mid .level-2:before {
+        left: 48px;
+    }
+
+}
+
+.dci .reply-box .level-1, .dci .reply-box-img .level-1,
+.dci .reply-box .level-2, .dci .reply-box-img .level-2,
+.dci .reply-box .level-3, .dci .reply-box-img .level-3 {
+    display: block;
+    width: 24px;
+    flex-grow: 0;
+    flex-shrink: 0;
+}
+
+.dci .reply-box-img .level-1,
+.dci .reply-box-img .level-2 { width: 52px }
+
+@media screen and (max-width: 839px) {
+    .dci .reply-box .level-1,
+    .dci .reply-box .level-2,
+    .dci .reply-box .level-3 {
+        width: 16px
+    }
+
+    .dci .reply-box-img .level-1,
+    .dci .reply-box-img .level-2,
+    .dci .reply-box-img .level-3 {
+        width: 24px
+    }
+}
+
+.dci .reply-box,
+.dci .reply-box-img {
+    position: relative;
+    display: flex;
+    padding: 0;
+}
+
+.dci .reply-box.l0,
+.dci .reply-box-img.l0 {
+    margin-left: 0;
+}
+
+.dci .reply-box-img.l0 {
+    margin-left: 16px;
+}
+
+@media screen and (max-width: 839px) {
+    .dci .reply-box.l0     { margin-left: 0 }
+    .dci .reply-box-img.l0 { margin-left: 8px }
+}
+
+.dci .reply-box.l0     .content,
+.dci .reply-box-img.l0 .content {
+    position: relative;
+    margin-left: 41px;
+    width: 100%;
+}
+
+.dci .reply-box-img.l0 .content { margin-left: 87px }
+
+@media screen and (max-width: 839px) {
+    .dci .reply-box.l0     .content { margin-left: 32px }
+    .dci .reply-box-img.l0 .content { margin-left: 52px }
+}
+
+.dci .reply-box.l0.l1:before,
+.dci .reply-box-img.l0.l1:before,
+.dci .reply-box.l0.l1 .level-1:before,
+.dci .reply-box-img.l0.l1 .level-1:before {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    display: block;
+    width: 2px;
+    content: "";
+    background-color: hsl(207deg 90% 34%);
+}
+
+
+
+.dci .reply-box.l0:before,
+.dci .reply-box-img.l0:before,
+.dci .reply-box.l0.l1 .level-1:before,
+.dci .reply-box-img.l0.l1 .level-1:before,
+.dci .reply-box.l0.l1.l2 .level-2:before,
+.dci .reply-box-img.l0.l1.l2 .level-2:before {
+    position: absolute;
+    top: 0;
+    bottom: 50%;
+    left: 0;
+    display: block;
+    width: 2px;
+    content: "";
+    background-color: hsl(207deg 90% 34%);
+}
+
+.dci .reply-box.l0.l1 .level-1:before,
+.dci .reply-box-img.l0.l1 .level-1:before,
+.dci .reply-box.l0.l1.l2 .level-1:before,
+.dci .reply-box-img.l0.l1.l2 .level-1:before {
+    left: 24px;
+    background-color: hsl(207deg 90% 54%);
+}
+
+.dci .reply-box-img.l0.l1 .level-1:before,
+.dci .reply-box-img.l0.l1.l2 .level-1:before {
+        left: 52px;
+}
+
+@media screen and (max-width: 839px) {
+    .dci .reply-box.l0.l1 .level-1:before,
+    .dci .reply-box.l0.l1.l2 .level-1:before {
+        left: 16px;
+    }
+
+    .dci .reply-box-img.l0.l1 .level-1:before,
+    .dci .reply-box-img.l0.l1.l2 .level-1:before {
+        left: 24px;
+    }
+}
+
+.dci .reply-box.l0.l1.l2     .level-1:before,
+.dci .reply-box-img.l0.l1.l2 .level-1:before {
+    bottom: 0;
+}
+
+.dci .reply-box.l0.l1.l2     .level-2:before,
+.dci .reply-box-img.l0.l1.l2 .level-2:before {
+    left: 48px;
+    background-color: hsl(207deg 90% 74%);
+}
+
+.dci .reply-box-img.l0.l1.l2 .level-2:before {
+    left: 104px;
+}
+
+@media screen and (max-width: 839px) {
+    .dci .reply-box.l0.l1.l2     .level-2:before { left: 32px }
+    .dci .reply-box-img.l0.l1.l2 .level-2:before { left: 48px }
+}
+
+.dci .reply-box .line-0, .dci .reply-box-img .line-0,
+.dci .reply-box .line-1, .dci .reply-box-img .line-1,
+.dci .reply-box .line-2, .dci .reply-box-img .line-2 {
+    position: absolute;
+    top: 50%;
+    left: 1px;
+    border-top-width: 2px;
+    border-top-style: solid;
+    transform: translateY(-50%);
+    display: block;
+    width: 40px;
+    flex-grow: 0;
+    flex-shrink: 0;
+}
+
+.dci .reply-box-img .line-0,
+.dci .reply-box-img .line-1,
+.dci .reply-box-img .line-2 {
+    width: 87px
+}
+
+@media screen and (max-width: 839px) {
+    .dci .reply-box .line-0,
+    .dci .reply-box .line-1,
+    .dci .reply-box .line-2 {
+        width: 32px
+    }
+
+    .dci .reply-box-img .line-0,
+    .dci .reply-box-img .line-1,
+    .dci .reply-box-img .line-2 {
+        width: 52px
+    }
+}
+
+.dci .reply-box .line-0, .dci .reply-box-img .line-0 {
+    border-color: hsl(207deg 90% 34%);
+}
+
+.dci .reply-box .line-1, .dci .reply-box-img .line-1 {
+    border-color: hsl(207deg 90% 54%);
+}
+
+.dci .reply-box .line-2, .dci .reply-box-img .line-2 {
+    border-color: hsl(207deg 90% 74%);
+}
+
+.dci .reply-box .line-0,
+.dci .reply-box-img .line-0 { left: 1px }
+
+.dci .reply-box .line-1 { left: 25px }
+.dci .reply-box-img .line-1 { left: 53px }
+
+
+@media screen and (max-width: 839px) {
+    .dci .reply-box     .line-1 { left: 17px }
+    .dci .reply-box-img .line-1 { left: 25px }
+}
+
+.dci .reply-box     .line-2,
+.dci .reply-box-img .line-2 {
+    left: 49px;
+    border-color: hsl(207deg 90% 74%);
+}
+
+.dci .reply-box-img .line-2 {
+    left: 105px;
+}
+
+@media screen and (max-width: 839px) {
+    .dci .reply-box     .line-2 { left: 33px }
+    .dci .reply-box-img .line-2 { left: 49px }
+}
+
+.dci .not-reply-box.l0:before, .dci .not-reply-box-img.l0:before,
+.dci .not-reply-box.l0.l1:before, .dci .not-reply-box-img.l0.l1:before,
+.dci .not-reply-box.l0.l1.l2:before, .dci .not-reply-box-img.l0.l1.l2:before {
+    position: absolute;
+    content: "";
+    margin-left: -5px;
+    margin-top: -4px;
+    width: 12px;
+    height: 2px;
+    border: 2px solid hsl(207deg 90% 34%);
+}
+
+.dci .not-reply-box-img.l0:before {
+    margin-left: 11px;
+}
+
+.dci .not-reply-box.l0.l1:before,
+.dci .not-reply-box-img.l0.l1:before {
+    margin-left: 19px;
+    border: 2px solid hsl(207deg 90% 54%);
+}
+
+.dci .not-reply-box-img.l0.l1:before {
+    margin-left: 63px;
+}
+
+.dci .not-reply-box.l0.l1.l2:before,
+.dci .not-reply-box-img.l0.l1.l2:before {
+    margin-left: 43px;
+    border: 2px solid hsl(207deg 90% 74%);
+    background-color: #ffffff;
+}
+
+.dci .not-reply-box-img.l0.l1.l2:before {
+    margin-left: 115px;
+}
+
+@media screen and (max-width: 839px) {
+    .dci .not-reply-box-img.l0:before { margin-left: 4px }
+    .dci .not-reply-box.l0.l1:before { margin-left: 12px }
+    .dci .not-reply-box-img.l0.l1:before { margin-left: 28px }
+    .dci .not-reply-box.l0.l1.l2:before { margin-left: 28px }
+    .dci .not-reply-box-img.l0.l1.l2:before { margin-left: 52px }
+}
+
+/* ------------------------------------------------- */
+
+.dci .comment-box           a.permalink,
+.dci .comment-box-img       a.permalink { display: none }
+.dci .comment-box:hover     a.permalink,
+.dci .comment-box-img:hover a.permalink { display: inline }
+
+.dci .comment-box .thread-space {
+    position: relative;
+    z-index: 1;
+    padding-right: 16px;
+}
+
+.dci .comment-box-img .user-avatar {
+    position: relative;
+    z-index: 1;
+    margin-left: -17px;
+    padding-right: 16px;
+}
+
+@media screen and (max-width: 839px) {
+    .dci .comment-box-img .user-avatar {
+        padding-right: 8px;
+    }
+}
+
+.dci .comment-box-img .user-avatar > IMG {
+    border: 2px solid white;
+    border-radius: 50%;
+}
+
+.dci .comment-box .comment,
+.dci .comment-box-img .comment {
+    flex-grow: 1;
+}
+
+.dci .comment-box .comment {
+    padding-left: 16px;
+}
+
+.dci .comment-box .header,
+.dci .comment-box-img .header {
+    display: flex;
+    justify-content: space-between;
+    margin: 0 8px 4px 8px;
+    font-size: 0.8rem;
+}
+
+.body-bordered {
+    padding: 4px;
+    border: 1px solid rgba(0, 0, 0, .1);
+    border-bottom: 0;
+    border-color: rgba(0, 0, 0, .1);
+    border-style: solid;
+    border-top-left-radius: 0.3rem;
+    border-top-right-radius: 0.3rem;
+}
+
+.dci .comment-box     .body > P,
+.dci .comment-box-img .body > P  { margin: .6rem; }
+
+.dci .comment-box     .body > P + P,
+.dci .comment-box-img .body > P + P { margin-top: 0; }
+
+.feedback-bordered {
+    padding: 0 .8rem 4px;
+    border: 1px solid rgba(0, 0, 0, .1);
+    border-top: 0;
+    border-bottom-left-radius: 0.3rem;
+    border-bottom-right-radius: 0.3rem;
+}
+
+.dci .comment-box .feedback, .dci .comment-box-img .feedback {
+    font-size: 0.8rem;
+}
+
+.dci .comment-box     .feedback > DIV,
+.dci .comment-box-img .feedback > DIV {
+    display: inline-block
+}
+
+.dci .comment-box     .feedback > DIV::after,
+.dci .comment-box-img .feedback > DIV::after,
+.dci .comment-box     .feedback > DIV.reactions > DIV:last-child::after,
+.dci .comment-box-img .feedback > DIV.reactions > DIV:last-child::after {
+    content: "·";
+    padding: 0 2px;
+    /* font-size: 0.8rem; */
+    font-weight: 700;
+}
+.dci .comment-box     .feedback > DIV:last-child::after,
+.dci .comment-box-img .feedback > DIV:last-child::after,
+.dci .comment-box     .feedback > DIV.reactions::after,
+.dci .comment-box-img .feedback > DIV.reactions::after {
+    content: "";
+}
+
+.dci .reply-box .content, .dci .reply-box-img .content {
+    display: flex;
+    justify-content: left;
+    padding: .6rem 0;
+}
+
+/* ----------------------------------------------------- */
+.dci .comment-form {
+    margin: 16px;
+    border: 8px solid rgba(0, 0, 0, .1);
+    border-radius: 0.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+@media screen and (max-width: 839px) {
+    .dci .comment-form {
+        margin: 16px 0px;
+    }
+}
+
+
+.dci .comment-form > H5 { margin-bottom: 0px; }
+.dci .comment-form > P  { margin: 1.5rem 2.2rem 0.5rem; }
+.dci .comment-form > P + P { margin-top: 0; }
+
+.dci .comment-form form {
+    display: grid;
+    grid-template-columns: 1fr 3fr;
+    grid-gap: 1rem;
+    padding: 1.5rem 2.5rem;
+}
+
+.dci .reply-form {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    border-radius: 0.5rem;
+    transition: 0.15s all ease;
+}
+
+.dci .reply-form.active {
+    border: 1px solid rgba(0, 0, 0, .1);
+    padding: 16px;
+}
+
+.dci .reply-form > H5 { margin-top: 0px; }
+
+.dci .reply-form form {
+    display: grid;
+    grid-template-columns: 1fr 3fr;
+    grid-gap: 1rem;
+}
+
+.dci .col1 {
+    grid-column: 1/2;
+}
+
+.dci .col2 {
+    grid-column: 2/3;
+    padding-right: 2.5rem;
+}
+
+@media screen and (max-width: 839px) {
+    .dci .col2 {
+        padding-right: 0;
+    }
+}
+
+.dci .col1-2 { grid-column: 1/3 }
+
+@media screen and (max-width: 839px) {
+    .dci .comment-form form {
+        padding: 1.5rem 1rem;
+    }
+}
+
+/* ----------------------------------------------------- */
+.dci .user-avatar {
+    display: flex;
+    justify-content: center;
+}
+
+.dci .flex { display: flex; }
+.dci .flex-grow { flex-grow: 1 }
+.dci .flex-dir-col { flex-direction: column; }
+.dci .flex-justify-flex-end { justify-content: flex-end; }
+.dci .flex-align-center { align-items: center; }
+.dci .flex-align-flex-end { align-items: flex-end; }
+
+/* ----------------------------------------------------- */
+.dci .inline-left {
+    display: flex;
+    justify-content: left;
+}
+
+.dci .inline-centered {
+    display: flex;
+    justify-content: center;
+}
+
+.dci .inline-left>*, .inline-centered>* {
+    display: inline-block;
+}
+
+.dci .central-column {
+    margin: 0 auto;
+    max-width: 735px;
+}
+
+.dci .pagination {
+    padding: 24px 0;
+}
+
+.dci .step-links > * {
+    padding: 0 8px;
+}
+/* ----------------------------------------------------- */
+.dci label {
+    margin: auto 0;
+    text-align: right;
+    font-size: 0.9rem;
+}
+
+.dci input,
+.dci textarea {
+    font-size: 0.9rem;
+    border: 1px solid rgba(0, 0, 0, .2);
+    border-radius: 0.25rem;
+    box-shadow: inset 0 2px 0 rgba(0,0,0,0.075);
+}
+
+.dci textarea {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+}
+
+.dci .comment-form textarea, .dci .reply-form.active textarea {
+    height: 100%;
+}
+
+.dci input:focus,
+.dci textarea:focus {
+    outline: 0;
+    color: #555;
+    background-color: white;
+    border: 1px solid #9acffa;
+    box-shadow: 0 0 0 .2rem rgba(33,150,243,0.25);
+}
+
+.dci input[type=text],
+.dci input[type=email],
+.dci input[type=password] {
+    width: 100%;
+    padding: .3rem .5rem;
+    background-color: white;
+}
+
+.dci input.error,
+.dci textarea.error,
+.dci .error > input,
+.dci .error > textarea {
+    border-color: rgb(245, 153, 156);
+    box-shadow: inset 0 2px 0 rgba(245, 153, 156, .2);
+}
+
+.dci input.error:focus,
+.dci textarea.error:focus,
+.error > input:focus, .error > textarea:focus {
+    border: 1px solid rgb(245, 153, 156);
+    box-shadow: 0 0 0 .2rem rgba(247,37,42,0.25);
+}
+
+.dci .helper-text {
+    margin-top: -.7rem;
+    font-size: 0.75rem;
+    color: gray;
+}
+
+.dci .helper-text.error { color: red }
+.dci .small { font-size: 0.75rem }
+.dci .smaller { font-size: 0.65rem }
+.dci .bold { font-weight: bold }
+
+.dci .alert {
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.dci .alert-info { background-color: aliceblue }
+.dci .alert-success { background-color: #dbffe4 }
+.dci .alert-warn { background-color: #fff6e6 }
+.dci .alert-error { background-color: #fdf0f0 }
+
+.dci .text-info { color: #9acffa }
+.dci .text-success { color: #30c154 }
+.dci .text-warn { color: #ffa657 }
+.dci .text-error { color: red }
+
+.dci .mt16 { margin-top: 16px }
+.dci .mb16 { margin-bottom: 16px }
+.dci .mt32 { margin-top: 32px }
+.dci .mb32 { margin-bottom: 32px }
+.dci .p16 { padding: 16px }
+.dci .px0 { padding-left: 0px; padding-right: 0px }
+.dci .px16 { padding-left: 16px; padding-right: 16px }
+.dci .py0 { padding-top: 0px; padding-bottom: 0px }
+.dci .py16 { padding-top: 16px; padding-bottom: 16px }

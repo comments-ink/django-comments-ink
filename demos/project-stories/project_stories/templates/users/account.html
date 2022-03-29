@@ -2,13 +2,13 @@
 
 {% load i18n %}
 {% load static %}
-{% load comments_xtd %}
+{% load comments_ink %}
 
 {% block title %}{{ block.super }}&nbsp;&bull;&nbsp;Account{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" type="text/css" href="{% static 'django_comments_xtd/css/comments.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'django_comments_xtd/css/reactions.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'django_comments_ink/css/comments.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'django_comments_ink/css/reactions.css' %}">
 {% endblock %}
 
 {% block nav-account-class %}active{% endblock %}
@@ -55,11 +55,11 @@
           </ul>
           {% endif %}
         </div>
-        <div class="{% dcx_custom_selector %} ml32">
+        <div class="{% dci_custom_selector %} ml32">
           <div class="comment-box ml0" id="c{{ comment.id}}">
             <div class="comment">
               <div class="header">
-                <div>{{ comment.submit_date }}&nbsp;&nbsp;<a class="permalink" title="comment permalink" href="{% get_xtdcomment_permalink comment %}">¶</a></div>
+                <div>{{ comment.submit_date }}&nbsp;&nbsp;<a class="permalink" title="comment permalink" href="{% get_inkcomment_permalink comment %}">¶</a></div>
               </div>
               <div class="body">{{ comment.comment|linebreaks|escape }}</div>
               <div class="footer"></div>

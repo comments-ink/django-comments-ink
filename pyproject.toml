@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [tool.black]
 line-length = 80
-exclude = "django_comments_xtd/migrations"
+exclude = "django_comments_ink/migrations"
 
 [tool.ufmt]
 excludes = [
-    "django_comments_xtd/migrations"
+    "django_comments_ink/migrations"
 ]
 
 [tool.usort]

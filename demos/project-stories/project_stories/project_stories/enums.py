@@ -1,6 +1,6 @@
 from django.utils.translation import ugettext as _
 
-from django_comments_xtd.models import BaseReactionEnum
+from django_comments_ink.models import BaseReactionEnum
 
 
 class ReactionEnum(BaseReactionEnum):

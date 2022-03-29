@@ -4,7 +4,7 @@ const app = express();
 const port = 3000;
 
 const PRJ_PATH = path.resolve(
-    __dirname, '..', 'django_comments_xtd', 'static', 'django_comments_xtd'
+    __dirname, '..', 'django_comments_ink', 'static', 'django_comments_ink'
 );
 
 app.use(express.static(PRJ_PATH));

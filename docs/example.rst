@@ -99,7 +99,7 @@ The simple example project features:
 
  #. An Articles App, with a model ``Article`` whose instances accept comments.
  #. Confirmation by mail is required before the comment hit the database,
-    unless ``COMMENTS_XTD_CONFIRM_EMAIL`` is set to False. Authenticated users
+    unless ``COMMENTS_INK_CONFIRM_EMAIL`` is set to False. Authenticated users
     don't have to confirm comments.
  #. Follow up notifications via mail.
  #. Mute links to allow cancellation of follow-up notifications.
@@ -168,7 +168,7 @@ Features:
 Threaded comments
 -----------------
 
-The setting `COMMENTS_XTD_MAX_THREAD_LEVEL` is set to 2, meaning that comments
+The setting `COMMENTS_INK_MAX_THREAD_LEVEL` is set to 2, meaning that comments
 may be threaded up to 2 levels below the the first level (internally known as
 level 0)::
 

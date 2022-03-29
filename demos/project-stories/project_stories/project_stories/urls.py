@@ -32,7 +32,7 @@ urlpatterns = [
     path('jsi18n/', JavaScriptCatalog.as_view(), name='javascript-catalog'),
     path('user/', include('users.urls')),
     path('stories/', include('stories.urls')),
-    path('comments/', include('django_comments_xtd.urls')),
+    path('comments/', include('django_comments_ink.urls')),
     path('admin/', admin.site.urls),
 ]
 

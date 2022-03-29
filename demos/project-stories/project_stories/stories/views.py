@@ -18,7 +18,7 @@ class StoryDetailView(DateDetailView):
         context = super(StoryDetailView, self).get_context_data(**kwargs)
         obj = context.get('object')
         context.update({
-            'next': reverse('comments-xtd-sent'),
+            'next': reverse('comments-ink-sent'),
             'is_comment_input_allowed': check_comments_input_allowed(obj)
         })
         return context

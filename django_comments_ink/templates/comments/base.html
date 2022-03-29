@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" type="text/css"
+  href="{% static 'django_comments_ink/css/comments.css' %}">
+<link rel="stylesheet" type="text/css"
+  href="{% static 'django_comments_ink/css/reactions.css' %}">
+{% endblock %}

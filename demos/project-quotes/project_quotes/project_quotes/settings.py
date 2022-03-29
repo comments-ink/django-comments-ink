@@ -51,7 +51,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'django_comments_xtd',
+    'django_comments_ink',
     'django_comments',
 
     'users',
@@ -173,33 +173,33 @@ LOGOUT_URL          = "/user/logout/"
 LOGIN_REDIRECT_URL  = "/"
 LOGOUT_REDIRECT_URL = "/"
 
-COMMENTS_APP = "django_comments_xtd"
+COMMENTS_APP = "django_comments_ink"
 
 COMMENTS_HIDE_REMOVED = False
 
-COMMENTS_XTD_SALT = b"w28dnq7czc1m+=l)=yiydar-r$$pnz#a5#22pjz_&5n%sq^kkr"
-COMMENTS_XTD_CONFIRM_EMAIL = True   # Set to False to disable confirmation
-COMMENTS_XTD_FROM_EMAIL = 'staff@example.com'
-COMMENTS_XTD_CONTACT_EMAIL = 'staff@example.com'
-COMMENTS_XTD_THREADED_EMAILS = False # default to True, use False to allow
+COMMENTS_INK_SALT = b"w28dnq7czc1m+=l)=yiydar-r$$pnz#a5#22pjz_&5n%sq^kkr"
+COMMENTS_INK_CONFIRM_EMAIL = True   # Set to False to disable confirmation
+COMMENTS_INK_FROM_EMAIL = 'staff@example.com'
+COMMENTS_INK_CONTACT_EMAIL = 'staff@example.com'
+COMMENTS_INK_THREADED_EMAILS = False # default to True, use False to allow
                                      # other backend (say Celery based) send
                                      # your emails.
 
-COMMENTS_XTD_API_USER_REPR = lambda user: user.name
+COMMENTS_INK_API_USER_REPR = lambda user: user.name
 
-COMMENTS_XTD_SEND_HTML_EMAIL = True
+COMMENTS_INK_SEND_HTML_EMAIL = True
 
 # This setting is to apply a maximum thread level of 1 to all apps by default.
-COMMENTS_XTD_MAX_THREAD_LEVEL = 1
+COMMENTS_INK_MAX_THREAD_LEVEL = 1
 
 # This setting applies a maximum thread level of 1 only to the 'quotes.quote'
 # app model. Useful in case you want to allow different levels of comment
 # nesting to different app models.
-COMMENTS_XTD_MAX_THREAD_LEVEL_BY_APP_MODEL = {
+COMMENTS_INK_MAX_THREAD_LEVEL_BY_APP_MODEL = {
     'quotes.quote': 1  # So 2 levels: from 0 to 1.
 }
 
-COMMENTS_XTD_APP_MODEL_OPTIONS = {
+COMMENTS_INK_APP_MODEL_OPTIONS = {
     'default': {
         'who_can_post': 'all',  # Valid values: "users", "all".
         'comment_flagging_enabled': True,
@@ -211,18 +211,18 @@ COMMENTS_XTD_APP_MODEL_OPTIONS = {
     },
 }
 
-# All HTML elements rendered by django-comments-xtd use the 'dcx' CSS selector,
-# defined in 'django_comments_xtd/static/django_comments_xtd/css/comments.css'.
+# All HTML elements rendered by django-comments-ink use the 'dci' CSS selector,
+# defined in 'django_comments_ink/static/django_comments_ink/css/comments.css'.
 # You can alter the CSS rules applied to your comments adding your own custom
 # selector to the following setting.
-COMMENTS_XTD_CSS_CUSTOM_SELECTOR = "dcx dcx-custom"
+COMMENTS_INK_CSS_CUSTOM_SELECTOR = "dci dci-custom"
 
 # Display up to the given number of comments in the last page to avoid
 # creating another page containing only these amount of comments.
-COMMENTS_XTD_MAX_LAST_PAGE_ORPHANS = 4
+COMMENTS_INK_MAX_LAST_PAGE_ORPHANS = 4
 
 # Number of comments per page. When <=0 pagination is disabled.
-COMMENTS_XTD_ITEMS_PER_PAGE = 10
+COMMENTS_INK_ITEMS_PER_PAGE = 10
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
