@@ -22,22 +22,22 @@ describe("scene 3 - reactions.test.js module", () => {
         dom = await JSDOM.fromFile(html_path, opts);
         await new Promise(resolve => {
             dom.window.addEventListener("DOMContentLoaded", () => {
-                // dom.window.dcx.init_reactions();
+                // dom.window.dci.init_reactions();
                 container = dom.window.document.body;
                 resolve();
             });
         });
     });
 
-    it("makes window.dcx.comment_form attribute !== null", () => {
-        expect(dom.window.dcx !== null && dom.window.dcx !== undefined);
-        expect(dom.window.dcx.guest === "0");
-        expect(dom.window.dcx.login_url === null);
-        expect(dom.window.dcx.react_url === "/comments/api/react/");
+    it("makes window.dci.comment_form attribute !== null", () => {
+        expect(dom.window.dci !== null && dom.window.dci !== undefined);
+        expect(dom.window.dci.guest === "0");
+        expect(dom.window.dci.login_url === null);
+        expect(dom.window.dci.react_url === "/comments/api/react/");
     });
 
-    it("has a div with [data-dcx=config] with more data attributes", () => {
-        const qs_config = "[data-dcx=config]";
+    it("has a div with [data-dci=config] with more data attributes", () => {
+        const qs_config = "[data-dci=config]";
         const config_el = container.querySelector(qs_config);
         expect(config_el !== null);
         expect(config_el.dataset.react_url === "/comments/api/react/");
@@ -51,7 +51,7 @@ describe("scene 3 - reactions.test.js module", () => {
 
     it("has a div#comment-29 with a [data-crpanel=29]", () => {
         const panel_qs = '[data-crpanel="29"]';
-        const react_anchor_qs = "A[data-dcx=reactions-panel]";
+        const react_anchor_qs = "A[data-dci=reactions-panel]";
 
         const comment_el = container.querySelector("#comment-29");
         expect(comment_el !== null);
@@ -61,7 +61,7 @@ describe("scene 3 - reactions.test.js module", () => {
     });
 
     it("opens/closes reactions panel by clicking on 'react' link", async() => {
-        const anchor_qs = "A[data-dcx=reactions-panel]";
+        const anchor_qs = "A[data-dci=reactions-panel]";
 
         const comment_el = container.querySelector("#comment-29");
         expect(comment_el != null);
@@ -71,7 +71,7 @@ describe("scene 3 - reactions.test.js module", () => {
 
         fireEvent.click(react_anchor_el);
         await waitFor(() => {
-            const hdler = dom.window.dcx.reactions_handler;
+            const hdler = dom.window.dci.reactions_handler;
             expect(hdler.active_visible_panel === '29');
             expect(hdler.reactions_panel.comment_id === '29');
             expect(hdler.reactions_panel.panel_el.style.opacity == '1')
@@ -79,7 +79,7 @@ describe("scene 3 - reactions.test.js module", () => {
 
         fireEvent.click(react_anchor_el);
         await waitFor(() => {
-            const hdler = dom.window.dcx.reactions_handler;
+            const hdler = dom.window.dci.reactions_handler;
             expect(hdler.active_visible_panel === '0');
             expect(hdler.reactions_panel.comment_id === '29');
             expect(hdler.reactions_panel.panel_el.style.opacity == '0');
@@ -87,8 +87,8 @@ describe("scene 3 - reactions.test.js module", () => {
     });
 
     it("clicks on the 'Like' and displays the 'Like'", async () => {
-        const panel_qs = "[data-dcx=reactions-panel-template]";
-        const anchor_qs = "A[data-dcx=reactions-panel]";
+        const panel_qs = "[data-dci=reactions-panel-template]";
+        const anchor_qs = "A[data-dci=reactions-panel]";
 
         const comment_el = container.querySelector("#comment-29");
         expect(comment_el != null);
@@ -102,7 +102,7 @@ describe("scene 3 - reactions.test.js module", () => {
         // Click on the 'react' link to open the reactions panel.
         fireEvent.click(react_anchor_el);
         await waitFor(() => {
-            const hdler = dom.window.dcx.reactions_handler;
+            const hdler = dom.window.dci.reactions_handler;
             expect(hdler.active_visible_panel === '29');
             expect(hdler.reactions_panel.comment_id === '29');
             expect(hdler.reactions_panel.panel_el.style.opacity == '1')
@@ -159,8 +159,8 @@ describe("scene 3 - reactions.test.js module", () => {
     });
 
     it("clicks on the 'Like' to add and remove the 'Like'", async () => {
-        const panel_qs = '[data-dcx=reactions-panel-template]';
-        const anchor_qs = "A[data-dcx=reactions-panel]";
+        const panel_qs = '[data-dci=reactions-panel-template]';
+        const anchor_qs = "A[data-dci=reactions-panel]";
 
         const comment_el = container.querySelector("#comment-29");
         expect(comment_el != null);
@@ -174,7 +174,7 @@ describe("scene 3 - reactions.test.js module", () => {
         // Click on the 'react' link to open the reactions panel.
         fireEvent.click(react_anchor_el);
         await waitFor(() => {
-            const hdler = dom.window.dcx.reactions_handler;
+            const hdler = dom.window.dci.reactions_handler;
             expect(hdler.active_visible_panel === '29');
             expect(hdler.reactions_panel.comment_id === '29');
             expect(hdler.reactions_panel.panel_el.style.opacity == '1')

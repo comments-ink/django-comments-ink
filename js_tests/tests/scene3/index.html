@@ -35,11 +35,11 @@
             </p>
           </div>
           <h4 class="text-center">There is 1 comment</h4>
-          <div class="dcx dcx-custom pb32">
+          <div class="dci dci-custom pb32">
             <div
               id="comments"
               class="comment-list"
-              data-dcx="config"
+              data-dci="config"
               data-react-url="/comments/react/0/"
               data-guest-user="0"
               data-page-qs-param="cpage"
@@ -57,7 +57,7 @@
                     <div class="reactions" id="cm-reactions-29">
                     </div>
                     <div>
-                      <a data-dcx="reactions-panel" data-comment="29" class="small" data-user-auth="False" href="/comments/react/29/?cpage=1" data-login-next="/comments/cr/15/3/29/#comment-29">React</a>
+                      <a data-dci="reactions-panel" data-comment="29" class="small" data-user-auth="False" href="/comments/react/29/?cpage=1" data-login-next="/comments/cr/15/3/29/#comment-29">React</a>
                     </div>
                   </div>
                 </div>
@@ -68,12 +68,12 @@
               >
                 <div class="line-0"></div>
                 <div class="content">
-                  <section class="reply-form" data-dcx="reply-form">
+                  <section class="reply-form" data-dci="reply-form">
                     <form id="reply-form-902" method="post" action="/comments/reply/902/"><input type="hidden" name="csrfmiddlewaretoken" value="lMutsrM1Jar6XIA1D8wrrH7Yx8sDEBjjSMmUZ7K55sRD397pWcN0VQF954f2TCHy">
                       <input type="hidden" name="reply_to" value="902" />
                       <div class="col1-2">
                         <div class="inline-left">
-                          <button type="submit" class="secondary small" data-dcx="reply-button">Write a reply</button>
+                          <button type="submit" class="secondary small" data-dci="reply-button">Write a reply</button>
                         </div>
                       </div>
                     </form>
@@ -82,7 +82,7 @@
               </div>
             </div>
           </div>
-          <div class="dcx dcx-custom" data-dcx="comment-form">
+          <div class="dci dci-custom" data-dci="comment-form">
             <section class="comment-form">
               <h5 class="text-center">Post your comment</h5>
               <form method="POST" autocomplete="off" action="/comments/post/">
@@ -94,7 +94,7 @@
                 <input type="hidden" name="security_hash" value="4e789ea3b206f364658477046fdbf6b82de9dbbc" id="id_security_hash">
                 <input type="hidden" name="reply_to" value="0" id="id_reply_to">
                 <div class="hide"><input type="text" name="honeypot" id="id_honeypot"></div>
-                <div data-dcx="comment-form-errors" class="col1-2 hide alert"></div>
+                <div data-dci="comment-form-errors" class="col1-2 hide alert"></div>
                 <div class="col1-2">
                   <textarea name="comment" placeholder="Your comment" class="form-control" required id="id_comment"></textarea>
                 </div>
@@ -144,15 +144,15 @@
     </footer>
 
     <script>
-        self.dcx = {}
+        self.dci = {}
     </script>
     <script> // From https://unpkg.com/unfetch/polyfill.
       self.fetch||(self.fetch=function(e,n){return n=n||{},new Promise(function(t,s){var r=new XMLHttpRequest,o=[],u=[],i={},a=function(){return{ok:2==(r.status/100|0),statusText:r.statusText,status:r.status,url:r.responseURL,text:function(){return Promise.resolve(r.responseText)},json:function(){return Promise.resolve(r.responseText).then(JSON.parse)},blob:function(){return Promise.resolve(new Blob([r.response]))},clone:a,headers:{keys:function(){return o},entries:function(){return u},get:function(e){return i[e.toLowerCase()]},has:function(e){return e.toLowerCase()in i}}}};for(var c in r.open(n.method||"get",e,!0),r.onload=function(){r.getAllResponseHeaders().replace(/^(.*?):[^\S\n]*([\s\S]*?)$/gm,function(e,n,t){o.push(n=n.toLowerCase()),u.push([n,t]),i[n]=i[n]?i[n]+","+t:t}),t(a())},r.onerror=s,r.withCredentials="include"==n.credentials,n.headers)r.setRequestHeader(c,n.headers[c]);r.send(n.body||null)})});
     </script>
-    <script src="http://localhost:3000/dist/dcx-3.0.0.js"></script>
+    <script src="http://localhost:3000/dist/dci-1.0.0.js"></script>
 
     <div style="display: none">
-      <section class="reply-form" data-dcx="reply-form-template">
+      <section class="reply-form" data-dci="reply-form-template">
         <form id="reply-form" method="POST" autocomplete="off" action="/comments/post/"  style="display: none;">
           <input type="hidden" name="csrfmiddlewaretoken" value="lMutsrM1Jar6XIA1D8wrrH7Yx8sDEBjjSMmUZ7K55sRD397pWcN0VQF954f2TCHy">
           <input type="hidden" name="content_type" value="stories.story" id="id_content_type">
@@ -162,7 +162,7 @@
           <input type="hidden" name="reply_to" value="0" id="id_reply_to">
           <input type="hidden" name="cpage" value="" />
           <div class="hide"><input type="text" name="honeypot" id="id_honeypot"></div>
-          <div data-dcx="comment-form-errors" class="col1-2 hide alert"></div>
+          <div data-dci="comment-form-errors" class="col1-2 hide alert"></div>
           <div class="col1-2">
             <textarea name="comment" placeholder="Your comment" class="form-control" required id="id_comment"></textarea>
           </div>
@@ -191,12 +191,12 @@
             </div>
           </div>
         </form>
-        <div class="reply-form" data-dcx="reply-textarea">
+        <div class="reply-form" data-dci="reply-textarea">
           <textarea rows="1" placeholder="Your reply"></textarea>
         </div>
       </section>
     </div>
-    <div class="reactions-panel" data-dcx="reactions-panel-template">
+    <div class="reactions-panel" data-dci="reactions-panel-template">
       <div class="arrow"></div>
         <h3 class="title">Pick your reaction</h3>
         <p>

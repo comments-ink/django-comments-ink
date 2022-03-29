@@ -64,22 +64,22 @@ describe("scene 1 - comments.test.js module", () => {
         await new Promise(resolve => {
             dom.window.addEventListener("DOMContentLoaded", () => {
                 container = dom.window.document.body;
-                qs_cform = "[data-dcx=comment-form]";
+                qs_cform = "[data-dci=comment-form]";
                 resolve();
             });
         });
     });
 
-    it("asserts window.dcx.comment_form attributes", () => {
-        expect(dom.window.dcx !== null && dom.window.dcx !== undefined);
-        expect(dom.window.dcx.comment_form !== null);
-        expect(dom.window.dcx.comment_form.formWrapper === qs_cform);
+    it("asserts window.dci.comment_form attributes", () => {
+        expect(dom.window.dci !== null && dom.window.dci !== undefined);
+        expect(dom.window.dci.comment_form !== null);
+        expect(dom.window.dci.comment_form.formWrapper === qs_cform);
 
         const elem = container.querySelector(qs_cform);
-        expect(dom.window.dcx.comment_form.formWrapperEl === elem);
+        expect(dom.window.dci.comment_form.formWrapperEl === elem);
 
         const form = elem.querySelector("form");
-        expect(dom.window.dcx.comment_form.formEl === form);
+        expect(dom.window.dci.comment_form.formEl === form);
     });
 
     it("previewing empty form focuses on textarea comment", () => {
@@ -147,7 +147,7 @@ describe("scene 1 - comments.test.js module", () => {
         await findByText(container, "An error has happened.");
         await findByText(container, "The comment form failed security verification.");
         await waitFor(() => {
-            const qs = "[data-dcx=comment-form] form h6";
+            const qs = "[data-dci=comment-form] form h6";
             const h6 = dom.window.document.querySelector(qs);
             expect(h6.textContent.indexOf("An error has happened.") > -1);
         });
@@ -221,7 +221,7 @@ describe("scene 1 - comments.test.js module", () => {
 
         await waitFor(() => {
             expect(
-                dom.window.document.querySelector("[data-dcx=preview]")
+                dom.window.document.querySelector("[data-dci=preview]")
             ).toBeInTheDocument();
         });
         dom.window.fetch.mockClear();
@@ -258,7 +258,7 @@ describe("scene 1 - comments.test.js module", () => {
         await findByText(container, "An error has happened.");
         await findByText(container, "The comment form failed security verification.");
         await waitFor(() => {
-            const qs = "[data-dcx=comment-form] form h6";
+            const qs = "[data-dci=comment-form] form h6";
             const h6 = dom.window.document.querySelector(qs);
             expect(h6.textContent.indexOf("An error has happened.") > -1);
         });
@@ -295,7 +295,7 @@ describe("scene 1 - comments.test.js module", () => {
 
         await findByText(container, "Comment published");
         await waitFor(() => {
-            const qs = "[data-dcx=comment-form] form > div > div";
+            const qs = "[data-dci=comment-form] form > div > div";
             const alert = dom.window.document.querySelector(qs);
             expect(alert.textContent.indexOf("Comment published") > -1);
         });
@@ -333,7 +333,7 @@ describe("scene 1 - comments.test.js module", () => {
         const text = "Comment confirmation requested";
         await findByText(container, text);
         await waitFor(() => {
-            const qs = "[data-dcx=comment-form] form > div > div";
+            const qs = "[data-dci=comment-form] form > div > div";
             const alert = dom.window.document.querySelector(qs);
             expect(alert.textContent.indexOf(text) > -1);
         });

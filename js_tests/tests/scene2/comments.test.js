@@ -21,36 +21,36 @@ describe("scene 2 - comments.test.js module", () => {
         dom = await JSDOM.fromFile(html_path, opts);
         await new Promise(resolve => {
             dom.window.addEventListener("DOMContentLoaded", () => {
-                dom.window.dcx.init_comments();
+                dom.window.dci.init_comments();
                 container = dom.window.document.body;
-                qs_cform = "[data-dcx=comment-form]";
+                qs_cform = "[data-dci=comment-form]";
                 resolve();
             });
         });
     });
 
-    it("makes window.dcx.comment_form attribute !== null", () => {
-        expect(dom.window.dcx !== null && dom.window.dcx !== undefined);
-        expect(dom.window.dcx.comment_form !== null);
+    it("makes window.dci.comment_form attribute !== null", () => {
+        expect(dom.window.dci !== null && dom.window.dci !== undefined);
+        expect(dom.window.dci.comment_form !== null);
     });
 
-    it("has a div with [data-dcx=comment-form]", () => {
+    it("has a div with [data-dci=comment-form]", () => {
         expect(container.querySelector(qs_cform));
         expect(getByText(container, 'Post your comment')).toBeInTheDocument();
     });
 
-    it("has a div with [data-dcx=reply-form-template]", () => {
-        const qs_rform_template = "[data-dcx=reply-form-template]";
+    it("has a div with [data-dci=reply-form-template]", () => {
+        const qs_rform_template = "[data-dci=reply-form-template]";
         expect(container.querySelector(qs_rform_template));
     });
 
-    it("has a div with [data-dcx=reply-form]", () => {
-        const qs_rform = "[data-dcx=reply-form]";
+    it("has a div with [data-dci=reply-form]", () => {
+        const qs_rform = "[data-dci=reply-form]";
         expect(container.querySelector(qs_rform));
     });
 
-    it("creates window.dcx.reply_forms_handler attribute !== null", () => {
-        expect(dom.window.dcx !== null && dom.window.dcx !== undefined);
-        expect(dom.window.dcx.comment_form !== null);
+    it("creates window.dci.reply_forms_handler attribute !== null", () => {
+        expect(dom.window.dci !== null && dom.window.dci !== undefined);
+        expect(dom.window.dci.comment_form !== null);
     });
 });

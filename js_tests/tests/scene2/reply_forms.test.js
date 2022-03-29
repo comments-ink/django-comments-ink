@@ -63,29 +63,29 @@ describe("scene 2 - reply_forms.test.js module", () => {
         await new Promise(resolve => {
             dom.window.addEventListener("DOMContentLoaded", () => {
                 container = dom.window.document.body;
-                qs_rform_base = "[data-dcx=reply-form-template]";
+                qs_rform_base = "[data-dci=reply-form-template]";
                 resolve();
             })
         })
     });
 
-    it("asserts window.dcx.reply_forms_handle attributes", () => {
-        expect(dom.window.dcx !== null && dom.window.dcx !== undefined);
-        expect(dom.window.dcx.reply_forms_handler !== null);
-        expect(dom.window.dcx.reply_forms_handler.replyFormBase !== null);
-        expect(dom.window.dcx.reply_forms_handler.replyMap !== null);
+    it("asserts window.dci.reply_forms_handle attributes", () => {
+        expect(dom.window.dci !== null && dom.window.dci !== undefined);
+        expect(dom.window.dci.reply_forms_handler !== null);
+        expect(dom.window.dci.reply_forms_handler.replyFormBase !== null);
+        expect(dom.window.dci.reply_forms_handler.replyMap !== null);
 
         const elem = container.querySelector(qs_rform_base);
-        expect(dom.window.dcx.reply_forms_handler.replyFormBase === elem);
+        expect(dom.window.dci.reply_forms_handler.replyFormBase === elem);
 
-        expect(dom.window.dcx.reply_forms_handler.replyMap.size === 1);
+        expect(dom.window.dci.reply_forms_handler.replyMap.size === 1);
     });
 
     it("asserts reply form is not visible until reply field clicked", () => {
-        const qs_reply_section = "[data-dcx=reply-form-902]";
+        const qs_reply_section = "[data-dci=reply-form-902]";
         const section = container.querySelector(qs_reply_section);
         const reply_form = section.querySelector("form");
-        const reply_ta = section.querySelector("[data-dcx=reply-textarea]");
+        const reply_ta = section.querySelector("[data-dci=reply-textarea]");
 
         expect(reply_form.style.display === "none");
         expect(reply_ta.style.display === "");
@@ -96,10 +96,10 @@ describe("scene 2 - reply_forms.test.js module", () => {
     });
 
     it("focuses on reply-form's textarea comment when click on preview", () => {
-        const qs_reply_section = "[data-dcx=reply-form-902]";
+        const qs_reply_section = "[data-dci=reply-form-902]";
         const section = container.querySelector(qs_reply_section);
         const reply_form = section.querySelector("form");
-        const reply_ta = section.querySelector("[data-dcx=reply-textarea]");
+        const reply_ta = section.querySelector("[data-dci=reply-textarea]");
 
         // Assert that before it's clicked the
         // form is not visible but the field is.
@@ -120,10 +120,10 @@ describe("scene 2 - reply_forms.test.js module", () => {
     });
 
     it("focuses on reply-form's input name when click on preview", () => {
-        const qs_reply_section = "[data-dcx=reply-form-902]";
+        const qs_reply_section = "[data-dci=reply-form-902]";
         const section = container.querySelector(qs_reply_section);
         const reply_form = section.querySelector("form");
-        const reply_ta = section.querySelector("[data-dcx=reply-textarea]");
+        const reply_ta = section.querySelector("[data-dci=reply-textarea]");
 
         // Assert that before it's clicked the
         // form is not visible but the field is.
@@ -149,10 +149,10 @@ describe("scene 2 - reply_forms.test.js module", () => {
     });
 
     it("focuses on reply-form's input email when click on preview", () => {
-        const qs_reply_section = "[data-dcx=reply-form-902]";
+        const qs_reply_section = "[data-dci=reply-form-902]";
         const section = container.querySelector(qs_reply_section);
         const reply_form = section.querySelector("form");
-        const reply_ta = section.querySelector("[data-dcx=reply-textarea]");
+        const reply_ta = section.querySelector("[data-dci=reply-textarea]");
 
         // Assert that before it's clicked the
         // form is not visible but the field is.
@@ -181,10 +181,10 @@ describe("scene 2 - reply_forms.test.js module", () => {
     });
 
     it("receives http-400 when previewing a tampered form", async () => {
-        const qs_reply_section = "[data-dcx=reply-form-902]";
+        const qs_reply_section = "[data-dci=reply-form-902]";
         const section = container.querySelector(qs_reply_section);
         const reply_form = section.querySelector("form");
-        const reply_ta = section.querySelector("[data-dcx=reply-textarea]");
+        const reply_ta = section.querySelector("[data-dci=reply-textarea]");
 
         // Assert that before it's clicked the
         // form is not visible but the field is.
@@ -224,7 +224,7 @@ describe("scene 2 - reply_forms.test.js module", () => {
         await findByText(container, "An error has happened.");
         await findByText(container, "The comment form failed security verification.");
         await waitFor(() => {
-            const qs = "[data-dcx=reply-form-902] form h6";
+            const qs = "[data-dci=reply-form-902] form h6";
             const h6 = dom.window.document.querySelector(qs);
             expect(h6.textContent.indexOf("An error has happened.") > -1);
         });
@@ -232,10 +232,10 @@ describe("scene 2 - reply_forms.test.js module", () => {
     });
 
     it("receives http-200 when previewing form with wrong email", async () => {
-        const qs_reply_section = "[data-dcx=reply-form-902]";
+        const qs_reply_section = "[data-dci=reply-form-902]";
         const section = container.querySelector(qs_reply_section);
         const reply_form = section.querySelector("form");
-        const reply_ta = section.querySelector("[data-dcx=reply-textarea]");
+        const reply_ta = section.querySelector("[data-dci=reply-textarea]");
 
         // Assert that before it's clicked the
         // form is not visible but the field is.
@@ -286,10 +286,10 @@ describe("scene 2 - reply_forms.test.js module", () => {
     });
 
     it("receives http-200 when previewing reply form", async () => {
-        const qs_reply_section = "[data-dcx=reply-form-902]";
+        const qs_reply_section = "[data-dci=reply-form-902]";
         const section = container.querySelector(qs_reply_section);
         const reply_form = section.querySelector("form");
-        const reply_ta = section.querySelector("[data-dcx=reply-textarea]");
+        const reply_ta = section.querySelector("[data-dci=reply-textarea]");
 
         // Assert that before it's clicked the
         // form is not visible but the field is.
@@ -327,16 +327,16 @@ describe("scene 2 - reply_forms.test.js module", () => {
         );
 
         await waitFor(() => {
-            expect(dom.window.document.querySelector("[data-dcx=preview]"));
+            expect(dom.window.document.querySelector("[data-dci=preview]"));
         });
         dom.window.fetch.mockClear();
     });
 
     it("receives http-400 when submitting the reply form", async () => {
-        const qs_reply_section = "[data-dcx=reply-form-902]";
+        const qs_reply_section = "[data-dci=reply-form-902]";
         const section = container.querySelector(qs_reply_section);
         const reply_form = section.querySelector("form");
-        const reply_ta = section.querySelector("[data-dcx=reply-textarea]");
+        const reply_ta = section.querySelector("[data-dci=reply-textarea]");
 
         // Assert that before it's clicked the
         // form is not visible but the field is.
@@ -374,7 +374,7 @@ describe("scene 2 - reply_forms.test.js module", () => {
         await findByText(container, "An error has happened.");
         await findByText(container, "The comment form failed security verification.");
         await waitFor(() => {
-            const qs = "[data-dcx=reply-form-902] form h6";
+            const qs = "[data-dci=reply-form-902] form h6";
             const h6 = dom.window.document.querySelector(qs);
             expect(h6.textContent.indexOf("An error has happened.") > -1);
         });
@@ -382,10 +382,10 @@ describe("scene 2 - reply_forms.test.js module", () => {
     });
 
     it("receives http-201 when submitting the reply form", async () => {
-        const qs_reply_section = "[data-dcx=reply-form-902]";
+        const qs_reply_section = "[data-dci=reply-form-902]";
         const section = container.querySelector(qs_reply_section);
         const reply_form = section.querySelector("form");
-        const reply_ta = section.querySelector("[data-dcx=reply-textarea]");
+        const reply_ta = section.querySelector("[data-dci=reply-textarea]");
 
         // Assert that before it's clicked the
         // form is not visible but the field is.
@@ -422,7 +422,7 @@ describe("scene 2 - reply_forms.test.js module", () => {
 
         await findByText(container, "Comment published");
         await waitFor(() => {
-            const qs = "[data-dcx=reply-form-902] form > div > div";
+            const qs = "[data-dci=reply-form-902] form > div > div";
             const alert = dom.window.document.querySelector(qs);
             expect(alert.textContent.indexOf("Comment published") > -1);
         });
@@ -431,10 +431,10 @@ describe("scene 2 - reply_forms.test.js module", () => {
     });
 
     it("receives http-202 when submitting the reply form", async () => {
-        const qs_reply_section = "[data-dcx=reply-form-902]";
+        const qs_reply_section = "[data-dci=reply-form-902]";
         const section = container.querySelector(qs_reply_section);
         const reply_form = section.querySelector("form");
-        const reply_ta = section.querySelector("[data-dcx=reply-textarea]");
+        const reply_ta = section.querySelector("[data-dci=reply-textarea]");
 
         // Assert that before it's clicked the
         // form is not visible but the field is.
@@ -472,7 +472,7 @@ describe("scene 2 - reply_forms.test.js module", () => {
         const text = "Comment confirmation requested";
         await findByText(container, text);
         await waitFor(() => {
-            const qs = "[data-dcx=reply-form-902] form > div > div";
+            const qs = "[data-dci=reply-form-902] form > div > div";
             const alert = dom.window.document.querySelector(qs);
             expect(alert.textContent.indexOf(text) > -1);
         });
@@ -480,10 +480,10 @@ describe("scene 2 - reply_forms.test.js module", () => {
     });
 
     it("receives http-500 when submitting the reply form", async () => {
-        const qs_reply_section = "[data-dcx=reply-form-902]";
+        const qs_reply_section = "[data-dci=reply-form-902]";
         const section = container.querySelector(qs_reply_section);
         const reply_form = section.querySelector("form");
-        const reply_ta = section.querySelector("[data-dcx=reply-textarea]");
+        const reply_ta = section.querySelector("[data-dci=reply-textarea]");
 
         // Assert that before it's clicked the
         // form is not visible but the field is.
