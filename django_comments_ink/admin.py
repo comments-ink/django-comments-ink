@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django.contrib import admin
-
 from django_comments import get_model
 from django_comments.admin import CommentsAdmin
 from django_comments.models import CommentFlag

@@ -3,7 +3,6 @@ Tests borrowed from Simon Willison's Django-OpenID project:
   * https://github.com/simonw/django-openid
 """
 import pytest
-
 from django.conf import settings
 
 from django_comments_ink import signed

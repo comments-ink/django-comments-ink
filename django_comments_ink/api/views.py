@@ -6,14 +6,13 @@ from rest_framework import generics, mixins, permissions, renderers, status
 from rest_framework.response import Response
 from rest_framework.schemas.openapi import AutoSchema
 
-from django_comments_ink import get_model, get_model as get_comment_model
+from django_comments_ink import get_model as get_comment_model
 from django_comments_ink.api import serializers
 from django_comments_ink.conf import settings
 from django_comments_ink.models import CommentReaction
 from django_comments_ink.utils import check_option, get_current_site_id
 
-
-InkComment = get_model()
+InkComment = get_comment_model()
 
 
 class DefaultsMixin:

@@ -2,13 +2,11 @@ import collections
 from datetime import datetime
 
 import pytest
-
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
 
 from django_comments_ink import get_model
 from django_comments_ink.paginator import CommentsPaginator
-
 
 InkComment = get_model()
 

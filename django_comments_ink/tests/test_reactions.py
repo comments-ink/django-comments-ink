@@ -1,7 +1,6 @@
 from datetime import datetime
 
 import django_comments
-
 from django.contrib.auth.models import AnonymousUser, User
 from django.test import RequestFactory, TestCase
 
@@ -13,7 +12,6 @@ from django_comments_ink.tests.test_views import (
     post_diary_comment,
 )
 from django_comments_ink.tests.utils import post_flag, send_reaction
-
 
 request_factory = RequestFactory()
 comments_model = django_comments.get_model()

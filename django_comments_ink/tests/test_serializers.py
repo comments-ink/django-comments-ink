@@ -5,10 +5,8 @@ from datetime import datetime
 from unittest.mock import Mock, patch
 
 import django_comments
-
 import pytest
 import pytz
-
 from django.contrib.auth.models import AnonymousUser, User
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
@@ -16,7 +14,6 @@ from django.test import TestCase
 from django.urls import reverse
 from django_comments.moderation import CommentModerator
 from django_comments.signals import comment_will_be_posted
-
 from rest_framework.test import APIClient
 
 from django_comments_ink.api.serializers import (
@@ -25,12 +22,10 @@ from django_comments_ink.api.serializers import (
     WriteCommentReactionSerializer,
     WriteCommentSerializer,
 )
-
 from django_comments_ink.conf import settings
 from django_comments_ink.models import InkComment
 from django_comments_ink.moderation import moderator
 from django_comments_ink.signals import should_request_be_authorized
-
 from django_comments_ink.tests.models import (
     Article,
     authorize_api_post_comment,

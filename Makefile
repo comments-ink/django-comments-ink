@@ -1,6 +1,7 @@
-	.DEFAULT_GOAL := help
-.PHONY: coverage deps pep8 check-syntax format-syntax help tox sdist \
-	collectstatic compose-project-quotes-build compose-project-quotes-up
+.DEFAULT_GOAL := help
+.PHONY: coverage help tox syntax-check syntax-format pip-compile pip-install \
+	sdist-project-quotes collectstatic-project-quotes \
+	compose-project-quotes-build compose-project-quotes-up
 
 coverage:  ## Run tests with coverage.
 	coverage erase
@@ -8,21 +9,27 @@ coverage:  ## Run tests with coverage.
 		--omit=*migrations*,*tests* -m pytest -ra
 	coverage report -m
 
-deps:  ## Install dependencies.
-	pip install coverage flake8 pylint pytest pytest-django tox
-	pip install -r requirements.txt
+syntax-check:  ## Check syntax code (isort and black).
+	sh ./lint.sh check
 
-pep8:  ## Check PEP8 compliance.
-	flake8 --exclude=.tox,docs,django_comments_ink/tests,django_comments_ink/__init__.py,django_comments_ink/migrations --max-line-length=80 --extend-ignore=E203 django_comments_ink
-
-check-syntax:
-	ufmt check django_comments_ink/
-
-format-syntax:
-	ufmt format django_comments_ink/
+syntax-format:  ## Format syntax code (isort and black).
+	sh ./lint.sh format
 
 tox:  ## Run tox.
 	python -m tox
+
+pip-compile:  ## Generate requirements.txt and requirements-dev.txt files.
+	python -c "import piptools" > /dev/null 2>&1 || pip install pip-tools
+	pip-compile --generate-hashes --allow-unsafe \
+		--output-file requirements.txt requirements.in
+	pip-compile --allow-unsafe \
+		--output-file requirements-tests.txt requirements-tests.in
+	pip-compile --generate-hashes --allow-unsafe \
+		--output-file requirements-dev.txt requirements-dev.in
+
+pip-install:  ## Install dependencies listed in requirements-dev.txt.
+	pip install -r requirements.txt
+	pip install -r requirements-dev.txt
 
 sdist-project-quotes:  # Create source tarballs for django-comments-ink and demos projects.
 	. venv/bin/activate && python setup.py sdist && deactivate

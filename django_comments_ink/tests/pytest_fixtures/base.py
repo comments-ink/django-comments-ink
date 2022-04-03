@@ -1,16 +1,13 @@
 from datetime import datetime
 
 import pytest
-
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
-
 from django_comments.models import CommentFlag
 
 from django_comments_ink import get_reactions_enum
 from django_comments_ink.models import CommentReaction, InkComment
-
 from django_comments_ink.tests.models import Article
 
 

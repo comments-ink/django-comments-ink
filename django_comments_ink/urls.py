@@ -7,11 +7,9 @@ from django_comments.views.moderation import (
     delete_done,
     flag_done,
 )
-
 from rest_framework.urlpatterns import format_suffix_patterns
 
 from django_comments_ink import views
-
 
 urlpatterns = [
     re_path(r"^post/$", views.post, name="comments-ink-post"),

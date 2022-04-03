@@ -2,8 +2,8 @@ from django.apps import apps
 from django.contrib.sites.shortcuts import get_current_site
 from django.utils import formats, timezone
 from django.utils.html import escape
-from django.utils.translation import activate, get_language, gettext as _
-
+from django.utils.translation import activate, get_language
+from django.utils.translation import gettext as _
 from django_comments import get_form
 from django_comments.forms import CommentSecurityForm
 from django_comments.models import CommentFlag
@@ -14,16 +14,15 @@ from django_comments_ink import get_model, get_reactions_enum, signed, views
 from django_comments_ink.conf import settings
 from django_comments_ink.models import (
     CommentReaction,
-    max_thread_level_for_content_type,
-    TmpInkComment,
     InkComment,
+    TmpInkComment,
+    max_thread_level_for_content_type,
 )
 from django_comments_ink.signals import (
     confirmation_received,
     should_request_be_authorized,
 )
 from django_comments_ink.utils import get_app_model_options
-
 
 COMMENT_MAX_LENGTH = getattr(settings, "COMMENT_MAX_LENGTH", 3000)
 

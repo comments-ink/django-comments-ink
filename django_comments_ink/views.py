@@ -25,27 +25,20 @@ from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
 from django.views.defaults import bad_request
-
 from django_comments.signals import comment_was_posted, comment_will_be_posted
 from django_comments.views.comments import CommentPostBadRequest
 from django_comments.views.moderation import perform_flag
 from django_comments.views.utils import next_redirect
 
-from django_comments_ink import (
-    get_form,
-    get_model as get_comment_model,
-    get_reactions_enum,
-    signals,
-    signed,
-    utils,
-)
+from django_comments_ink import get_form
+from django_comments_ink import get_model as get_comment_model
+from django_comments_ink import get_reactions_enum, signals, signed, utils
 from django_comments_ink.conf import settings
 from django_comments_ink.models import (
     CommentReaction,
     MaxThreadLevelExceededException,
     TmpInkComment,
 )
-
 
 InkComment = get_comment_model()
 

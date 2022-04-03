@@ -8,12 +8,11 @@ from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.core.paginator import InvalidPage, PageNotAnInteger
 from django.http import Http404
-from django.template import Library, loader, Node, TemplateSyntaxError, Variable
+from django.template import Library, Node, TemplateSyntaxError, Variable, loader
 from django.urls import reverse
 from django.utils.module_loading import import_string
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _
-
 from django_comments.templatetags.comments import (
     BaseCommentNode,
     RenderCommentFormNode,
@@ -25,7 +24,6 @@ from django_comments_ink.api import frontend
 from django_comments_ink.conf import settings
 from django_comments_ink.models import max_thread_level_for_content_type
 from django_comments_ink.paginator import CommentsPaginator
-
 
 register = Library()
 
@@ -453,6 +451,8 @@ def comment_reaction_form_target(comment):
     return reverse("comments-ink-react", args=(comment.id,))
 
 
+# Convert from inclusion_tag into a normal tag, so that it can render a list
+# of possible templates instead of just this one.
 @register.inclusion_tag(f"comments/{theme_dir}/reactions_buttons.html")
 def render_reactions_buttons(user_reactions):
     """

@@ -4,13 +4,11 @@ import pytest
 from django.contrib.auth.models import AnonymousUser, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
-
 from django_comments.models import Comment
 
 from django_comments_ink import utils
 from django_comments_ink.api import frontend
 from django_comments_ink.conf import settings
-
 from django_comments_ink.models import max_thread_level_for_content_type
 
 

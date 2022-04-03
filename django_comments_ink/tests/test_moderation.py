@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import django_comments
-
 from django.contrib.auth.models import AnonymousUser, Permission, User
 from django.contrib.contenttypes.models import ContentType
 from django.test import RequestFactory, TestCase

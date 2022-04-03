@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from django.conf import settings
 
-
 COMMENT_MAX_LENGTH = 3000
 
 # Extra key to salt the InkCommentForm.

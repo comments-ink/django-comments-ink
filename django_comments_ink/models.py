@@ -2,14 +2,12 @@ from collections import OrderedDict
 
 from django.contrib.contenttypes.models import ContentType
 from django.core import signing
-
 from django.db import models
 from django.db.models import F, Max, Min, Prefetch, Q
 from django.db.models.signals import post_delete
 from django.db.transaction import atomic
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-
 from django_comments.managers import CommentManager
 from django_comments.models import Comment, CommentFlag
 

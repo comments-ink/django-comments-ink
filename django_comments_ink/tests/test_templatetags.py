@@ -8,21 +8,19 @@ from django.contrib.auth.models import AnonymousUser
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
 from django.core.paginator import PageNotAnInteger
-
 from django.db.models.signals import pre_save
 from django.http.response import Http404
-from django.template import Context, loader, Template, TemplateSyntaxError
+from django.template import Context, Template, TemplateSyntaxError, loader
 from django.test import TestCase as DjangoTestCase
 from django.urls import reverse
 
 from django_comments_ink import get_model, get_reactions_enum
 from django_comments_ink.conf import settings
 from django_comments_ink.models import (
-    publish_or_withhold_on_pre_save,
     InkComment,
+    publish_or_withhold_on_pre_save,
 )
 from django_comments_ink.templatetags import comments_ink
-
 from django_comments_ink.tests.models import Article, MyComment
 from django_comments_ink.tests.test_models import (
     thread_test_step_1,
@@ -32,7 +30,6 @@ from django_comments_ink.tests.test_models import (
     thread_test_step_5,
 )
 from django_comments_ink.utils import get_current_site_id, get_html_id_suffix
-
 
 _ink_model = "django_comments_ink.tests.models.MyComment"
 

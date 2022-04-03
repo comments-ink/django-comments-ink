@@ -1,6 +1,5 @@
 from django.contrib.contenttypes.models import ContentType
 from django.utils.module_loading import import_string
-
 from django_comments.forms import CommentSecurityForm
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
@@ -13,7 +12,6 @@ from django_comments_ink.utils import (
     get_current_site_id,
     get_html_id_suffix,
 )
-
 
 InkComment = get_comment_model()
 

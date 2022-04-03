@@ -1,7 +1,6 @@
 from django import VERSION
 from django.contrib.sites.shortcuts import get_current_site
 from django.template import Context, loader
-
 from django_comments import get_model
 from django_comments.models import CommentFlag
 from django_comments.moderation import CommentModerator, Moderator

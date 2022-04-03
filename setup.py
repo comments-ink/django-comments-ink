@@ -1,7 +1,6 @@
 from pathlib import Path
 
-from setuptools import setup, find_packages
-
+from setuptools import find_packages, setup
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -12,24 +11,9 @@ with open(BASE_DIR / "README.md", "r") as readme_file:
 
 
 requirements = []
-with open(BASE_DIR / "requirements.txt", "r") as req_file:
+with open(BASE_DIR / "requirements.in", "r") as req_file:
     for item in req_file:
         requirements.append(item)
-
-
-tests_requirements = requirements[:]
-with open(BASE_DIR / "requirements-tests.txt", "r") as req_file:
-    req_file.readline()  # Skip 1st line: '-r requirements.txt'.
-    for item in req_file:
-        tests_requirements.append(item)
-
-
-dev_requirements = tests_requirements[:]
-with open(BASE_DIR / "requirements-dev.txt", "r") as req_file:
-    req_file.readline()  # Skip 1st line: '-r requirements-tests.txt'.
-    for item in req_file:
-        dev_requirements.append(item)
-
 
 setup(
     name="django-comments-ink",
@@ -50,23 +34,19 @@ setup(
     maintainer_email="danirus@eml.cc",
     url="http://pypi.python.org/pypi/django-comments-ink",
     install_requires=requirements,
-    extras_requires={
-        'tests': tests_requirements,
-        'dev': dev_requirements,
-    },
-    setup_requires=['wheel'],
+    setup_requires=["wheel"],
     classifiers=[
-        'Development Status :: 5 - Production/Stable',
-        'Environment :: Web Environment',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
-        'Operating System :: OS Independent',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 3',
-        'Framework :: Django',
-        'Natural Language :: English',
-        'Topic :: Internet :: WWW/HTTP :: Dynamic Content :: News/Diary',
+        "Development Status :: 5 - Production/Stable",
+        "Environment :: Web Environment",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Framework :: Django",
+        "Natural Language :: English",
+        "Topic :: Internet :: WWW/HTTP :: Dynamic Content :: News/Diary",
     ],
     test_suite="dummy",
-    zip_safe=True
+    zip_safe=True,
 )

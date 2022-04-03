@@ -6,19 +6,6 @@ on:
   pull_request:
 
 jobs:
-  pep8:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Python setup
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.9'
-      - name: Install tox and flake8
-        run: pip install tox flake8
-      - name: Check syntax compliance
-        run: tox -e pep8
-
   django:
     runs-on: ubuntu-latest
     strategy:

@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 import os
 
-
 PRJ_PATH = os.path.abspath(os.path.curdir)
 
 DEBUG = True
@@ -107,7 +106,7 @@ COMMENTS_APP = "django_comments_ink"
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 DEFAULT_FROM_EMAIL = "Alice Bloggs <alice@example.com>"
 

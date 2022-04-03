@@ -5,22 +5,19 @@ import pytest
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
-
 from django.db.models.signals import pre_save
 from django.test import TestCase as DjangoTestCase
-
 from django_comments.models import Comment, CommentFlag
 
 from django_comments_ink import get_form, get_model, get_reactions_enum
 from django_comments_ink.conf import settings
 from django_comments_ink.models import (
     BlackListedDomain,
+    InkComment,
     MaxThreadLevelExceededException,
     publish_or_withhold_on_pre_save,
-    InkComment,
 )
-from django_comments_ink.moderation import moderator, SpamModerator
-
+from django_comments_ink.moderation import SpamModerator, moderator
 from django_comments_ink.tests.models import Article, Diary, MyComment
 from django_comments_ink.tests.test_views import post_article_comment
 
@@ -757,8 +754,6 @@ def test_get_queryset_returns_none():
 def test_get_queryset_with_content_object(an_article, an_articles_comment):
     qs = InkComment.get_queryset(content_object=an_article)
     assert qs[0] == an_articles_comment
-
-
 
 
 # ---------------------------------------------------------------------

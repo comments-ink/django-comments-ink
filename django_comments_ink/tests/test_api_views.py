@@ -3,24 +3,21 @@ from datetime import datetime
 from unittest.mock import patch
 
 import django_comments
-
 import pytest
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
-
 from django.db.models.signals import pre_save
 from django.test import TestCase as DjangoTestCase
 from django.urls import reverse
-
 from rest_framework.test import APIRequestFactory, APITestCase
 
 from django_comments_ink import get_model
 from django_comments_ink.api.views import CommentCount, CommentList
 from django_comments_ink.conf import settings
 from django_comments_ink.models import (
-    publish_or_withhold_on_pre_save,
     InkComment,
+    publish_or_withhold_on_pre_save,
 )
 from django_comments_ink.tests.models import Article, MyComment
 from django_comments_ink.tests.test_models import (
@@ -29,7 +26,6 @@ from django_comments_ink.tests.test_models import (
     thread_test_step_3,
 )
 from django_comments_ink.tests.utils import post_comment
-
 
 app_model_options_mock = {"tests.article": {"who_can_post": "users"}}
 

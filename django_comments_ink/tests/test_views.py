@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
+import json
 import random
-
 import re
 import string
 from datetime import datetime
@@ -9,19 +9,17 @@ from unittest.mock import patch
 
 import django_comments
 from django.contrib.auth.models import AnonymousUser, User
-
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
+from django.http import JsonResponse
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
-
 from django_comments.views import comments
 
 from django_comments_ink import signals, signed, views
 from django_comments_ink.conf import settings
 from django_comments_ink.models import InkComment
 from django_comments_ink.tests.models import Article, Diary
-
 
 request_factory = RequestFactory()
 
@@ -577,3 +575,47 @@ class HTMLDisabledMailTestCase(TestCase):
         self.assertTrue(response.url.startswith("/comments/posted/?c="))
         self.assertTrue(self.mock_mailer.call_count == 1)
         self.assertTrue(self.mock_mailer.call_args[1]["html"] is not None)
+
+
+# ---------------------------------------------------------------------
+# Test 'post' via accessing the exposed functionality, to
+# later replace the implementation with class-based views.
+
+
+def test_post_view_requires_method_to_be_POST(rf):
+    # GET should not work.
+    request = rf.get(reverse("comments-ink-post"))
+    request._dont_enforce_csrf_checks = True
+    response = views.post(request)
+    assert response.status_code == 405
+
+    # PUT should not work.
+    request = rf.put(reverse("comments-ink-post"))
+    request._dont_enforce_csrf_checks = True
+    response = views.post(request)
+    assert response.status_code == 405
+
+    # PATCH should not work.
+    request = rf.patch(reverse("comments-ink-post"))
+    request._dont_enforce_csrf_checks = True
+    response = views.post(request)
+    assert response.status_code == 405
+
+
+def mocked_post_js(*args, **kwargs):
+    return JsonResponse({"post_js_called": True}, status=200)
+
+
+def test_post_view_receives_XMLHttpRequest(rf, monkeypatch):
+    request = rf.post(
+        reverse(
+            "comments-ink-post",
+        ),
+        data={},
+    )
+    request._dont_enforce_csrf_checks = True
+    request.META["HTTP_X_REQUESTED_WITH"] = "XMLHttpRequest"
+    monkeypatch.setattr(views, "post_js", mocked_post_js)
+    response = views.post(request)
+    assert response.status_code == 200
+    assert json.loads(response.content) == {"post_js_called": True}

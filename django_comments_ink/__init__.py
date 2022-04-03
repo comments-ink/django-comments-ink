@@ -1,7 +1,6 @@
 from django.urls import reverse
 from django.utils.module_loading import import_string
 
-
 default_app_config = "django_comments_ink.apps.CommentsInkConfig"
 
 
