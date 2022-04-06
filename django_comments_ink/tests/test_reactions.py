@@ -3,7 +3,6 @@ from datetime import datetime
 import django_comments
 from django.contrib.auth.models import AnonymousUser, User
 from django.test import RequestFactory, TestCase
-
 from django_comments_ink import get_model, get_reactions_enum
 from django_comments_ink.models import CommentReaction
 from django_comments_ink.tests.models import Article, Diary

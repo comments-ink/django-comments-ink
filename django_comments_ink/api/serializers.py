@@ -8,8 +8,6 @@ from django_comments import get_form
 from django_comments.forms import CommentSecurityForm
 from django_comments.models import CommentFlag
 from django_comments.signals import comment_was_posted, comment_will_be_posted
-from rest_framework import exceptions, serializers
-
 from django_comments_ink import get_model, get_reactions_enum, signed, views
 from django_comments_ink.conf import settings
 from django_comments_ink.models import (
@@ -23,6 +21,7 @@ from django_comments_ink.signals import (
     should_request_be_authorized,
 )
 from django_comments_ink.utils import get_app_model_options
+from rest_framework import exceptions, serializers
 
 COMMENT_MAX_LENGTH = getattr(settings, "COMMENT_MAX_LENGTH", 3000)
 

@@ -2,13 +2,13 @@
 
 {% load i18n %}
 {% load static %}
-{% load comments_xtd %}
+{% load comments_ink %}
 
 {% block title %}{{ block.super }}&nbsp;&bull;&nbsp;Account{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" type="text/css" href="{% static 'django_comments_xtd/css/comments.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'django_comments_xtd/css/reactions.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'django_comments_ink/css/comments.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'django_comments_ink/css/reactions.css' %}">
 {% endblock %}
 
 {% block nav-account-class %}active{% endblock %}

@@ -14,8 +14,6 @@ from django.contrib.sites.models import Site
 from django.http import JsonResponse
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
-from django_comments.views import comments
-
 from django_comments_ink import signals, signed, views
 from django_comments_ink.conf import settings
 from django_comments_ink.models import InkComment
@@ -43,7 +41,7 @@ def post_article_comment(data, article, auth_user=None):
     else:
         request.user = AnonymousUser()
     request._dont_enforce_csrf_checks = True
-    return comments.post_comment(request)
+    return views.post(request)
 
 
 def post_diary_comment(data, diary_entry, auth_user=None):
@@ -64,7 +62,8 @@ def post_diary_comment(data, diary_entry, auth_user=None):
     else:
         request.user = AnonymousUser()
     request._dont_enforce_csrf_checks = True
-    return comments.post_comment(request)
+    return views.post(request)
+    # return comments.post_comment(request)
 
 
 def confirm_comment_url(key, follow=True):
@@ -91,8 +90,8 @@ class OnCommentWasPostedTestCase(TestCase):
     def tearDown(self):
         self.patcher.stop()
 
-    def post_valid_data(self, auth_user=None, response_code=302):
-        data = {
+    def post_valid_data(self, auth_user=None, response_code=302, data=None):
+        def_data = {
             "name": "Bob",
             "email": "bob@example.com",
             "followup": True,
@@ -101,8 +100,13 @@ class OnCommentWasPostedTestCase(TestCase):
             "order": 1,
             "comment": "Es war einmal eine kleine...",
         }
-        data.update(self.form.initial)
-        response = post_article_comment(data, self.article, auth_user)
+        if data:
+            data.update(self.form.initial)
+            _data = data
+        else:
+            def_data.update(self.form.initial)
+            _data = def_data
+        response = post_article_comment(_data, self.article, auth_user)
         self.assertEqual(response.status_code, response_code)
         if response.status_code == 302:
             self.assertTrue(response.url.startswith("/comments/posted/?c="))
@@ -111,6 +115,20 @@ class OnCommentWasPostedTestCase(TestCase):
         self.user = User.objects.create_user("bob", "bob@example.com", "pwd")
         self.assertTrue(self.mock_mailer.call_count == 0)
         self.post_valid_data(auth_user=self.user)
+        # no confirmation email sent as user is authenticated
+        self.assertTrue(self.mock_mailer.call_count == 0)
+
+    def test_post_as_authenticated_user_without_name_nor_email(self):
+        data = {
+            "followup": True,
+            "reply_to": 0,
+            "level": 1,
+            "order": 1,
+            "comment": "Es war einmal eine kleine...",
+        }
+        self.user = User.objects.create_user("bob", "bob@example.com", "pwd")
+        self.assertTrue(self.mock_mailer.call_count == 0)
+        self.post_valid_data(auth_user=self.user, data=data)
         # no confirmation email sent as user is authenticated
         self.assertTrue(self.mock_mailer.call_count == 0)
 
@@ -606,7 +624,7 @@ def mocked_post_js(*args, **kwargs):
     return JsonResponse({"post_js_called": True}, status=200)
 
 
-def test_post_view_receives_XMLHttpRequest(rf, monkeypatch):
+def test_XMLHttpRequest_post_view_handles_to_post_js(rf, monkeypatch):
     request = rf.post(
         reverse(
             "comments-ink-post",

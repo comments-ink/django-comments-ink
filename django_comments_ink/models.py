@@ -10,7 +10,6 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django_comments.managers import CommentManager
 from django_comments.models import Comment, CommentFlag
-
 from django_comments_ink import get_model, get_reactions_enum
 from django_comments_ink.conf import settings
 from django_comments_ink.utils import get_current_site_id

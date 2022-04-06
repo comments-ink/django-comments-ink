@@ -709,7 +709,6 @@ UL LI {
 /* Override comments.css */
 
 .dci.dci-custom .comment-box .body {
-    padding: 8px;
     line-height: 1.5;
     color: #555;
     font-size: 0.9rem;

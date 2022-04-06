@@ -13,7 +13,6 @@ from django.http.response import Http404
 from django.template import Context, Template, TemplateSyntaxError, loader
 from django.test import TestCase as DjangoTestCase
 from django.urls import reverse
-
 from django_comments_ink import get_model, get_reactions_enum
 from django_comments_ink.conf import settings
 from django_comments_ink.models import (

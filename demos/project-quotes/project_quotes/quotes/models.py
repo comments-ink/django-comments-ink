@@ -3,9 +3,7 @@ from datetime import date, datetime
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
-
-
-from django_comments_ink.moderation import moderator, SpamModerator
+from django_comments_ink.moderation import SpamModerator, moderator
 
 
 class PublicManager(models.Manager):
@@ -18,31 +16,32 @@ class PublicManager(models.Manager):
 class Quote(models.Model):
     """Quote, that accepts comments."""
 
-    title = models.CharField('title', max_length=200)
-    slug = models.SlugField('slug', unique_for_date='published_time')
-    quote = models.TextField('quote')
-    author = models.CharField('author', max_length=255)
-    url_source = models.URLField('url source', blank=True, null=True)
-    allow_comments = models.BooleanField('allow comments', default=True)
-    published_time = models.DateTimeField('published time',
-                                          default=timezone.now)
+    title = models.CharField("title", max_length=200)
+    slug = models.SlugField("slug", unique_for_date="published_time")
+    quote = models.TextField("quote")
+    author = models.CharField("author", max_length=255)
+    url_source = models.URLField("url source", blank=True, null=True)
+    allow_comments = models.BooleanField("allow comments", default=True)
+    published_time = models.DateTimeField(
+        "published time", default=timezone.now
+    )
 
     objects = PublicManager()
 
     class Meta:
-        db_table = 'comp_quotes'
-        ordering = ('-published_time',)
+        db_table = "comp_quotes"
+        ordering = ("-published_time",)
 
     def __str__(self):
         return self.title
 
     def get_absolute_url(self):
-        return reverse('quote-detail', kwargs={'slug': self.slug})
+        return reverse("quote-detail", kwargs={"slug": self.slug})
 
 
 class QuoteCommentModerator(SpamModerator):
     email_notification = True
-    auto_moderate_field = 'published_time'
+    auto_moderate_field = "published_time"
     moderate_after = 365
 
 

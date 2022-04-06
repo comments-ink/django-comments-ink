@@ -8,13 +8,12 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMultiAlternatives
 from django.http.response import HttpResponseRedirect
 from django.utils.crypto import salted_hmac
-from rest_framework import status
-from rest_framework.exceptions import PermissionDenied
-
 from django_comments_ink import get_model
 from django_comments_ink.conf import settings
 from django_comments_ink.conf.defaults import COMMENTS_INK_APP_MODEL_OPTIONS
 from django_comments_ink.paginator import CommentsPaginator
+from rest_framework import status
+from rest_framework.exceptions import PermissionDenied
 
 mail_sent_queue = queue.Queue()
 

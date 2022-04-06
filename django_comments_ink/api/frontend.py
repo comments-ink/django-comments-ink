@@ -1,9 +1,6 @@
 from django.contrib.contenttypes.models import ContentType
 from django.utils.module_loading import import_string
 from django_comments.forms import CommentSecurityForm
-from rest_framework.response import Response
-from rest_framework.reverse import reverse
-
 from django_comments_ink import get_model as get_comment_model
 from django_comments_ink.conf import settings
 from django_comments_ink.models import max_thread_level_for_content_type
@@ -12,6 +9,8 @@ from django_comments_ink.utils import (
     get_current_site_id,
     get_html_id_suffix,
 )
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
 
 InkComment = get_comment_model()
 

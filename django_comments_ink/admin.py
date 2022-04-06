@@ -4,7 +4,6 @@ from django.contrib import admin
 from django_comments import get_model
 from django_comments.admin import CommentsAdmin
 from django_comments.models import CommentFlag
-
 from django_comments_ink.models import BlackListedDomain, InkComment
 
 

@@ -4,7 +4,6 @@ import pytest
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
 from django.utils.functional import cached_property
-
 from django_comments_ink import get_model, utils
 from django_comments_ink.conf import settings
 from django_comments_ink.conf.defaults import COMMENTS_INK_APP_MODEL_OPTIONS

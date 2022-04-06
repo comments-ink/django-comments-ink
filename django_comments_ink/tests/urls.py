@@ -1,7 +1,6 @@
 from django.contrib.auth import views as auth_views
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.urls import include, re_path
-
 from django_comments_ink.tests import views
 
 urlpatterns = [

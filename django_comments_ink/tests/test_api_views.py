@@ -10,8 +10,6 @@ from django.contrib.sites.models import Site
 from django.db.models.signals import pre_save
 from django.test import TestCase as DjangoTestCase
 from django.urls import reverse
-from rest_framework.test import APIRequestFactory, APITestCase
-
 from django_comments_ink import get_model
 from django_comments_ink.api.views import CommentCount, CommentList
 from django_comments_ink.conf import settings
@@ -26,6 +24,7 @@ from django_comments_ink.tests.test_models import (
     thread_test_step_3,
 )
 from django_comments_ink.tests.utils import post_comment
+from rest_framework.test import APIRequestFactory, APITestCase
 
 app_model_options_mock = {"tests.article": {"who_can_post": "users"}}
 

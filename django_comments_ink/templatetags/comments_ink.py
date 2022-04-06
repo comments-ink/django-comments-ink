@@ -18,7 +18,6 @@ from django_comments.templatetags.comments import (
     RenderCommentFormNode,
     RenderCommentListNode,
 )
-
 from django_comments_ink import get_model, get_reactions_enum, utils
 from django_comments_ink.api import frontend
 from django_comments_ink.conf import settings
@@ -100,6 +99,15 @@ if theme_dir_exists:
     ]
 else:
     _reactions_panel_template_tmpl = "comments/reactions_panel_template.html"
+
+
+if theme_dir_exists:
+    _reactions_buttons_tmpl = [
+        f"comments/{theme_dir}/reactions_buttons.html",
+        "comments/reactions_buttons.html",
+    ]
+else:
+    _reactions_buttons_tmpl = "comments/reactions_buttons.html"
 
 
 def paginate_queryset(queryset, context):
@@ -221,7 +229,7 @@ class RenderInkCommentListNode(RenderCommentListNode):
             )
             for pth in _list_html_tmpl
         ]
-        print(template_list)
+
         qs = self.get_queryset(context)
         qs = self.get_context_value_from_queryset(context, qs)
         context_dict = context.flatten()
@@ -451,12 +459,28 @@ def comment_reaction_form_target(comment):
     return reverse("comments-ink-react", args=(comment.id,))
 
 
-# Convert from inclusion_tag into a normal tag, so that it can render a list
-# of possible templates instead of just this one.
-@register.inclusion_tag(f"comments/{theme_dir}/reactions_buttons.html")
-def render_reactions_buttons(user_reactions):
+class RenderReactionsButtons(Node):
+    def __init__(self, user_reactions):
+        self.user_reactions = Variable(user_reactions)
+
+    def render(self, context):
+        context = {
+            "reactions": get_reactions_enum(),
+            "user_reactions": self.user_reactions.resolve(context),
+            "break_every": settings.COMMENTS_INK_REACTIONS_ROW_LENGTH,
+        }
+        htmlstr = loader.render_to_string(_reactions_buttons_tmpl, context)
+        return htmlstr
+
+
+@register.tag
+def render_reactions_buttons(parser, token):
     """
-    Renders template `comments/reactions_buttons.html`.
+    Renders template with reactions buttons, depending on the selected theme.
+
+    Example usage::
+
+        {% render_reactions_buttons user_reactions %}
 
     Argument `user_reactions` is a list with `ReactionEnum` items, it
     contains a user's reactions to a comment. The template display a button
@@ -464,11 +488,14 @@ def render_reactions_buttons(user_reactions):
     is already in the `user_reactions` list is marked as already clicked.
     This templatetag is used within the `react.html` template.
     """
-    return {
-        "reactions": get_reactions_enum(),
-        "user_reactions": user_reactions,
-        "break_every": settings.COMMENTS_INK_REACTIONS_ROW_LENGTH,
-    }
+    try:
+        _, args = token.contents.split(None, 1)
+    except ValueError:
+        raise TemplateSyntaxError(
+            "%r tag requires argument" % token.contents.split()[0]
+        )
+    user_reactions = args
+    return RenderReactionsButtons(user_reactions)
 
 
 @register.filter

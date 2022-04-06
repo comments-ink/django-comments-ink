@@ -7,7 +7,6 @@ from django.contrib.sites.models import Site
 from django.core.management import call_command
 from django.db.utils import ConnectionHandler
 from django_comments.models import Comment
-
 from django_comments_ink.management.commands import populate_comments
 from django_comments_ink.models import InkComment
 

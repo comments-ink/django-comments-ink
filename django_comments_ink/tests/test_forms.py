@@ -2,7 +2,6 @@ from unittest.mock import patch
 
 import django_comments
 from django.test import TestCase
-
 from django_comments_ink.forms import InkCommentForm
 from django_comments_ink.models import TmpInkComment
 from django_comments_ink.tests.models import Article

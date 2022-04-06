@@ -1,5 +1,4 @@
 from django.urls import reverse
-
 from django_comments_ink import get_form_target
 
 

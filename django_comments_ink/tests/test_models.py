@@ -8,7 +8,6 @@ from django.contrib.sites.models import Site
 from django.db.models.signals import pre_save
 from django.test import TestCase as DjangoTestCase
 from django_comments.models import Comment, CommentFlag
-
 from django_comments_ink import get_form, get_model, get_reactions_enum
 from django_comments_ink.conf import settings
 from django_comments_ink.models import (

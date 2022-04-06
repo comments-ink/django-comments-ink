@@ -2,7 +2,6 @@ from datetime import datetime
 
 from django.db import models
 from django.urls import reverse
-
 from django_comments_ink.conf import settings
 from django_comments_ink.models import InkComment
 from django_comments_ink.moderation import InkCommentModerator, moderator

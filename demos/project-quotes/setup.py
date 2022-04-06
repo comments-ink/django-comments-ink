@@ -1,7 +1,6 @@
 from pathlib import Path
 
-from setuptools import setup, find_packages
-
+from setuptools import find_packages, setup
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent
@@ -24,28 +23,30 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     license="MIT",
-    description=("Example django-comments-xtd project using only the backend"
-                 " capabilities."),
+    description=(
+        "Example Django project using django-comments-ink to only "
+        "with backend capabilities (no use of the JavaScript code)."
+    ),
     long_description=readme,
     long_description_content_type="text/markdown",
     author="Daniela Rus Morales",
     author_email="danirus@eml.cc",
     maintainer="Daniela Rus Morales",
     maintainer_email="danirus@eml.cc",
-    url="http://pypi.python.org/pypi/django-comments-xtd",
+    url="http://pypi.python.org/pypi/django-comments-ink",
     install_requires=requirements,
-    scripts=['manage.py'],
+    scripts=["manage.py"],
     classifiers=[
-        'Development Status :: 5 - Production/Stable',
-        'Environment :: Web Environment',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
-        'Operating System :: OS Independent',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 3',
-        'Framework :: Django',
-        'Natural Language :: English',
-        'Topic :: Internet :: WWW/HTTP :: Dynamic Content :: News/Diary',
+        "Development Status :: 5 - Production/Stable",
+        "Environment :: Web Environment",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Framework :: Django",
+        "Natural Language :: English",
+        "Topic :: Internet :: WWW/HTTP :: Dynamic Content :: News/Diary",
     ],
-    zip_safe=True
+    zip_safe=True,
 )

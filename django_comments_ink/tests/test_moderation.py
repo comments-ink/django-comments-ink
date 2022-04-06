@@ -12,7 +12,6 @@ from django.test import RequestFactory, TestCase
 from django.urls import reverse
 from django_comments.models import Comment, CommentFlag
 from django_comments.views.moderation import delete
-
 from django_comments_ink import views
 from django_comments_ink.models import InkComment
 from django_comments_ink.tests.models import (

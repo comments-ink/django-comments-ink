@@ -2,7 +2,6 @@ from django.core.management.base import BaseCommand
 from django.db import connections
 from django.db.utils import ConnectionDoesNotExist, IntegrityError
 from django_comments.models import Comment
-
 from django_comments_ink.models import InkComment
 
 __all__ = ["Command"]

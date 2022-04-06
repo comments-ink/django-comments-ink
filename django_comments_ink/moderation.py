@@ -5,7 +5,6 @@ from django_comments import get_model
 from django_comments.models import CommentFlag
 from django_comments.moderation import CommentModerator, Moderator
 from django_comments.signals import comment_was_flagged, comment_will_be_posted
-
 from django_comments_ink.conf import settings
 from django_comments_ink.models import BlackListedDomain, TmpInkComment
 from django_comments_ink.signals import confirmation_received

@@ -1,11 +1,10 @@
 from django.urls import reverse
-from rest_framework.test import APIRequestFactory, force_authenticate
-
 from django_comments_ink.api.views import (
     CommentCreate,
     CreateReportFlag,
     PostCommentReaction,
 )
+from rest_framework.test import APIRequestFactory, force_authenticate
 
 request_factory = APIRequestFactory()
 

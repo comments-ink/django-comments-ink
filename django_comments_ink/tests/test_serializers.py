@@ -14,8 +14,6 @@ from django.test import TestCase
 from django.urls import reverse
 from django_comments.moderation import CommentModerator
 from django_comments.signals import comment_will_be_posted
-from rest_framework.test import APIClient
-
 from django_comments_ink.api.serializers import (
     FlagSerializer,
     ReadCommentSerializer,
@@ -32,6 +30,7 @@ from django_comments_ink.tests.models import (
     comment_will_be_rejected,
 )
 from django_comments_ink.tests.utils import post_comment
+from rest_framework.test import APIClient
 
 
 class FakeRequest:

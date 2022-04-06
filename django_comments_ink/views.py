@@ -29,7 +29,6 @@ from django_comments.signals import comment_was_posted, comment_will_be_posted
 from django_comments.views.comments import CommentPostBadRequest
 from django_comments.views.moderation import perform_flag
 from django_comments.views.utils import next_redirect
-
 from django_comments_ink import get_form
 from django_comments_ink import get_model as get_comment_model
 from django_comments_ink import get_reactions_enum, signals, signed, utils

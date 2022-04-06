@@ -1,6 +1,5 @@
 from django.conf import settings as django_settings
 from django.utils.functional import LazyObject
-
 from django_comments_ink.conf import defaults as app_settings
 
 

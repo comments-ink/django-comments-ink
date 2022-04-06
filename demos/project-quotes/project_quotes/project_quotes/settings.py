@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 import os
 from pathlib import Path
 
-
 PRODUCTION = bool(os.getenv("PRODUCTION", False))
 
 
@@ -24,69 +23,67 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'bqac+=!uj4i@-1q-u#w=gy*q6b(y_5*nv84s4vbg#@5s+cq7nc'
+SECRET_KEY = "bqac+=!uj4i@-1q-u#w=gy*q6b(y_5*nv84s4vbg#@5s+cq7nc"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False if PRODUCTION else True
 
 if PRODUCTION:
-    ALLOWED_HOSTS = ['localhost',]
+    ALLOWED_HOSTS = [
+        "localhost",
+    ]
 else:
     ALLOWED_HOSTS = []
 
-INTERNAL_IPS = ['127.0.0.1']
+INTERNAL_IPS = ["127.0.0.1"]
 
-ADMINS = (
-    ('Alice Bloggs', 'admin@example.com'),
-)
+ADMINS = (("Alice Bloggs", "admin@example.com"),)
 
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.sites',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-
-    'django_comments_ink',
-    'django_comments',
-
-    'users',
-    'quotes',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.sites",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "django_comments_ink",
+    "django_comments",
+    "users",
+    "quotes",
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = 'project_quotes.urls'
+ROOT_URLCONF = "project_quotes.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'project_quotes.wsgi.application'
+WSGI_APPLICATION = "project_quotes.wsgi.application"
 
 
 # Database
@@ -94,20 +91,20 @@ WSGI_APPLICATION = 'project_quotes.wsgi.application'
 
 if PRODUCTION:
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'dcx-demo-qp',
-            'USER': 'dcx-demo',
-            'PASSWORD': 'dcx-demo',
-            'HOST': 'dcx-postgres',
-            'PORT': '5432'
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": "dcx-demo-qp",
+            "USER": "dcx-demo",
+            "PASSWORD": "dcx-demo",
+            "HOST": "dcx-postgres",
+            "PORT": "5432",
         },
     }
 else:
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
         }
     }
 
@@ -117,16 +114,16 @@ else:
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -134,9 +131,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
@@ -149,7 +146,7 @@ USE_TZ = True
 if PRODUCTION:
     STATIC_URL = "http://localhost:8049/"
 else:
-    STATIC_URL = 'static/'
+    STATIC_URL = "static/"
 
 STATIC_ROOT = BASE_DIR.parent / "static"
 
@@ -160,17 +157,17 @@ STATICFILES_DIRS = [
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Define the user model. The difference between 'users.User' and 'auth.User'
 # is that the former doesn't include an 'username' attribute, and rather uses
 # the email address.
-AUTH_USER_MODEL = 'users.User'
+AUTH_USER_MODEL = "users.User"
 
-SIGNUP_URL          = "/user/signup/"
-LOGIN_URL           = "/user/login/"
-LOGOUT_URL          = "/user/logout/"
-LOGIN_REDIRECT_URL  = "/"
+SIGNUP_URL = "/user/signup/"
+LOGIN_URL = "/user/login/"
+LOGOUT_URL = "/user/logout/"
+LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
 COMMENTS_APP = "django_comments_ink"
@@ -178,12 +175,12 @@ COMMENTS_APP = "django_comments_ink"
 COMMENTS_HIDE_REMOVED = False
 
 COMMENTS_INK_SALT = b"w28dnq7czc1m+=l)=yiydar-r$$pnz#a5#22pjz_&5n%sq^kkr"
-COMMENTS_INK_CONFIRM_EMAIL = True   # Set to False to disable confirmation
-COMMENTS_INK_FROM_EMAIL = 'staff@example.com'
-COMMENTS_INK_CONTACT_EMAIL = 'staff@example.com'
-COMMENTS_INK_THREADED_EMAILS = False # default to True, use False to allow
-                                     # other backend (say Celery based) send
-                                     # your emails.
+COMMENTS_INK_CONFIRM_EMAIL = True  # Set to False to disable confirmation
+COMMENTS_INK_FROM_EMAIL = "staff@example.com"
+COMMENTS_INK_CONTACT_EMAIL = "staff@example.com"
+COMMENTS_INK_THREADED_EMAILS = False  # default to True, use False to allow
+# other backend (say Celery based) send
+# your emails.
 
 COMMENTS_INK_API_USER_REPR = lambda user: user.name
 
@@ -196,18 +193,18 @@ COMMENTS_INK_MAX_THREAD_LEVEL = 1
 # app model. Useful in case you want to allow different levels of comment
 # nesting to different app models.
 COMMENTS_INK_MAX_THREAD_LEVEL_BY_APP_MODEL = {
-    'quotes.quote': 1  # So 2 levels: from 0 to 1.
+    "quotes.quote": 1  # So 2 levels: from 0 to 1.
 }
 
 COMMENTS_INK_APP_MODEL_OPTIONS = {
-    'default': {
-        'who_can_post': 'all',  # Valid values: "users", "all".
-        'comment_flagging_enabled': True,
-        'comment_reactions_enabled': True,
-        'object_reactions_enabled': True,
+    "default": {
+        "who_can_post": "all",  # Valid values: "users", "all".
+        "comment_flagging_enabled": True,
+        "comment_reactions_enabled": True,
+        "object_reactions_enabled": True,
     },
-    'quotes.quote': {
-        'check_input_allowed': 'quotes.models.check_comments_input_allowed'
+    "quotes.quote": {
+        "check_input_allowed": "quotes.models.check_comments_input_allowed"
     },
 }
 
@@ -224,5 +221,6 @@ COMMENTS_INK_MAX_LAST_PAGE_ORPHANS = 4
 # Number of comments per page. When <=0 pagination is disabled.
 COMMENTS_INK_ITEMS_PER_PAGE = 10
 
+COMMENTS_INK_THEME_DIR = "feedback_in_header"
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

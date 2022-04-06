@@ -15,14 +15,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
-
 from project_quotes import views
 
-
 urlpatterns = [
-    path('', views.home, name="homepage"),
-    path('user/', include('users.urls')),
-    path('quotes/', include('quotes.urls')),
-    path('comments/', include('django_comments_ink.urls')),
-    path('admin/', admin.site.urls),
+    path("", views.home, name="homepage"),
+    path("user/", include("users.urls")),
+    path("quotes/", include("quotes.urls")),
+    path("comments/", include("django_comments_ink.urls")),
+    path("admin/", admin.site.urls),
 ]
