@@ -32,7 +32,7 @@ setup(
     author_email="danirus@eml.cc",
     maintainer="Daniela Rus Morales",
     maintainer_email="danirus@eml.cc",
-    url="http://pypi.python.org/pypi/django-comments-ink",
+    url="https://github.com/comments-ink/django-comments-ink",
     install_requires=requirements,
     setup_requires=["wheel"],
     classifiers=[

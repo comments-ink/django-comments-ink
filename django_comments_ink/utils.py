@@ -1,4 +1,5 @@
 import hashlib
+import os
 import queue as queue
 import threading
 from urllib.parse import urlencode
@@ -236,6 +237,6 @@ def does_theme_dir_exist(theme_dir):
 
     for engine in engines.all():
         for pth in engine.template_dirs:
-            if (pth / theme_dir).exists():
+            if os.path.exists(os.path.join(pth, theme_dir)):
                 return True
     return False

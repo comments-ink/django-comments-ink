@@ -309,7 +309,6 @@ def post(request, next=None, using=None):
             )
             for pth in _preview_tmpl
         ]
-        print(template_list)
         return render(
             request,
             template_list,
@@ -348,13 +347,11 @@ def post(request, next=None, using=None):
     comment_was_posted.send(
         sender=comment.__class__, comment=comment, request=request
     )
-
     kwargs = {
         "c": comment._get_pk_val(),
     }
     if cpage is not None:
         kwargs[settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM] = cpage
-
     return next_redirect(
         request, fallback=next or "comments-comment-done", **kwargs
     )

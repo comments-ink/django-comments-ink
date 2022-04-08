@@ -1,19 +1,24 @@
 from __future__ import unicode_literals
 
+import importlib
 import json
 import random
 import re
 import string
 from datetime import datetime
-from unittest.mock import patch
+from typing import List
+from unittest.mock import Mock, patch
 
 import django_comments
+import pytest
 from django.contrib.auth.models import AnonymousUser, User
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.http import JsonResponse
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
+from django_comments.views.comments import CommentPostBadRequest
 from django_comments_ink import signals, signed, views
 from django_comments_ink.conf import settings
 from django_comments_ink.models import InkComment
@@ -90,8 +95,8 @@ class OnCommentWasPostedTestCase(TestCase):
     def tearDown(self):
         self.patcher.stop()
 
-    def post_valid_data(self, auth_user=None, response_code=302, data=None):
-        def_data = {
+    def post_valid_data(self, auth_user=None, response_code=302):
+        data = {
             "name": "Bob",
             "email": "bob@example.com",
             "followup": True,
@@ -100,13 +105,29 @@ class OnCommentWasPostedTestCase(TestCase):
             "order": 1,
             "comment": "Es war einmal eine kleine...",
         }
-        if data:
-            data.update(self.form.initial)
-            _data = data
-        else:
-            def_data.update(self.form.initial)
-            _data = def_data
-        response = post_article_comment(_data, self.article, auth_user)
+        data.update(self.form.initial)
+        response = post_article_comment(data, self.article, auth_user)
+        self.assertEqual(response.status_code, response_code)
+        if response.status_code == 302:
+            self.assertTrue(response.url.startswith("/comments/posted/?c="))
+
+    def post_invalid_data(
+        self, auth_user=None, response_code=302, remove_fields: List[str] = []
+    ):
+        data = {
+            "name": "Bob",
+            "email": "bob@example.com",
+            "followup": True,
+            "reply_to": 0,
+            "level": 1,
+            "order": 1,
+            "comment": "Es war einmal eine kleine...",
+        }
+        data.update(self.form.initial)
+        if len(remove_fields):
+            for field_name in remove_fields:
+                data.pop(field_name)
+        response = post_article_comment(data, self.article, auth_user)
         self.assertEqual(response.status_code, response_code)
         if response.status_code == 302:
             self.assertTrue(response.url.startswith("/comments/posted/?c="))
@@ -128,9 +149,20 @@ class OnCommentWasPostedTestCase(TestCase):
         }
         self.user = User.objects.create_user("bob", "bob@example.com", "pwd")
         self.assertTrue(self.mock_mailer.call_count == 0)
-        self.post_valid_data(auth_user=self.user, data=data)
-        # no confirmation email sent as user is authenticated
+        self.post_invalid_data(
+            auth_user=self.user, remove_fields=["name", "email"]
+        )
+        # no confirmation email sent as user is authenticated via self.user.
         self.assertTrue(self.mock_mailer.call_count == 0)
+
+    # def test_post_comment_form_without_content_type(self):
+    #     self.user = User.objects.create_user("bob", "bob@example.com", "pwd")
+    #     self.assertTrue(self.mock_mailer.call_count == 0)
+    #     self.post_invalid_data(
+    #         auth_user=self.user,
+    #         response_code=400,
+    #         remove_fields=['content_type']
+    #     )
 
     def test_confirmation_email_is_sent(self):
         self.assertTrue(self.mock_mailer.call_count == 0)
@@ -596,6 +628,28 @@ class HTMLDisabledMailTestCase(TestCase):
 
 
 # ---------------------------------------------------------------------
+# Test module level `_*_tmpl` variables. Verify that they include
+# the them (settings.COMMENTS_INK_THEME_DIR) in the path when that
+# setting is provided.
+
+
+def test_template_path_includes_theme(monkeypatch):
+    monkeypatch.setattr(
+        views.settings, "COMMENTS_INK_THEME_DIR", "avatar_in_header"
+    )
+    importlib.reload(views)
+    assert views.theme_dir == "themes/avatar_in_header"
+    assert views.theme_dir_exists == True
+    monkeypatch.setattr(views.settings, "COMMENTS_INK_THEME_DIR", "")
+    importlib.reload(views)
+
+
+def test_template_path_does_not_include_theme(monkeypatch):
+    assert views.theme_dir == ""
+    assert views.theme_dir_exists == False
+
+
+# ---------------------------------------------------------------------
 # Test 'post' via accessing the exposed functionality, to
 # later replace the implementation with class-based views.
 
@@ -637,3 +691,338 @@ def test_XMLHttpRequest_post_view_handles_to_post_js(rf, monkeypatch):
     response = views.post(request)
     assert response.status_code == 200
     assert json.loads(response.content) == {"post_js_called": True}
+
+
+# ---------------------------------------------------------------------
+class MockedPostBadRequest(CommentPostBadRequest):
+    def __init__(self, why):
+        self.why = why
+        super().__init__(why)
+
+
+def prepare_comment_form_data(an_article):
+    form = django_comments.get_form()(an_article)
+    data = {
+        "name": "Joe",
+        "email": "joe@example.com",
+        "followup": True,
+        "reply_to": 0,
+        "level": 1,
+        "order": 1,
+        "comment": "Es war einmal eine kleine...",
+    }
+    data.update(form.initial)
+    return data
+
+
+def prepare_request_to_post_form(
+    monkeypatch, rf, an_article, an_user, remove_fields=[], add_fields=[]
+):
+    monkeypatch.setattr(views, "CommentPostBadRequest", MockedPostBadRequest)
+    data = prepare_comment_form_data(an_article)
+
+    # Remove fields listed in remove_fields.
+    for field_name in remove_fields:
+        data.pop(field_name)
+
+    # Add fields listed in add_fields as {"name": <name>, "value": <value>}
+    for field in add_fields:
+        data[field["name"]] = field["value"]
+
+    article_url = reverse(
+        "article-detail",
+        kwargs={
+            "year": an_article.publish.year,
+            "month": an_article.publish.month,
+            "day": an_article.publish.day,
+            "slug": an_article.slug,
+        },
+    )
+    request = rf.post(article_url, data=data, follow=True)
+    request.user = an_user
+    request._dont_enforce_csrf_checks = True
+    return request
+
+
+@pytest.mark.django_db
+def test_post_comment_form_without_content_type(
+    monkeypatch, rf, an_article, an_user
+):
+    request = prepare_request_to_post_form(
+        monkeypatch, rf, an_article, an_user, remove_fields=["content_type"]
+    )
+    response = views.post(request)
+    assert response.status_code == 400
+    assert response.why == "Missing content_type or object_pk field."
+
+
+@pytest.mark.django_db
+def test_post_comment_form_without_object_pk(
+    monkeypatch, rf, an_article, an_user
+):
+    request = prepare_request_to_post_form(
+        monkeypatch, rf, an_article, an_user, remove_fields=["object_pk"]
+    )
+    response = views.post(request)
+    assert response.status_code == 400
+    assert response.why == "Missing content_type or object_pk field."
+
+
+def mock_get_model(etr):
+    def _mocked_function(*args, **kwargs):
+        raise etr("Something went wrong")
+
+    return _mocked_function
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "monkeypatch, rf, an_article, an_user, exc, message",
+    [
+        (
+            "monkeypatch",
+            "rf",
+            "an_article",
+            "an_user",
+            LookupError,
+            "Invalid content_type value",
+        ),
+        (
+            "monkeypatch",
+            "rf",
+            "an_article",
+            "an_user",
+            TypeError,
+            "Invalid content_type value",
+        ),
+        (
+            "monkeypatch",
+            "rf",
+            "an_article",
+            "an_user",
+            AttributeError,
+            "The given content-type",
+        ),
+        (
+            "monkeypatch",
+            "rf",
+            "an_article",
+            "an_user",
+            ObjectDoesNotExist,
+            "No object matching content-type",
+        ),
+        (
+            "monkeypatch",
+            "rf",
+            "an_article",
+            "an_user",
+            ValueError,
+            "Attempting to get content-type",
+        ),
+        (
+            "monkeypatch",
+            "rf",
+            "an_article",
+            "an_user",
+            ValidationError,
+            "Attempting to get content-type",
+        ),
+    ],
+    indirect=["monkeypatch", "rf", "an_article", "an_user"],
+)
+def test_post_comment_form_raises_an_error(
+    monkeypatch, rf, an_article, an_user, exc, message
+):
+    monkeypatch.setattr(views.apps, "get_model", mock_get_model(exc))
+    request = prepare_request_to_post_form(monkeypatch, rf, an_article, an_user)
+    response = views.post(request)
+    assert response.status_code == 400
+    assert response.why.startswith(message)
+
+
+# ---------------------------------------------------------------------
+
+
+def get_form_mocked(has_errors=False):
+    class MockedForm:
+        def __init__(self, target, data=None):
+            self.has_errors = has_errors
+            self.target = target
+            self.data = data
+
+        def security_errors(self):
+            return self.has_errors
+
+    return MockedForm
+
+
+@pytest.mark.django_db
+def test_post_comment_form_with_security_errors(
+    monkeypatch, rf, an_article, an_user
+):
+    monkeypatch.setattr(
+        views, "get_form", lambda: get_form_mocked(has_errors=True)
+    )
+    request = prepare_request_to_post_form(monkeypatch, rf, an_article, an_user)
+    response = views.post(request)
+    assert response.status_code == 400
+    assert response.why.startswith("The comment form failed security ")
+
+
+# ---------------------------------------------------------------------
+# Check the preview templates in the following conditions:
+#  1st: when the theme_dir is left blank.
+#  2nd: when the theme_dir has been given in the settings.
+#  3rd: when the form had errors (remove the 'comment' field and add it empty.)
+
+
+@pytest.mark.django_db
+def test_post_comment_form_in_preview_without_theme_dir(
+    monkeypatch, rf, an_article, an_user
+):
+    monkeypatch.setattr(views, "render", lambda x, tmpl_list, y: tmpl_list)
+    request = prepare_request_to_post_form(
+        monkeypatch,
+        rf,
+        an_article,
+        an_user,
+        add_fields=[
+            {"name": "preview", "value": 1},
+        ],
+    )
+    template_list = views.post(request)
+    assert template_list == [
+        "comments/tests/article/preview.html",
+        "comments/tests/preview.html",
+        "comments/preview.html",
+    ]
+
+
+@pytest.mark.django_db
+def test_post_comment_form_in_preview_with_theme_dir(
+    monkeypatch, rf, an_article, an_user
+):
+    monkeypatch.setattr(
+        views.settings, "COMMENTS_INK_THEME_DIR", "feedback_in_header"
+    )
+    importlib.reload(views)
+
+    monkeypatch.setattr(views, "render", lambda x, tmpl_list, y: tmpl_list)
+    request = prepare_request_to_post_form(
+        monkeypatch,
+        rf,
+        an_article,
+        an_user,
+        add_fields=[
+            {"name": "preview", "value": 1},
+        ],
+    )
+    template_list = views.post(request)
+    assert template_list == [
+        "comments/themes/feedback_in_header/tests/article/preview.html",
+        "comments/themes/feedback_in_header/tests/preview.html",
+        "comments/themes/feedback_in_header/preview.html",
+        "comments/tests/article/preview.html",
+        "comments/tests/preview.html",
+        "comments/preview.html",
+    ]
+    # Revert it.
+    monkeypatch.setattr(views.settings, "COMMENTS_INK_THEME_DIR", "")
+    importlib.reload(views)
+
+
+@pytest.mark.django_db
+def test_post_comment_form_with_an_empty_comment_field(
+    monkeypatch, rf, an_article, an_user
+):
+    monkeypatch.setattr(views, "render", lambda x, tmpl_list, y: tmpl_list)
+    request = prepare_request_to_post_form(
+        monkeypatch,
+        rf,
+        an_article,
+        an_user,
+        remove_fields=["comment"],
+        add_fields=[
+            {"name": "comment", "value": ""},
+        ],
+    )
+    template_list = views.post(request)
+    assert template_list == [
+        "comments/tests/article/preview.html",
+        "comments/tests/preview.html",
+        "comments/preview.html",
+    ]
+
+
+# ----------------------------------------------------------------------
+# Test that during the post of the comment form the
+# signal 'comment_will_be_posted' has been called.
+#  1. Check that when the signal returns False, a HTTP 400 is returned.
+#  2. Check that when the signal returns True, the comment is posted.
+
+
+@pytest.mark.django_db
+def test_post_comment_form__comment_will_be_posted__returns_400(
+    monkeypatch, rf, an_article, an_user
+):
+    def mock_send(*args, **kwargs):
+        class Receiver:
+            def __init__(self):
+                self.__name__ = "mocked receiver"
+
+        return [
+            (Receiver(), False),
+        ]
+
+    monkeypatch.setattr(views.comment_will_be_posted, "send", mock_send)
+    request = prepare_request_to_post_form(monkeypatch, rf, an_article, an_user)
+    response = views.post(request)
+    assert response.status_code == 400
+    assert response.why.startswith("comment_will_be_posted receiver")
+
+
+@pytest.mark.django_db
+def test_post_comment_form__comment_will_be_posted__returns_302(
+    monkeypatch, rf, an_article, an_user
+):
+    def mock_send(*args, **kwargs):
+        return [
+            (None, True),
+        ]
+
+    monkeypatch.setattr(views.comment_will_be_posted, "send", mock_send)
+    request = prepare_request_to_post_form(monkeypatch, rf, an_article, an_user)
+    response = views.post(request)
+    assert response.status_code == 302
+    assert response.url == "/comments/posted/?c=1"
+
+
+# ----------------------------------------------------------------------
+# Test that signal 'comment_was_posted' has been sent.
+# Follow the same approach as here above, but check that send is called.
+@pytest.mark.django_db
+def test_post_comment_form__comment_was_posted__signal_sent(
+    monkeypatch, rf, an_article, an_user
+):
+    mock_send = Mock()
+    monkeypatch.setattr(views.comment_was_posted, "send", mock_send)
+    request = prepare_request_to_post_form(monkeypatch, rf, an_article, an_user)
+    views.post(request)
+    assert mock_send.called
+
+
+# ---------------------------------------------------------------------
+@pytest.mark.django_db
+def test_post_comment_form_has_cpage_qs_param(
+    monkeypatch, rf, an_article, an_user
+):
+    request = prepare_request_to_post_form(
+        monkeypatch,
+        rf,
+        an_article,
+        an_user,
+        add_fields=[{"name": "cpage", "value": 2}],
+    )
+    response = views.post(request)
+    assert response.status_code == 302
+    assert response.url == "/comments/posted/?c=1&cpage=2"
