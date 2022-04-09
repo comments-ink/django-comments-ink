@@ -79,6 +79,25 @@ _preview_tmpl.extend(
 )
 
 
+# List of possible paths to the 'reply_form_js.html' or 'form.js.html'.
+_preview_js_tmpl = []
+if theme_dir_exists:
+    _preview_js_tmpl.extend(
+        [
+            "comments/{theme_dir}/{app_label}/{model}/{template_name}",
+            "comments/{theme_dir}/{app_label}/{template_name}",
+            "comments/{theme_dir}/{template_name}",
+        ]
+    )
+_preview_js_tmpl.extend(
+    [
+        "comments/{app_label}/{model}/{template_name}",
+        "comments/{app_label}/{template_name}",
+        "comments/{template_name}",
+    ]
+)
+
+
 # List of possible paths to the bad_form.html template file.
 if theme_dir_exists:
     _posted_tmpl = [f"comments/{theme_dir}/posted.html", "comments/posted.html"]
@@ -445,11 +464,13 @@ def post_js(request, next=None, using=None):
             template_name = "form_js.html"
 
         template_list = [
-            f"comments/{theme_dir}/%s/%s/{template_name}"
-            % (model._meta.app_label, model._meta.model_name),
-            f"comments/{theme_dir}/%s/{template_name}" % model._meta.app_label,
-            f"comments/{theme_dir}/{template_name}",
-            f"comments/{template_name}",
+            pth.format(
+                theme_dir=theme_dir,
+                app_label=model._meta.app_label,
+                model=model._meta.model_name,
+                template_name=template_name,
+            )
+            for pth in _preview_js_tmpl
         ]
         if form.errors:
             field_focus = [key for key in form.errors.keys()][0]
@@ -487,11 +508,11 @@ def post_js(request, next=None, using=None):
                     "comment_will_be_posted receiver %r killed the comment"
                     % receiver.__name__
                 )
-            else:
+            else:  # pragma: no cover
                 error_msg = "Your comment has been rejected."
 
             context = {"bad_error": error_msg}
-            return render(request, _bad_form_tmpl, context, status=400)
+            return json_res(request, _bad_form_tmpl, context, status=400)
 
     # Save the comment and signal that it was saved
     comment.save()
@@ -568,7 +589,7 @@ def on_comment_will_be_posted(sender, comment, request, **kwargs):
 
     Returns False if there are conditions to reject the comment.
     """
-    if settings.COMMENTS_APP != "django_comments_ink":
+    if settings.COMMENTS_APP != "django_comments_ink":  # pragma: no cover
         # Do not kill the post if handled by other commenting app.
         return True
 
@@ -599,7 +620,7 @@ def on_comment_was_posted(sender, comment, request, **kwargs):
     In both cases will post the comment. Otherwise will send a confirmation
     email to the person who posted the comment.
     """
-    if settings.COMMENTS_APP != "django_comments_ink":
+    if settings.COMMENTS_APP != "django_comments_ink":  # pragma: no cover
         return False
     if comment.user:
         user_is_authenticated = comment.user.is_authenticated

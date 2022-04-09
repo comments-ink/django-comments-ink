@@ -872,7 +872,7 @@ def test_post_comment_form_with_security_errors(
 # ---------------------------------------------------------------------
 # Check the preview templates in the following conditions:
 #  1st: when the theme_dir is left blank.
-#  2nd: when the theme_dir has been given in the settings.
+#  2nd: when the theme_dir is been given in the settings.
 #  3rd: when the form had errors (remove the 'comment' field and add it empty.)
 
 
@@ -926,7 +926,7 @@ def test_post_comment_form_in_preview_with_theme_dir(
         "comments/tests/preview.html",
         "comments/preview.html",
     ]
-    # Revert it.
+    # Revert theme.
     monkeypatch.setattr(views.settings, "COMMENTS_INK_THEME_DIR", "")
     importlib.reload(views)
 
@@ -998,8 +998,11 @@ def test_post_comment_form__comment_will_be_posted__returns_302(
 
 
 # ----------------------------------------------------------------------
-# Test that signal 'comment_was_posted' has been sent.
-# Follow the same approach as here above, but check that send is called.
+# Test that 'comment_was_posted' signal has been sent.
+# Follow the same approach as here above, but check
+# that method 'send' is called.
+
+
 @pytest.mark.django_db
 def test_post_comment_form__comment_was_posted__signal_sent(
     monkeypatch, rf, an_article, an_user
@@ -1170,3 +1173,203 @@ def test_post_js_comment_form_with_security_errors(
     assert response.status_code == 400
     result = json.loads(response.content)
     assert result["html"].find("The comment form failed security") > -1
+
+
+# ---------------------------------------------------------------------
+# Do a JS Post and check the preview templates in the following
+# conditions:
+#  1st: when the reply_to field is 0, and the theme_dir is left blank.
+#  2nd: when the reply_to field is 1, and the theme_dir is left blank.
+#  3nd: when the reply_to is 0 and theme_dir is given in the settings.
+#  4th: when the reply_to is 1 and theme_dir is given in the settings.
+#  5th: when the form had errors (remove the 'comment' field and add it empty.)
+
+
+@pytest.mark.django_db
+def test_post_js_comment_form_in_preview__no_reply_to__without_theme_dir(
+    monkeypatch, rf, an_article, an_user
+):
+    monkeypatch.setattr(
+        views, "json_res", lambda req, tmpl_list, ctx, **kwargs: tmpl_list
+    )
+    request = prepare_js_request_to_post_form(
+        rf,
+        an_article,
+        an_user,
+        remove_fields=["reply_to"],
+        add_fields=[
+            {"name": "preview", "value": 1},
+            {"name": "reply_to", "value": 0},  # Will use 'form_js.html'.
+        ],
+    )
+    template_list = views.post(request)
+    assert template_list == [
+        "comments/tests/article/form_js.html",
+        "comments/tests/form_js.html",
+        "comments/form_js.html",
+    ]
+
+
+@pytest.mark.django_db
+def test_post_js_comment_form_in_preview__with_reply_to__without_theme_dir(
+    monkeypatch, rf, an_article, an_user
+):
+    monkeypatch.setattr(
+        views, "json_res", lambda req, tmpl_list, ctx, **kwargs: tmpl_list
+    )
+    request = prepare_js_request_to_post_form(
+        rf,
+        an_article,
+        an_user,
+        remove_fields=["reply_to"],
+        add_fields=[
+            {"name": "preview", "value": 1},
+            {"name": "reply_to", "value": 1},  # Will use 'reply_form_js.html'.
+        ],
+    )
+    template_list = views.post(request)
+    assert template_list == [
+        "comments/tests/article/reply_form_js.html",
+        "comments/tests/reply_form_js.html",
+        "comments/reply_form_js.html",
+    ]
+
+
+@pytest.mark.django_db
+def test_post_js_comment_form_in_preview__no_reply_to__with_theme_dir(
+    monkeypatch, rf, an_article, an_user
+):
+    monkeypatch.setattr(
+        views.settings, "COMMENTS_INK_THEME_DIR", "feedback_in_header"
+    )
+    importlib.reload(views)
+
+    monkeypatch.setattr(
+        views, "json_res", lambda req, tmpl_list, ctx, **kwargs: tmpl_list
+    )
+    request = prepare_js_request_to_post_form(
+        rf,
+        an_article,
+        an_user,
+        remove_fields=["reply_to"],
+        add_fields=[
+            {"name": "preview", "value": 1},
+            {"name": "reply_to", "value": 0},  # Will use 'form_js.html'.
+        ],
+    )
+    template_list = views.post(request)
+    assert template_list == [
+        "comments/themes/feedback_in_header/tests/article/form_js.html",
+        "comments/themes/feedback_in_header/tests/form_js.html",
+        "comments/themes/feedback_in_header/form_js.html",
+        "comments/tests/article/form_js.html",
+        "comments/tests/form_js.html",
+        "comments/form_js.html",
+    ]
+
+    # Revert theme.
+    monkeypatch.setattr(views.settings, "COMMENTS_INK_THEME_DIR", "")
+    importlib.reload(views)
+
+
+@pytest.mark.django_db
+def test_post_js_comment_form_in_preview__with_reply_to__with_theme_dir(
+    monkeypatch, rf, an_article, an_user
+):
+    monkeypatch.setattr(
+        views.settings, "COMMENTS_INK_THEME_DIR", "feedback_in_header"
+    )
+    importlib.reload(views)
+
+    monkeypatch.setattr(
+        views, "json_res", lambda req, tmpl_list, ctx, **kwargs: tmpl_list
+    )
+    request = prepare_js_request_to_post_form(
+        rf,
+        an_article,
+        an_user,
+        remove_fields=["reply_to"],
+        add_fields=[
+            {"name": "preview", "value": 1},
+            {"name": "reply_to", "value": 1},  # Will use 'reply_form_js.html'.
+        ],
+    )
+    template_list = views.post(request)
+    assert template_list == [
+        "comments/themes/feedback_in_header/tests/article/reply_form_js.html",
+        "comments/themes/feedback_in_header/tests/reply_form_js.html",
+        "comments/themes/feedback_in_header/reply_form_js.html",
+        "comments/tests/article/reply_form_js.html",
+        "comments/tests/reply_form_js.html",
+        "comments/reply_form_js.html",
+    ]
+
+    # Revert theme.
+    monkeypatch.setattr(views.settings, "COMMENTS_INK_THEME_DIR", "")
+    importlib.reload(views)
+
+
+@pytest.mark.django_db
+def test_post_js_comment_form_with_an_empty_comment_field(
+    rf, an_article, an_user
+):
+    request = prepare_js_request_to_post_form(
+        rf,
+        an_article,
+        an_user,
+        remove_fields=["comment"],
+        add_fields=[
+            {"name": "comment", "value": ""},
+        ],
+    )
+    response = views.post(request)
+    assert response.status_code == 200
+    result = json.loads(response.content)
+    assert result["field_focus"] == "comment"
+
+
+# ---------------------------------------------------------------------
+# Test that during the post_js of the comment form the signal
+# 'comment_will_be_posted' has been called.
+#  1. Check that when the signal returns False, a HTTP 400 is returned.
+#  2. Check that wh nthe signal returns True, the comment is posted.
+
+
+@pytest.mark.django_db
+def test_post_js_comment_form__comment_will_be_posted__returns_400(
+    monkeypatch, rf, an_article, an_user
+):
+    def mock_send(*args, **kwargs):
+        class Receiver:
+            def __init__(self):
+                self.__name__ = "mocked receiver"
+
+        return [
+            (Receiver(), False),
+        ]
+
+    monkeypatch.setattr(views.comment_will_be_posted, "send", mock_send)
+    request = prepare_js_request_to_post_form(rf, an_article, an_user)
+    response = views.post(request)
+    assert response.status_code == 400
+    result = json.loads(response.content)
+    assert result["html"].find("comment_will_be_posted receiver") > -1
+
+
+@pytest.mark.django_db
+def test_post_js_comment_form__comment_will_be_posted__returns_201(
+    monkeypatch, rf, an_article, an_user
+):
+    def mock_send(*args, **kwargs):
+        return [
+            (None, True),
+        ]
+
+    monkeypatch.setattr(views.comment_will_be_posted, "send", mock_send)
+    request = prepare_js_request_to_post_form(rf, an_article, an_user)
+    response = views.post(request)
+    assert response.status_code == 201
+    result = json.loads(response.content)
+    assert result["html"].find("Your comment has been already published.") > -1
+    comment = InkComment.objects.get(pk=1)
+    assert comment.user == an_user

@@ -6,6 +6,9 @@ build-backend = "setuptools.build_meta"
 omit = [
     "django_comments_ink/admin.py"
 ]
+exclude_lines = [
+    "pragma: no cover"
+]
 
 [tool.black]
 line-length = 80
