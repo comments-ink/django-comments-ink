@@ -1,4 +1,4 @@
-#  django-comments-ink [![example workflow](https://github.com/comments-ink/django-comments-ink/workflows/tests/badge.svg)](https://github.com/comments-ink/django-comments-ink/actions/workflows/ci-pipeline.yml) [![Code Coverage](coverage.svg)](https://github.com/comments-ink/django-comments-ink/actions/workflows/ci-pipeline.yml)
+#  django-comments-ink [![example workflow](https://github.com/comments-ink/django-comments-ink/workflows/tests/badge.svg)](https://github.com/comments-ink/django-comments-ink/actions/workflows/ci-pipeline.yml) [![Code Coverage](coverage.svg)]((https://github.com/comments-ink/django-comments-ink/actions/workflows/ci-pipeline.yml))
 
 
 **Don't use it yet**: It's still under migration from django-comments-xtd to django-comments-ink.
