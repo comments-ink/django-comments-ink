@@ -1,4 +1,5 @@
-#  django-comments-ink [![example workflow](https://github.com/comments-ink/django-comments-ink/workflows/tests/badge.svg)](https://github.com/comments-ink/django-comments-ink/actions/workflows/ci-pipeline.yml)
+#  django-comments-ink [![example workflow](https://github.com/comments-ink/django-comments-ink/workflows/tests/badge.svg)](https://github.com/comments-ink/django-comments-ink/actions/workflows/ci-pipeline.yml) [![Code Coverage](coverage.svg)](https://github.com/comments-ink/django-comments-ink/actions/workflows/ci-pipeline.yml)
+
 
 **Don't use it yet**: It's still under migration from django-comments-xtd to django-comments-ink.
 
@@ -33,5 +34,5 @@ Example sites and tests work under officially Django `supported versions <https:
 
 Additional Dependencies:
 
-* django-contrib-comments >=2.1,<2.2
+* django-contrib-comments >=2.2,<2.3
 * djangorestframework >=3.12,<3.14

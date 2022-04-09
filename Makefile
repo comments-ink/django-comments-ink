@@ -8,6 +8,7 @@ coverage:  ## Run tests with coverage.
 	coverage run --source=django_comments_ink \
 		--omit=*migrations*,*tests* -m pytest -ra
 	coverage report -m
+	@sh ./ccsvg.sh ||:
 
 syntax-check:  ## Check syntax code (isort and black).
 	sh ./lint.sh check

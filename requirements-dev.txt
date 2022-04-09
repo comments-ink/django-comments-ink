@@ -95,6 +95,12 @@ coverage==6.3.2 \
     --hash=sha256:f7331dbf301b7289013175087636bbaf5b2405e57259dd2c42fdcc9fcc47325e \
     --hash=sha256:f9987b0354b06d4df0f4d3e0ec1ae76d7ce7cbca9a2f98c25041eb79eec766f1 \
     --hash=sha256:fd9e830e9d8d89b20ab1e5af09b32d33e1a08ef4c4e14411e559556fd788e6b2
+    # via
+    #   -r requirements-dev.in
+    #   coverage-badge
+coverage-badge==1.1.0 \
+    --hash=sha256:c824a106503e981c02821e7d32f008fb3984b2338aa8c3800ec9357e33345b78 \
+    --hash=sha256:e365d56e5202e923d1b237f82defd628a02d1d645a147f867ac85c58c81d7997
     # via -r requirements-dev.in
 decorator==5.1.1 \
     --hash=sha256:637996211036b6385ef91435e4fae22989472f9d571faba8927ba8253acbc330 \
