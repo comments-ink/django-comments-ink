@@ -1026,3 +1026,147 @@ def test_post_comment_form_has_cpage_qs_param(
     response = views.post(request)
     assert response.status_code == 302
     assert response.url == "/comments/posted/?c=1&cpage=2"
+
+
+# ---------------------------------------------------------------------
+def prepare_js_request_to_post_form(
+    rf, an_article, an_user, remove_fields=[], add_fields=[]
+):
+    data = prepare_comment_form_data(an_article)
+
+    # Remove fields listed in remove_fields.
+    for field_name in remove_fields:
+        data.pop(field_name)
+
+    # Add fields listed in add_fields as {"name": <name>, "value": <value>}
+    for field in add_fields:
+        data[field["name"]] = field["value"]
+
+    article_url = reverse(
+        "article-detail",
+        kwargs={
+            "year": an_article.publish.year,
+            "month": an_article.publish.month,
+            "day": an_article.publish.day,
+            "slug": an_article.slug,
+        },
+    )
+    request = rf.post(article_url, data=data, follow=True)
+    request.user = an_user
+    request._dont_enforce_csrf_checks = True
+    request.META["HTTP_X_REQUESTED_WITH"] = "XMLHttpRequest"
+    return request
+
+
+@pytest.mark.django_db
+def test_post_js_comment_form_missing_name_and_email(rf, an_article, an_user):
+    request = prepare_js_request_to_post_form(
+        rf, an_article, an_user, remove_fields=["name", "email"]
+    )
+    response = views.post(request)
+    assert response.status_code == 201
+    result = json.loads(response.content)
+    assert result["html"].find("Your comment has been already published.") > -1
+    comment = InkComment.objects.get(pk=1)
+    assert comment.user == an_user
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "rf, an_article, an_user, remove_field",
+    [
+        ("rf", "an_article", "an_user", "content_type"),
+        ("rf", "an_article", "an_user", "object_pk"),
+    ],
+    indirect=["rf", "an_article", "an_user"],
+)
+def test_post_js_comment_form_missing_content_type_or_object_pk(
+    rf, an_article, an_user, remove_field
+):
+    request = prepare_js_request_to_post_form(
+        rf, an_article, an_user, remove_fields=[remove_field]
+    )
+    response = views.post(request)
+    assert response.status_code == 400
+    result = json.loads(response.content)
+    assert result["html"].find("Missing content_type or object_pk field.") > -1
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "monkeypatch, rf, an_article, an_user, exc, message",
+    [
+        (
+            "monkeypatch",
+            "rf",
+            "an_article",
+            "an_user",
+            LookupError,
+            "Invalid content_type value",
+        ),
+        (
+            "monkeypatch",
+            "rf",
+            "an_article",
+            "an_user",
+            TypeError,
+            "Invalid content_type value",
+        ),
+        (
+            "monkeypatch",
+            "rf",
+            "an_article",
+            "an_user",
+            AttributeError,
+            "The given content-type",
+        ),
+        (
+            "monkeypatch",
+            "rf",
+            "an_article",
+            "an_user",
+            ObjectDoesNotExist,
+            "No object matching content-type",
+        ),
+        (
+            "monkeypatch",
+            "rf",
+            "an_article",
+            "an_user",
+            ValueError,
+            "Attempting to get content-type",
+        ),
+        (
+            "monkeypatch",
+            "rf",
+            "an_article",
+            "an_user",
+            ValidationError,
+            "Attempting to get content-type",
+        ),
+    ],
+    indirect=["monkeypatch", "rf", "an_article", "an_user"],
+)
+def test_post_js_comment_form_returns_400(
+    monkeypatch, rf, an_article, an_user, exc, message
+):
+    monkeypatch.setattr(views.apps, "get_model", mock_get_model(exc))
+    request = prepare_js_request_to_post_form(rf, an_article, an_user)
+    response = views.post(request)
+    assert response.status_code == 400
+    result = json.loads(response.content)
+    assert result["html"].find(message) > -1
+
+
+@pytest.mark.django_db
+def test_post_js_comment_form_with_security_errors(
+    monkeypatch, rf, an_article, an_user
+):
+    monkeypatch.setattr(
+        views, "get_form", lambda: get_form_mocked(has_errors=True)
+    )
+    request = prepare_js_request_to_post_form(rf, an_article, an_user)
+    response = views.post(request)
+    assert response.status_code == 400
+    result = json.loads(response.content)
+    assert result["html"].find("The comment form failed security") > -1
