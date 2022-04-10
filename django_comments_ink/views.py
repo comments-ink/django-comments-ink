@@ -650,7 +650,7 @@ comment_was_posted.connect(on_comment_was_posted, sender=TmpInkComment)
 def sent(request, using=None):
     comment_pk = request.GET.get("c", None)
     if not comment_pk:
-        return HttpResponseBadRequest("Comment doesn't exist")
+        return CommentPostBadRequest("Comment doesn't exist")
     try:
         comment_pk = int(comment_pk)
         comment = InkComment.objects.get(pk=comment_pk)
@@ -661,7 +661,7 @@ def sent(request, using=None):
             model = apps.get_model(*ctype.split(".", 1))
             target = model._default_manager.using(using).get(pk=object_pk)
         except Exception:
-            return HttpResponseBadRequest("Comment doesn't exist")
+            return CommentPostBadRequest("Comment doesn't exist")
 
         return render(request, _posted_tmpl, {"target": target})
     else:
@@ -680,7 +680,6 @@ def sent(request, using=None):
 
 
 def sent_js(request, comment, using=None):
-
     try:
         comment_pk = comment._get_pk_val()
         comment = InkComment.objects.get(pk=comment_pk)

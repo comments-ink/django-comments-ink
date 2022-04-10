@@ -104,12 +104,13 @@ class OnCommentWasPostedTestCase(TestCase):
             "level": 1,
             "order": 1,
             "comment": "Es war einmal eine kleine...",
+            "next": reverse("comments-ink-sent"),
         }
         data.update(self.form.initial)
         response = post_article_comment(data, self.article, auth_user)
         self.assertEqual(response.status_code, response_code)
         if response.status_code == 302:
-            self.assertTrue(response.url.startswith("/comments/posted/?c="))
+            self.assertTrue(response.url.startswith("/comments/sent/?c="))
 
     def post_invalid_data(
         self, auth_user=None, response_code=302, remove_fields: List[str] = []
@@ -122,6 +123,7 @@ class OnCommentWasPostedTestCase(TestCase):
             "level": 1,
             "order": 1,
             "comment": "Es war einmal eine kleine...",
+            "next": reverse("comments-ink-sent"),
         }
         data.update(self.form.initial)
         if len(remove_fields):
@@ -130,7 +132,7 @@ class OnCommentWasPostedTestCase(TestCase):
         response = post_article_comment(data, self.article, auth_user)
         self.assertEqual(response.status_code, response_code)
         if response.status_code == 302:
-            self.assertTrue(response.url.startswith("/comments/posted/?c="))
+            self.assertTrue(response.url.startswith("/comments/sent/?c="))
 
     def test_post_as_authenticated_user(self):
         self.user = User.objects.create_user("bob", "bob@example.com", "pwd")
@@ -199,6 +201,7 @@ class ConfirmCommentTestCase(TestCase):
             "level": 1,
             "order": 1,
             "comment": "Es war einmal iene kleine...",
+            "next": reverse("comments-ink-sent"),
         }
         data.update(self.form.initial)
         response = post_article_comment(data, self.article)
@@ -280,11 +283,12 @@ class ConfirmCommentTestCase(TestCase):
             "level": 1,
             "order": 1,
             "comment": "Es war einmal eine kleine...",
+            "next": reverse("comments-ink-sent"),
         }
         data.update(self.form.initial)
         response = post_article_comment(data, article=self.article)
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(response.url.startswith("/comments/posted/?c="))
+        self.assertTrue(response.url.startswith("/comments/sent/?c="))
         self.assertEqual(self.mock_mailer.call_count, 2)
         self.key = re.search(
             r"http://.+/confirm/(?P<key>[\S]+)/",
@@ -317,11 +321,12 @@ class ConfirmCommentTestCase(TestCase):
             "level": 1,
             "order": 1,
             "comment": "Es war einmal eine kleine...",
+            "next": reverse("comments-ink-sent"),
         }
         data.update(self.form.initial)
         response = post_diary_comment(data, diary_entry=diary)
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(response.url.startswith("/comments/posted/?c="))
+        self.assertTrue(response.url.startswith("/comments/sent/?c="))
         self.key = str(
             re.search(
                 r"http://.+/confirm/(?P<key>[\S]+)/",
@@ -345,11 +350,12 @@ class ConfirmCommentTestCase(TestCase):
             "level": 1,
             "order": 1,
             "comment": "Es war einmal iene kleine...",
+            "next": reverse("comments-ink-sent"),
         }
         data.update(self.form.initial)
         response = post_article_comment(data, article=self.article)
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(response.url.startswith("/comments/posted/?c="))
+        self.assertTrue(response.url.startswith("/comments/sent/?c="))
         self.assertEqual(self.mock_mailer.call_count, 3)
         self.key = re.search(
             r"http://.+/confirm/(?P<key>[\S]+)/",
@@ -382,6 +388,7 @@ class ConfirmCommentTestCase(TestCase):
             "level": 1,
             "order": 1,
             "comment": "Bob's comment he shouldn't get notified about",
+            "next": reverse("comments-ink-sent"),
         }
         data.update(self.form.initial)
         response = post_article_comment(data, self.article)
@@ -493,11 +500,12 @@ class MuteFollowUpTestCase(TestCase):
             "level": 1,
             "order": 1,
             "comment": "Nice September you had...",
+            "next": reverse("comments-ink-sent"),
         }
         data.update(self.form.initial)
         response = post_article_comment(data, self.article)
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(response.url.startswith("/comments/posted/?c="))
+        self.assertTrue(response.url.startswith("/comments/sent/?c="))
         self.assertTrue(self.mock_mailer.call_count == 1)
         bobkey = str(
             re.search(
@@ -516,11 +524,12 @@ class MuteFollowUpTestCase(TestCase):
             "level": 1,
             "order": 1,
             "comment": "Yeah, great photos",
+            "next": reverse("comments-ink-sent"),
         }
         data.update(self.form.initial)
         response = post_article_comment(data, self.article)
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(response.url.startswith("/comments/posted/?c="))
+        self.assertTrue(response.url.startswith("/comments/sent/?c="))
         self.assertTrue(self.mock_mailer.call_count == 2)
         alicekey = str(
             re.search(
@@ -563,11 +572,12 @@ class MuteFollowUpTestCase(TestCase):
             "level": 1,
             "order": 1,
             "comment": "And look at this and that...",
+            "next": reverse("comments-ink-sent"),
         }
         data.update(self.form.initial)
         response = post_article_comment(data, self.article)
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(response.url.startswith("/comments/posted/?c="))
+        self.assertTrue(response.url.startswith("/comments/sent/?c="))
         # Alice confirms her comment...
         self.assertTrue(self.mock_mailer.call_count == 4)
         alicekey = str(
@@ -602,6 +612,7 @@ class HTMLDisabledMailTestCase(TestCase):
             "level": 1,
             "order": 1,
             "comment": "Nice September you had...",
+            "next": reverse("comments-ink-sent"),
         }
         self.data.update(self.form.initial)
 
@@ -615,14 +626,14 @@ class HTMLDisabledMailTestCase(TestCase):
         ):
             response = post_article_comment(self.data, self.article)
             self.assertEqual(response.status_code, 302)
-            self.assertTrue(response.url.startswith("/comments/posted/?c="))
+            self.assertTrue(response.url.startswith("/comments/sent/?c="))
             self.assertTrue(self.mock_mailer.call_count == 1)
             self.assertTrue(self.mock_mailer.call_args[1]["html"] is None)
 
     def test_mail_does_contain_html_part(self):
         response = post_article_comment(self.data, self.article)
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(response.url.startswith("/comments/posted/?c="))
+        self.assertTrue(response.url.startswith("/comments/sent/?c="))
         self.assertTrue(self.mock_mailer.call_count == 1)
         self.assertTrue(self.mock_mailer.call_args[1]["html"] is not None)
 
@@ -710,13 +721,14 @@ def prepare_comment_form_data(an_article):
         "level": 1,
         "order": 1,
         "comment": "Es war einmal eine kleine...",
+        "next": reverse("comments-ink-sent"),
     }
     data.update(form.initial)
     return data
 
 
 def prepare_request_to_post_form(
-    monkeypatch, rf, an_article, an_user, remove_fields=[], add_fields=[]
+    monkeypatch, rf, an_article, user=None, remove_fields=[], add_fields=[]
 ):
     monkeypatch.setattr(views, "CommentPostBadRequest", MockedPostBadRequest)
     data = prepare_comment_form_data(an_article)
@@ -739,7 +751,10 @@ def prepare_request_to_post_form(
         },
     )
     request = rf.post(article_url, data=data, follow=True)
-    request.user = an_user
+    if user:
+        request.user = user
+    else:
+        request.user = AnonymousUser()
     request._dont_enforce_csrf_checks = True
     return request
 
@@ -749,7 +764,11 @@ def test_post_comment_form_without_content_type(
     monkeypatch, rf, an_article, an_user
 ):
     request = prepare_request_to_post_form(
-        monkeypatch, rf, an_article, an_user, remove_fields=["content_type"]
+        monkeypatch,
+        rf,
+        an_article,
+        user=an_user,
+        remove_fields=["content_type"],
     )
     response = views.post(request)
     assert response.status_code == 400
@@ -761,7 +780,7 @@ def test_post_comment_form_without_object_pk(
     monkeypatch, rf, an_article, an_user
 ):
     request = prepare_request_to_post_form(
-        monkeypatch, rf, an_article, an_user, remove_fields=["object_pk"]
+        monkeypatch, rf, an_article, user=an_user, remove_fields=["object_pk"]
     )
     response = views.post(request)
     assert response.status_code == 400
@@ -834,7 +853,9 @@ def test_post_comment_form_raises_an_error(
     monkeypatch, rf, an_article, an_user, exc, message
 ):
     monkeypatch.setattr(views.apps, "get_model", mock_get_model(exc))
-    request = prepare_request_to_post_form(monkeypatch, rf, an_article, an_user)
+    request = prepare_request_to_post_form(
+        monkeypatch, rf, an_article, user=an_user
+    )
     response = views.post(request)
     assert response.status_code == 400
     assert response.why.startswith(message)
@@ -863,7 +884,9 @@ def test_post_comment_form_with_security_errors(
     monkeypatch.setattr(
         views, "get_form", lambda: get_form_mocked(has_errors=True)
     )
-    request = prepare_request_to_post_form(monkeypatch, rf, an_article, an_user)
+    request = prepare_request_to_post_form(
+        monkeypatch, rf, an_article, user=an_user
+    )
     response = views.post(request)
     assert response.status_code == 400
     assert response.why.startswith("The comment form failed security ")
@@ -885,7 +908,7 @@ def test_post_comment_form_in_preview_without_theme_dir(
         monkeypatch,
         rf,
         an_article,
-        an_user,
+        user=an_user,
         add_fields=[
             {"name": "preview", "value": 1},
         ],
@@ -912,7 +935,7 @@ def test_post_comment_form_in_preview_with_theme_dir(
         monkeypatch,
         rf,
         an_article,
-        an_user,
+        user=an_user,
         add_fields=[
             {"name": "preview", "value": 1},
         ],
@@ -940,7 +963,7 @@ def test_post_comment_form_with_an_empty_comment_field(
         monkeypatch,
         rf,
         an_article,
-        an_user,
+        user=an_user,
         remove_fields=["comment"],
         add_fields=[
             {"name": "comment", "value": ""},
@@ -975,7 +998,9 @@ def test_post_comment_form__comment_will_be_posted__returns_400(
         ]
 
     monkeypatch.setattr(views.comment_will_be_posted, "send", mock_send)
-    request = prepare_request_to_post_form(monkeypatch, rf, an_article, an_user)
+    request = prepare_request_to_post_form(
+        monkeypatch, rf, an_article, user=an_user
+    )
     response = views.post(request)
     assert response.status_code == 400
     assert response.why.startswith("comment_will_be_posted receiver")
@@ -991,10 +1016,12 @@ def test_post_comment_form__comment_will_be_posted__returns_302(
         ]
 
     monkeypatch.setattr(views.comment_will_be_posted, "send", mock_send)
-    request = prepare_request_to_post_form(monkeypatch, rf, an_article, an_user)
+    request = prepare_request_to_post_form(
+        monkeypatch, rf, an_article, user=an_user
+    )
     response = views.post(request)
     assert response.status_code == 302
-    assert response.url == "/comments/posted/?c=1"
+    assert response.url == "/comments/sent/?c=1"
 
 
 # ----------------------------------------------------------------------
@@ -1009,7 +1036,9 @@ def test_post_comment_form__comment_was_posted__signal_sent(
 ):
     mock_send = Mock()
     monkeypatch.setattr(views.comment_was_posted, "send", mock_send)
-    request = prepare_request_to_post_form(monkeypatch, rf, an_article, an_user)
+    request = prepare_request_to_post_form(
+        monkeypatch, rf, an_article, user=an_user
+    )
     views.post(request)
     assert mock_send.called
 
@@ -1023,17 +1052,17 @@ def test_post_comment_form_has_cpage_qs_param(
         monkeypatch,
         rf,
         an_article,
-        an_user,
+        user=an_user,
         add_fields=[{"name": "cpage", "value": 2}],
     )
     response = views.post(request)
     assert response.status_code == 302
-    assert response.url == "/comments/posted/?c=1&cpage=2"
+    assert response.url == "/comments/sent/?c=1&cpage=2"
 
 
 # ---------------------------------------------------------------------
 def prepare_js_request_to_post_form(
-    rf, an_article, an_user, remove_fields=[], add_fields=[]
+    rf, an_article, user=None, remove_fields=[], add_fields=[]
 ):
     data = prepare_comment_form_data(an_article)
 
@@ -1055,7 +1084,8 @@ def prepare_js_request_to_post_form(
         },
     )
     request = rf.post(article_url, data=data, follow=True)
-    request.user = an_user
+    if user != None:
+        request.user = user
     request._dont_enforce_csrf_checks = True
     request.META["HTTP_X_REQUESTED_WITH"] = "XMLHttpRequest"
     return request
@@ -1064,7 +1094,7 @@ def prepare_js_request_to_post_form(
 @pytest.mark.django_db
 def test_post_js_comment_form_missing_name_and_email(rf, an_article, an_user):
     request = prepare_js_request_to_post_form(
-        rf, an_article, an_user, remove_fields=["name", "email"]
+        rf, an_article, user=an_user, remove_fields=["name", "email"]
     )
     response = views.post(request)
     assert response.status_code == 201
@@ -1087,7 +1117,7 @@ def test_post_js_comment_form_missing_content_type_or_object_pk(
     rf, an_article, an_user, remove_field
 ):
     request = prepare_js_request_to_post_form(
-        rf, an_article, an_user, remove_fields=[remove_field]
+        rf, an_article, user=an_user, remove_fields=[remove_field]
     )
     response = views.post(request)
     assert response.status_code == 400
@@ -1154,7 +1184,7 @@ def test_post_js_comment_form_returns_400(
     monkeypatch, rf, an_article, an_user, exc, message
 ):
     monkeypatch.setattr(views.apps, "get_model", mock_get_model(exc))
-    request = prepare_js_request_to_post_form(rf, an_article, an_user)
+    request = prepare_js_request_to_post_form(rf, an_article, user=an_user)
     response = views.post(request)
     assert response.status_code == 400
     result = json.loads(response.content)
@@ -1168,7 +1198,7 @@ def test_post_js_comment_form_with_security_errors(
     monkeypatch.setattr(
         views, "get_form", lambda: get_form_mocked(has_errors=True)
     )
-    request = prepare_js_request_to_post_form(rf, an_article, an_user)
+    request = prepare_js_request_to_post_form(rf, an_article, user=an_user)
     response = views.post(request)
     assert response.status_code == 400
     result = json.loads(response.content)
@@ -1195,7 +1225,7 @@ def test_post_js_comment_form_in_preview__no_reply_to__without_theme_dir(
     request = prepare_js_request_to_post_form(
         rf,
         an_article,
-        an_user,
+        user=an_user,
         remove_fields=["reply_to"],
         add_fields=[
             {"name": "preview", "value": 1},
@@ -1220,7 +1250,7 @@ def test_post_js_comment_form_in_preview__with_reply_to__without_theme_dir(
     request = prepare_js_request_to_post_form(
         rf,
         an_article,
-        an_user,
+        user=an_user,
         remove_fields=["reply_to"],
         add_fields=[
             {"name": "preview", "value": 1},
@@ -1250,7 +1280,7 @@ def test_post_js_comment_form_in_preview__no_reply_to__with_theme_dir(
     request = prepare_js_request_to_post_form(
         rf,
         an_article,
-        an_user,
+        user=an_user,
         remove_fields=["reply_to"],
         add_fields=[
             {"name": "preview", "value": 1},
@@ -1287,7 +1317,7 @@ def test_post_js_comment_form_in_preview__with_reply_to__with_theme_dir(
     request = prepare_js_request_to_post_form(
         rf,
         an_article,
-        an_user,
+        user=an_user,
         remove_fields=["reply_to"],
         add_fields=[
             {"name": "preview", "value": 1},
@@ -1316,7 +1346,7 @@ def test_post_js_comment_form_with_an_empty_comment_field(
     request = prepare_js_request_to_post_form(
         rf,
         an_article,
-        an_user,
+        user=an_user,
         remove_fields=["comment"],
         add_fields=[
             {"name": "comment", "value": ""},
@@ -1349,7 +1379,7 @@ def test_post_js_comment_form__comment_will_be_posted__returns_400(
         ]
 
     monkeypatch.setattr(views.comment_will_be_posted, "send", mock_send)
-    request = prepare_js_request_to_post_form(rf, an_article, an_user)
+    request = prepare_js_request_to_post_form(rf, an_article, user=an_user)
     response = views.post(request)
     assert response.status_code == 400
     result = json.loads(response.content)
@@ -1366,10 +1396,155 @@ def test_post_js_comment_form__comment_will_be_posted__returns_201(
         ]
 
     monkeypatch.setattr(views.comment_will_be_posted, "send", mock_send)
-    request = prepare_js_request_to_post_form(rf, an_article, an_user)
+    request = prepare_js_request_to_post_form(rf, an_article, user=an_user)
     response = views.post(request)
     assert response.status_code == 201
     result = json.loads(response.content)
     assert result["html"].find("Your comment has been already published.") > -1
     comment = InkComment.objects.get(pk=1)
     assert comment.user == an_user
+
+
+# ---------------------------------------------------------------------
+# Test the redirect to 'sent'.
+
+
+@pytest.mark.django_db
+def test_sent_receives_non_existing_comment_pk(monkeypatch, rf):
+    monkeypatch.setattr(views, "CommentPostBadRequest", MockedPostBadRequest)
+    request = rf.get("/comments/sent/")
+    response = views.sent(request)
+    assert response.status_code == 400
+    assert response.why == "Comment doesn't exist"
+
+
+@pytest.mark.django_db
+def test_redirect_to_sent__auth_comment__returns_comments_url(
+    monkeypatch, rf, an_article, an_user
+):
+    request = prepare_request_to_post_form(
+        monkeypatch, rf, an_article, user=an_user
+    )
+    response = views.post(request)
+    assert response.status_code == 302
+    assert response.url == "/comments/sent/?c=1"
+
+    request = rf.get(response.url)
+    request.user = an_user
+    response = views.sent(request)
+    assert response.status_code == 302
+    comment = InkComment.objects.get(pk=1)
+    assert response.url == comment.get_absolute_url()
+
+
+@pytest.mark.django_db
+def test_redirect_to_sent__not_auth_comment__returns_posted_tmpl(
+    monkeypatch, rf, an_article
+):
+    monkeypatch.setattr(
+        views.utils, "send_mail", lambda *args, **kwargs: Mock(*args, *kwargs)
+    )
+    request = prepare_request_to_post_form(monkeypatch, rf, an_article)
+    response = views.post(request)
+    assert response.status_code == 302
+    assert response.url.startswith("/comments/sent/?c=")
+    request = rf.get(response.url)
+    response = views.sent(request)
+    assert response.status_code == 200
+    assert (
+        response.content.decode("utf-8").find("Comment confirmation requested")
+        > -1
+    )
+
+
+@pytest.mark.django_db
+def test_redirect_to_sent__not_auth_comment__uses_posted_tmpl(
+    monkeypatch, rf, an_article
+):
+    monkeypatch.setattr(
+        views.utils, "send_mail", lambda *args, **kwargs: Mock(*args, *kwargs)
+    )
+    monkeypatch.setattr(views, "render", lambda x, tmpl_list, y: tmpl_list)
+    request = prepare_request_to_post_form(monkeypatch, rf, an_article)
+    response = views.post(request)
+    assert response.status_code == 302
+    assert response.url.startswith("/comments/sent/?c=")
+    request = rf.get(response.url)
+    template = views.sent(request)
+    assert template == "comments/posted.html"
+
+
+@pytest.mark.django_db
+def test_redirect_to_sent__bad_key__returns_400(monkeypatch, rf, an_article):
+    monkeypatch.setattr(
+        views.utils, "send_mail", lambda *args, **kwargs: Mock(*args, *kwargs)
+    )
+    request = prepare_request_to_post_form(monkeypatch, rf, an_article)
+    response = views.post(request)
+    assert response.status_code == 302
+    assert response.url.startswith("/comments/sent/?c=")
+    request = rf.get(response.url[:-1])  # Force malformed key.
+    response = views.sent(request)
+    assert response.status_code == 400
+    assert response.why == "Comment doesn't exist"
+
+
+@pytest.mark.django_db
+def test_redirect_to_sent__not_public_comment__comment_in_moderation(
+    monkeypatch, rf, an_article, an_user
+):
+    def create_comment(tmp_comment):
+        tmp_comment.pop("page_number", None)
+        comment = InkComment(**tmp_comment)
+        comment.is_public = False  # To force rendering moderated_tmpl.
+        comment.save()
+        return comment
+
+    monkeypatch.setattr(
+        views.utils, "send_mail", lambda *args, **kwargs: Mock(*args, *kwargs)
+    )
+    monkeypatch.setattr(views, "_create_comment", create_comment)
+    request = prepare_request_to_post_form(
+        monkeypatch, rf, an_article, user=an_user
+    )
+    response = views.post(request)
+    assert response.status_code == 302
+    assert response.url.startswith("/comments/sent/?c=")
+    request = rf.get(response.url)
+    response = views.sent(request)
+    assert response.status_code == 200
+    assert (
+        response.content.decode("utf-8").find("Your comment is in moderation.")
+        > -1
+    )
+
+
+@pytest.mark.django_db
+def test_redirect_to_sent__not_public_comment__uses_moderated_tmpl(
+    monkeypatch, rf, an_article, an_user
+):
+    def create_comment(tmp_comment):
+        tmp_comment.pop("page_number", None)
+        comment = InkComment(**tmp_comment)
+        comment.is_public = False  # To force rendering moderated_tmpl.
+        comment.save()
+        return comment
+
+    monkeypatch.setattr(
+        views.utils, "send_mail", lambda *args, **kwargs: Mock(*args, *kwargs)
+    )
+    monkeypatch.setattr(views, "_create_comment", create_comment)
+    monkeypatch.setattr(views, "render", lambda x, tmpl_list, y: tmpl_list)
+    request = prepare_request_to_post_form(
+        monkeypatch, rf, an_article, user=an_user
+    )
+    response = views.post(request)
+    assert response.status_code == 302
+    assert response.url.startswith("/comments/sent/?c=")
+    request = rf.get(response.url)
+    template_list = views.sent(request)
+    assert template_list == [
+        "comments/tests/article/moderated.html",
+        "comments/tests/moderated.html",
+        "comments/moderated.html",
+    ]
