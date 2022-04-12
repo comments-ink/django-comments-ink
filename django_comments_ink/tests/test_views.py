@@ -15,7 +15,7 @@ from django.contrib.auth.models import AnonymousUser, User
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 from django_comments.views.comments import CommentPostBadRequest
@@ -204,7 +204,7 @@ class ConfirmCommentTestCase(TestCase):
             "next": reverse("comments-ink-sent"),
         }
         data.update(self.form.initial)
-        response = post_article_comment(data, self.article)
+        post_article_comment(data, self.article)
         self.assertTrue(self.mock_mailer.call_count == 1)
         self.key = str(
             re.search(
@@ -303,6 +303,49 @@ class ConfirmCommentTestCase(TestCase):
             )
             > -1
         )
+
+    @patch.multiple(
+        "django_comments_ink.conf.settings", COMMENTS_INK_SEND_HTML_EMAIL=False
+    )
+    def test_notify_comment_followers_with_SEND_HTML_EMAIL_eq_False(self):
+        # send a couple of comments to the article with followup=True and check
+        # that when the second comment is confirmed a followup notification
+        # email is sent to the user who sent the first comment
+        self.assertEqual(self.mock_mailer.call_count, 1)
+        confirm_comment_url(self.key)
+        # no comment followers yet:
+        self.assertEqual(self.mock_mailer.call_count, 1)
+        # send 2nd comment
+        self.form = django_comments.get_form()(self.article)
+        data = {
+            "name": "Alice",
+            "email": "alice@example.com",
+            "followup": True,
+            "reply_to": 0,
+            "level": 1,
+            "order": 1,
+            "comment": "Es war einmal eine kleine...",
+            "next": reverse("comments-ink-sent"),
+        }
+        data.update(self.form.initial)
+        response = post_article_comment(data, article=self.article)
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith("/comments/sent/?c="))
+        self.assertEqual(self.mock_mailer.call_count, 2)
+        self.key = re.search(
+            r"http://.+/confirm/(?P<key>[\S]+)/",
+            self.mock_mailer.call_args[0][1],
+        ).group("key")
+        confirm_comment_url(self.key)
+        self.assertEqual(self.mock_mailer.call_count, 3)
+        self.assertTrue(self.mock_mailer.call_args[0][3] == ["bob@example.com"])
+        self.assertTrue(
+            self.mock_mailer.call_args[0][1].find(
+                "There is a new comment following up yours."
+            )
+            > -1
+        )
+        self.assertEqual(self.mock_mailer.call_args[1], {"html": None})
 
     def test_notify_followers_dupes(self):
         # first of all confirm Bob's comment otherwise it doesn't reach DB
@@ -590,6 +633,31 @@ class MuteFollowUpTestCase(TestCase):
         # Alice confirmed her comment, but this time Bob won't receive any
         # notification, neither do Alice being the sender
         self.assertTrue(self.mock_mailer.call_count == 4)
+
+    def test_mute_followup_notifications_with_wrong_key(self):
+        # Bob's receive a notification and click on the mute link to
+        # avoid additional comment messages on the same article.
+        # But we use a wrong key (just remove a few bits from the tail).
+        key = self.bobs_mutekey[:-2]
+        request = request_factory.get(
+            reverse("comments-ink-mute", kwargs={"key": key}), follow=True
+        )
+        request.user = AnonymousUser()
+        response = views.mute(request, key)
+        self.assertEqual(response.status_code, 400)
+        self.assertTrue(response.content.find(b"Bad Request") > -1)
+
+    def test_muting_twice_raise_http_404(self):
+        # Mute one time.
+        self.get_mute_followup_url(self.bobs_mutekey)
+        # Mute a second time.
+        request = request_factory.get(
+            reverse("comments-ink-mute", kwargs={"key": self.bobs_mutekey}),
+            follow=True,
+        )
+        request.user = AnonymousUser()
+        with self.assertRaises(Http404):
+            views.mute(request, self.bobs_mutekey)
 
 
 class HTMLDisabledMailTestCase(TestCase):
@@ -1086,6 +1154,8 @@ def prepare_js_request_to_post_form(
     request = rf.post(article_url, data=data, follow=True)
     if user != None:
         request.user = user
+    else:
+        request.user = AnonymousUser()
     request._dont_enforce_csrf_checks = True
     request.META["HTTP_X_REQUESTED_WITH"] = "XMLHttpRequest"
     return request
@@ -1403,6 +1473,75 @@ def test_post_js_comment_form__comment_will_be_posted__returns_201(
     assert result["html"].find("Your comment has been already published.") > -1
     comment = InkComment.objects.get(pk=1)
     assert comment.user == an_user
+
+
+@pytest.mark.django_db
+def test_sent_js_returns_posted_js_tmpl(monkeypatch, rf, an_article):
+    send_mail_mock = Mock()
+    monkeypatch.setattr(views.utils, "send_mail", send_mail_mock)
+    monkeypatch.setattr(
+        views,
+        "json_res",
+        lambda req, tmpl_list, ctx, status: (tmpl_list, status),
+    )
+    request = prepare_js_request_to_post_form(rf, an_article)
+    template_list, status = views.post(request)
+    assert send_mail_mock.called
+    assert status == 202
+    assert template_list == [
+        "comments/tests/article/posted_js.html",
+        "comments/tests/posted_js.html",
+        "comments/posted_js.html",
+    ]
+
+
+@pytest.mark.django_db
+def test_sent_js_failing_to_decode_key_returns_400(monkeypatch, rf, an_article):
+    def _raise_exception(*args, **kwargs):
+        raise Exception("Something went wrong!")
+
+    send_mail_mock = Mock()
+    monkeypatch.setattr(views.signing, "loads", _raise_exception)
+    monkeypatch.setattr(views.utils, "send_mail", send_mail_mock)
+    request = prepare_js_request_to_post_form(rf, an_article)
+    response = views.post(request)
+    assert send_mail_mock.called
+    result = json.loads(response.content)
+    assert response.status_code == 400
+    assert result["html"].find("Comment does not exist") > -1
+
+
+@pytest.mark.django_db
+def test_sent_js__returns_moderated_js_tmpl(
+    monkeypatch, rf, an_article, an_user
+):
+    def mock_send(*args, **kwargs):
+        comment = kwargs["comment"]
+        comment.is_public = False
+        comment.save()
+        return [
+            (None, True),
+        ]
+
+    monkeypatch.setattr(views.comment_will_be_posted, "send", mock_send)
+
+    monkeypatch.setattr(
+        views,
+        "json_res",
+        lambda req, tmpl_list, ctx, status: (tmpl_list, status),
+    )
+
+    request = prepare_js_request_to_post_form(rf, an_article, user=an_user)
+    template_list, status = views.post(request)
+    assert status == 201
+    assert template_list == [
+        "comments/tests/article/moderated_js.html",
+        "comments/tests/moderated_js.html",
+        "comments/moderated_js.html",
+    ]
+    comment = InkComment.objects.get(pk=1)
+    assert comment.user == an_user
+    assert comment.is_public == False
 
 
 # ---------------------------------------------------------------------

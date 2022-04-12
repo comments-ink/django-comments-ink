@@ -12,7 +12,6 @@ from django.db.models import F
 from django.db.utils import NotSupportedError
 from django.http import (
     Http404,
-    HttpResponseBadRequest,
     HttpResponseForbidden,
     HttpResponseRedirect,
     JsonResponse,
@@ -910,7 +909,7 @@ def mute(request, key):
     # Can't mute a comment that doesn't have the followup attribute
     # set to True, or a comment that doesn't exist.
     if not tmp_comment.followup or _get_comment_if_exists(tmp_comment) is None:
-        raise Http404
+        raise Http404(_("Comment already muted or comment does not exist."))
 
     # Send signal that the comment thread has been muted
     signals.comment_thread_muted.send(
@@ -1115,7 +1114,7 @@ def comment_in_page(request, content_type_id, object_id, comment_id):
             return HttpResponseRedirect(f"{response.url}?{qs_param}={page}")
         else:
             raise Http404(
-                _("Page is not “last”, nor can it " "be converted to an int.")
+                _("Page is not “last”, nor can it be converted to an int.")
             )
     if page_number > 1:
         return HttpResponseRedirect(f"{response.url}?{qs_param}={page}")

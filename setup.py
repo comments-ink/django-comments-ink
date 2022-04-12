@@ -17,7 +17,7 @@ with open(BASE_DIR / "requirements.in", "r") as req_file:
 
 setup(
     name="django-comments-ink",
-    version="1.0.0",
+    version="0.0.1",
     packages=find_packages(),
     include_package_data=True,
     license="MIT",
@@ -36,7 +36,7 @@ setup(
     install_requires=requirements,
     setup_requires=["wheel"],
     classifiers=[
-        "Development Status :: 5 - Production/Stable",
+        "Development Status :: 2 - Pre-Alpha",
         "Environment :: Web Environment",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",

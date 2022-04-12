@@ -3,6 +3,7 @@ from datetime import date, datetime
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
+from django_comments_ink.moderation import SpamModerator, moderator
 
 
 class PublicManager(models.Manager):
@@ -40,6 +41,15 @@ class Story(models.Model):
                 "slug": self.slug,
             },
         )
+
+
+class StoryCommentModerator(SpamModerator):
+    email_notification = True
+    auto_moderate_field = "published_time"
+    moderate_after = 365
+
+
+moderator.register(Story, StoryCommentModerator)
 
 
 def check_comments_input_allowed(obj):
