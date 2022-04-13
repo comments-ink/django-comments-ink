@@ -21,8 +21,10 @@ from django.urls import reverse
 from django_comments.views.comments import CommentPostBadRequest
 from django_comments_ink import signals, signed, views
 from django_comments_ink.conf import settings
-from django_comments_ink.models import InkComment
+from django_comments_ink.models import CommentReaction, InkComment
 from django_comments_ink.tests.models import Article, Diary
+from rest_framework import status
+from rest_framework.exceptions import ErrorDetail, PermissionDenied
 
 request_factory = RequestFactory()
 
@@ -1600,9 +1602,6 @@ def test_redirect_to_sent__not_auth_comment__returns_posted_tmpl(
 def test_redirect_to_sent__not_auth_comment__uses_posted_tmpl(
     monkeypatch, rf, an_article
 ):
-    monkeypatch.setattr(
-        views.utils, "send_mail", lambda *args, **kwargs: Mock(*args, *kwargs)
-    )
     monkeypatch.setattr(views, "render", lambda x, tmpl_list, y: tmpl_list)
     request = prepare_request_to_post_form(monkeypatch, rf, an_article)
     response = views.post(request)
@@ -1615,9 +1614,6 @@ def test_redirect_to_sent__not_auth_comment__uses_posted_tmpl(
 
 @pytest.mark.django_db
 def test_redirect_to_sent__bad_key__returns_400(monkeypatch, rf, an_article):
-    monkeypatch.setattr(
-        views.utils, "send_mail", lambda *args, **kwargs: Mock(*args, *kwargs)
-    )
     request = prepare_request_to_post_form(monkeypatch, rf, an_article)
     response = views.post(request)
     assert response.status_code == 302
@@ -1639,9 +1635,6 @@ def test_redirect_to_sent__not_public_comment__comment_in_moderation(
         comment.save()
         return comment
 
-    monkeypatch.setattr(
-        views.utils, "send_mail", lambda *args, **kwargs: Mock(*args, *kwargs)
-    )
     monkeypatch.setattr(views, "_create_comment", create_comment)
     request = prepare_request_to_post_form(
         monkeypatch, rf, an_article, user=an_user
@@ -1687,3 +1680,194 @@ def test_redirect_to_sent__not_public_comment__uses_moderated_tmpl(
         "comments/tests/moderated.html",
         "comments/moderated.html",
     ]
+
+
+# ---------------------------------------------------------------------
+@pytest.mark.django_db
+def test_GET_react_to_comment_without_reactions_enabled_raises(
+    monkeypatch, rf, an_user, an_articles_comment
+):
+    def raise_PermissionDenied(*args):
+        raise PermissionDenied(detail="Mee", code=status.HTTP_403_FORBIDDEN)
+
+    monkeypatch.setattr(views.utils, "check_option", raise_PermissionDenied)
+    request = rf.get(
+        reverse("comments-ink-react", args=(an_articles_comment.pk,))
+    )
+    request.user = an_user
+    # request._dont_enforce_csrf_checks = True
+    try:
+        views.react(request, an_articles_comment.pk)
+    except Exception as exc:
+        assert exc.detail == ErrorDetail(string="Mee", code=403)
+
+
+@pytest.mark.django_db
+def test_GET_react_renders_react_tmpl(
+    monkeypatch, rf, an_user, an_articles_comment
+):
+    monkeypatch.setattr(views.utils, "check_option", lambda *_: True)
+    monkeypatch.setattr(views, "render", lambda x, tmpl, ctx: (tmpl, ctx))
+    request = rf.get(
+        reverse("comments-ink-react", args=(an_articles_comment.pk,))
+    )
+    request.user = an_user
+    template, context = views.react(request, an_articles_comment.pk)
+    assert template == "comments/react.html"
+    ctx_keys = [
+        "comment",
+        "user_reactions",
+        "next",
+        "page_number",
+        "cpage_qs_param",
+        "dcx_theme_dir",
+    ]
+    for key in ctx_keys:
+        assert key in context
+
+
+@pytest.mark.django_db
+def test_POST_react(monkeypatch, rf, an_user, an_articles_comment):
+    monkeypatch.setattr(views.utils, "check_option", lambda *_: True)
+    monkeypatch.setattr(views, "render", lambda x, tmpl, ctx: (tmpl, ctx))
+    request = rf.post(
+        reverse("comments-ink-react", args=(an_articles_comment.pk,)),
+        data={"reaction": "+"},
+        follow=True,
+    )
+    request.user = an_user
+    request._dont_enforce_csrf_checks = True
+    response = views.react(request, an_articles_comment.pk)
+    assert response.status_code == 302
+    request = rf.get(response.url)
+    template, context = views.react_done(request)
+    assert template == "comments/reacted.html"
+    assert context["comment"] == an_articles_comment
+    assert context["page_number"] == 1
+    assert context["dcx_theme_dir"] == ""
+
+
+@pytest.mark.django_db
+def test_POST_react_two_users_add_same_reaction_2nd_user_withdraws_it(
+    monkeypatch, rf, an_user, an_user_2, an_articles_comment
+):
+    # This function tests perform_react: two users add the same reaction
+    # to the same comment, and then the second user withdraws the reaction.
+    def get_cr_counter():
+        return CommentReaction.objects.get(
+            reaction="+", comment=an_articles_comment
+        ).counter
+
+    def prepare_request(user):
+        request = rf.post(
+            reverse("comments-ink-react", args=(an_articles_comment.pk,)),
+            data={"reaction": "+"},
+            follow=True,
+        )
+        request.user = user
+        request._dont_enforce_csrf_checks = True
+        return request
+
+    monkeypatch.setattr(views.utils, "check_option", lambda *_: True)
+
+    # 1: an_user sends the "+" reaction to this comment.
+    request = prepare_request(an_user)
+    response = views.react(request, an_articles_comment.pk)
+    assert response.status_code == 302
+    request = rf.get(response.url)
+    response = views.react_done(request)
+    assert response.status_code == 200
+    assert get_cr_counter() == 1
+
+    # 2: an_user_2 sends the "+" reaction to this comment.
+    request = prepare_request(an_user_2)
+    response = views.react(request, an_articles_comment.pk)
+    assert response.status_code == 302
+    request = rf.get(response.url)
+    response = views.react_done(request)
+    assert response.status_code == 200
+    assert get_cr_counter() == 2
+
+    # 3: an_user_2 sends again the "+" reaction to this comment,
+    # the effect is the withdrawal of the reaction.
+    request = prepare_request(an_user_2)
+    response = views.react(request, an_articles_comment.pk)
+    assert response.status_code == 302
+    request = rf.get(response.url)
+    response = views.react_done(request)
+    assert response.status_code == 200
+    assert get_cr_counter() == 1
+
+    # 4: an_user sends again the "+" reaction to this comment,
+    # the effect is the deletion of the CommentReaction (as it's the last
+    # author of the CommentReaction).
+    request = prepare_request(an_user)
+    response = views.react(request, an_articles_comment.pk)
+    assert response.status_code == 302
+    request = rf.get(response.url)
+    response = views.react_done(request)
+    assert response.status_code == 200
+    with pytest.raises(CommentReaction.DoesNotExist):
+        get_cr_counter()
+
+
+@pytest.mark.django_db
+def test_POST_react_js(monkeypatch, rf, an_user, an_articles_comment):
+    monkeypatch.setattr(views.utils, "check_option", lambda *_: True)
+    monkeypatch.setattr(
+        views,
+        "json_res",
+        lambda req, tmpl_list, ctx, **kwargs: (
+            tmpl_list,
+            ctx,
+            kwargs["status"],
+        ),
+    )
+    request = rf.post(
+        reverse("comments-ink-react", args=(an_articles_comment.pk,)),
+        data={"reaction": "+"},
+        follow=True,
+    )
+    request.user = an_user
+    request._dont_enforce_csrf_checks = True
+    request.META["HTTP_X_REQUESTED_WITH"] = "XMLHttpRequest"
+    tmpl_list, context, status = views.react(request, an_articles_comment.pk)
+    assert status == 201
+    assert tmpl_list == [
+        "comments/tests/article/comment_reactions.html",
+        "comments/tests/comment_reactions.html",
+        "comments/comment_reactions.html",
+    ]
+    assert "comment" in context
+    assert context["comment"] == an_articles_comment
+
+
+@pytest.mark.django_db
+def test_GET_react_with_an_existing_comments_reaction(
+    monkeypatch, rf, an_user, an_articles_comment, a_comments_reaction
+):
+    monkeypatch.setattr(views.utils, "check_option", lambda *_: True)
+    request = rf.get(
+        reverse("comments-ink-react", args=(an_articles_comment.pk,)),
+    )
+    request.user = an_user
+    response = views.react(request, an_articles_comment.pk)
+    assert response.status_code == 200
+    html = response.content.replace(b"  ", b" ").replace(b"\n", b"")
+    re_str = (  # This regexp matches the class="secondary active" in HTML.
+        rb'<button\s+type="submit"\s+name="reaction"\s+value="\+"'
+        rb'\s+class="(?P<classes>[a-z\s]+)"\s*>'
+    )
+    css_classes = re.search(re_str, html).group("classes")
+    assert css_classes.find(b"active") > -1
+
+
+@pytest.mark.django_db
+def test_react_done_raises_404_if_no_param_c_or_comment_does_not_exist(rf):
+    request = rf.get(reverse("comments-ink-react-done"))
+    with pytest.raises(Http404):
+        views.react_done(request)
+
+    request = rf.get(reverse("comments-ink-react-done") + "?c=1")
+    with pytest.raises(Http404):
+        views.react_done(request)

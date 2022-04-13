@@ -235,6 +235,25 @@ else:
     _react_tmpl = "comments/react.html"
 
 
+# List of possible paths to the reacted_js.html template file.
+_reacted_js_tmpl = []
+if theme_dir_exists:
+    _reacted_js_tmpl.extend(
+        [
+            "comments/{theme_dir}/{app_label}/{model}/comment_reactions.html",
+            "comments/{theme_dir}/{app_label}/comment_reactions.html",
+            "comments/{theme_dir}/comment_reactions.html",
+        ]
+    )
+_reacted_js_tmpl.extend(
+    [
+        "comments/{app_label}/{model}/comment_reactions.html",
+        "comments/{app_label}/comment_reactions.html",
+        "comments/comment_reactions.html",
+    ]
+)
+
+
 # List of possible paths to the reacted.html template file.
 if theme_dir_exists:
     _reacted_tmpl = [
@@ -1003,21 +1022,20 @@ def react(request, comment_id, next=None):
         # When the reaction has been sent via JavaScript.
         if request.META.get("HTTP_X_REQUESTED_WITH") == "XMLHttpRequest":
             obj_meta = comment.content_object._meta
-            template_name = "comment_reactions.html"
             template_list = [
-                f"comments/{theme_dir}/%s/%s/{template_name}"
-                % (obj_meta.app_label, obj_meta.model_name),
-                f"comments/{theme_dir}/%s/{template_name}" % obj_meta.app_label,
-                f"comments/{theme_dir}/{template_name}",
-                f"comments/{template_name}",
+                pth.format(
+                    theme_dir=theme_dir,
+                    app_label=obj_meta.app_label,
+                    model=obj_meta.model_name,
+                )
+                for pth in _reacted_js_tmpl
             ]
             context = {"comment": comment}
             status = 201 if created else 200
             return json_res(request, template_list, context, status=status)
-
         kwargs = {
             "c": comment.pk,
-            cpage_qs_param: cpage or request.POST.get(cpage_qs_param, None),
+            cpage_qs_param: cpage or request.POST.get(cpage_qs_param, 1),
         }
         return next_redirect(
             request, fallback=next or "comments-ink-react-done", **kwargs
@@ -1085,7 +1103,7 @@ def react_done(request):
             site__pk=utils.get_current_site_id(request),
         )
     else:
-        comment = None
+        raise Http404
     return render(
         request,
         _reacted_tmpl,

@@ -46,6 +46,19 @@ def an_user():
 
 @pytest.mark.django_db
 @pytest.fixture
+def an_user_2():
+    """Add a user2 to the DB."""
+    return User.objects.create_user(
+        "alice",
+        "alice@example.com",
+        "alicepwd",
+        first_name="Alice",
+        last_name="Bloggs",
+    )
+
+
+@pytest.mark.django_db
+@pytest.fixture
 def a_comments_reaction(an_articles_comment, an_user):
     """Send a reaction to a comment."""
     reaction = get_reactions_enum().LIKE_IT
