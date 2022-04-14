@@ -32,7 +32,7 @@ urlpatterns = [
     # Remap comments-url-redirect to add query string with page number.
     re_path(
         r"^cr/(\d+)/(\d+)/(\d+)/$",
-        views.comment_in_page,
+        views.get_inkcomment_url,
         name="comments-url-redirect",
     ),
     # API handlers.

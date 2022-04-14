@@ -1115,7 +1115,7 @@ def react_done(request):
     )
 
 
-def comment_in_page(request, content_type_id, object_id, comment_id):
+def get_inkcomment_url(request, content_type_id, object_id, comment_id):
     response = shortcut(request, content_type_id, object_id)
     qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
     page = request and request.GET.get(qs_param, None) or None

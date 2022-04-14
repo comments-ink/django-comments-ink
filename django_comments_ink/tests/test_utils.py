@@ -265,3 +265,14 @@ def test_get_comment_page_number_raises_Exception(an_article, monkeypatch):
         utils.get_comment_page_number(
             None, article_ct, an_article.pk, comment.id
         )
+
+
+@pytest.mark.parametrize(
+    "theme_dir, does_exist",
+    [
+        ("comments/themes/unknown", False),
+        ("comments/themes/feedback_in_header", True),
+    ],
+)
+def test_does_theme_dir_exist(theme_dir, does_exist):
+    assert utils.does_theme_dir_exist(theme_dir) == does_exist

@@ -1846,6 +1846,10 @@ def test_POST_react_js(monkeypatch, rf, an_user, an_articles_comment):
 def test_GET_react_with_an_existing_comments_reaction(
     monkeypatch, rf, an_user, an_articles_comment, a_comments_reaction
 ):
+    # fixture a_comments_reaction is needed in the signature of the test,
+    # so that it creates a_comments_reaction. When we then request GET the
+    # react view we will get that reaction with the 'active' css class.
+
     monkeypatch.setattr(views.utils, "check_option", lambda *_: True)
     request = rf.get(
         reverse("comments-ink-react", args=(an_articles_comment.pk,)),
@@ -1871,3 +1875,61 @@ def test_react_done_raises_404_if_no_param_c_or_comment_does_not_exist(rf):
     request = rf.get(reverse("comments-ink-react-done") + "?c=1")
     with pytest.raises(Http404):
         views.react_done(request)
+
+
+# ---------------------------------------------------------------------
+# Test view's get_inkcomment_url.
+
+
+@pytest.mark.django_db
+def test_get_inkcomment_url_without_page(rf, an_article, an_articles_comment):
+    args = (
+        an_articles_comment.content_type.pk,
+        int(an_articles_comment.object_pk),
+        an_articles_comment.pk,
+    )
+    request = rf.get(reverse("comments-url-redirect", args=args))
+    response = views.get_inkcomment_url(request, *args)
+    assert response.status_code == 302
+    assert response.url.endswith(an_article.get_absolute_url())
+
+
+@pytest.mark.django_db
+def test_get_inkcomment_url_with_bad_page(rf, an_articles_comment):
+    args = (
+        an_articles_comment.content_type.pk,
+        int(an_articles_comment.object_pk),
+        an_articles_comment.pk,
+    )
+    request = rf.get(
+        reverse("comments-url-redirect", args=args), {"cpage": "bad"}
+    )
+    with pytest.raises(Http404):
+        views.get_inkcomment_url(request, *args)
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "rf, an_article, an_articles_comment, cpage",
+    [
+        ("rf", "an_article", "an_articles_comment", "last"),
+        ("rf", "an_article", "an_articles_comment", "2"),
+    ],
+    indirect=["rf", "an_article", "an_articles_comment"],
+)
+def test_get_inkcomment_url_with_page(
+    rf, an_article, an_articles_comment, cpage
+):
+    args = (
+        an_articles_comment.content_type.pk,
+        int(an_articles_comment.object_pk),
+        an_articles_comment.pk,
+    )
+    request = rf.get(
+        reverse("comments-url-redirect", args=args), {"cpage": cpage}
+    )
+    response = views.get_inkcomment_url(request, *args)
+    assert response.status_code == 302
+    assert response.url.endswith(
+        an_article.get_absolute_url() + f"?cpage={cpage}"
+    )
