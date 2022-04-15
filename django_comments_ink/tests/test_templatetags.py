@@ -1,5 +1,8 @@
 import collections
+import importlib
 import json
+import re
+from collections import namedtuple
 from datetime import datetime
 from unittest.mock import patch
 
@@ -823,3 +826,160 @@ def test_render_only_users_can_post_template(an_article):
     output = Template(t).render(Context({"object": an_article}))
     suffix = get_html_id_suffix(an_article)
     assert output.find(f"only-users-can-post-{suffix}") > -1
+
+
+def test_using_a_theme_dir(monkeypatch):
+    monkeypatch.setattr(
+        comments_ink.settings, "COMMENTS_INK_THEME_DIR", "feedback_in_header"
+    )
+    importlib.reload(comments_ink)
+
+    templates = []
+    templates.extend(comments_ink._list_html_tmpl[:3])
+    templates.extend(comments_ink._form_html_tmpl[:3])
+    templates.extend(comments_ink._reply_template_html_tmpl[:3])
+    templates.extend(comments_ink._reactions_panel_template_tmpl[:1])
+    templates.extend(comments_ink._reactions_buttons_tmpl[:1])
+
+    for tmpl_path in templates:
+        assert tmpl_path.find("{theme_dir}") > -1
+
+    # Revert theme.
+    monkeypatch.setattr(comments_ink.settings, "COMMENTS_INK_THEME_DIR", "")
+    importlib.reload(comments_ink)
+
+
+# ---------------------------------------------------------------------
+
+re_form = (
+    r'<form method="(?P<method>\w+)" autocomplete="off"'
+    r' action="(?P<action>[\w\/]+)">'
+)
+
+re_field_1 = r'<input type="{type}" name="{name}" value="{value}" id="{id}">'
+re_field_2 = r'<input type="{type}" name="{name}" value="[\d]+" id="{id}">'
+re_field_3 = r'<input type="{type}" name="{name}" value="[\w]+" id="{id}">'
+
+
+@pytest.mark.django_db
+def test_render_inkcomment_form_for_object(monkeypatch, an_article):
+    t = "{% load comments_ink %}" "{% render_inkcomment_form for object %}"
+    output = Template(t).render(Context({"object": an_article}))
+
+    # Check <form> element.
+    match = re.search(re_form, output)
+    assert match.group("method") == "POST"
+    assert match.group("action") == "/comments/post/"
+
+    # Check field 'content_type':
+    re_field_formated = re_field_1.format(
+        type="hidden",
+        name="content_type",
+        value="tests.article",
+        id="id_content_type",
+    )
+    match = re.search(re_field_formated, output)
+    assert match != None
+
+    # Check field 'object_pk':
+    re_field_formated = re_field_1.format(
+        type="hidden", name="object_pk", value="1", id="id_object_pk"
+    )
+    match = re.search(re_field_formated, output)
+    assert match != None
+
+    # Check field 'timestamp':
+    re_field_formated = re_field_2.format(
+        type="hidden", name="timestamp", id="id_timestamp"
+    )
+    match = re.search(re_field_formated, output)
+    assert match != None
+
+    # Check field 'security_hash':
+    re_field_formated = re_field_3.format(
+        type="hidden", name="security_hash", id="id_security_hash"
+    )
+    match = re.search(re_field_formated, output)
+    assert match != None
+
+    # Check field 'reply_to':
+    re_field_formated = re_field_1.format(
+        type="hidden", name="reply_to", value="0", id="id_reply_to"
+    )
+    match = re.search(re_field_formated, output)
+    assert match != None
+
+    # Check field 'honeypot':
+    match = re.search(
+        r'<input type="text" name="honeypot" id="id_honeypot">', output
+    )
+    assert match != None
+
+    # Check field 'comment':
+    match = re.search(
+        (
+            r'<textarea name="comment" placeholder="Your comment"'
+            r' class="form-control" required id="id_comment">'
+        ),
+        output,
+    )
+    assert match != None
+
+    # Check field 'name':
+    match = re.search(
+        (
+            r'<input type="text" name="name" placeholder="name"'
+            r' class="form-control" required id="id_name">'
+        ),
+        output,
+    )
+    assert match != None
+
+    # Check field 'email':
+    match = re.search(
+        (
+            r'<input type="text" name="email" placeholder="mail address"'
+            r' class="form-control" required id="id_email">'
+        ),
+        output,
+    )
+    assert match != None
+
+    # Check field 'url':
+    match = re.search(
+        (
+            r'<input type="text" name="url" placeholder="url your name'
+            r' links to \(optional\)" class="form-control" id="id_url">'
+        ),
+        output,
+    )
+    assert match != None
+
+    # Check field 'followup':
+    match = re.search(
+        (
+            r'<input type="checkbox" name="followup" id="id_followup"'
+            r' class="custom-control-input">'
+        ),
+        output,
+    )
+    assert match != None
+
+
+@pytest.mark.django_db
+def test_render_inkcomment_form_for_non_existing_object():
+    t = "{% load comments_ink %}" "{% render_inkcomment_form for object %}"
+    output = Template(t).render(Context({"object": {}}))
+    assert output == ""
+    output = Template(t).render(Context({"object": None}))
+    assert output == ""
+
+
+@pytest.mark.django_db
+def test_render_inkcomment_form_for_app_model_pk():
+    t = (
+        "{% load comments_ink %}"
+        "{% render_inkcomment_form for tests.article 1 %}"
+    )
+    output = Template(t).render(Context({}))
+    assert output == ""

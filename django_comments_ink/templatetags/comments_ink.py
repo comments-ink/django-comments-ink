@@ -92,22 +92,26 @@ _reply_template_html_tmpl.extend(
 )
 
 
+_reactions_panel_template_tmpl = []
 if theme_dir_exists:
-    _reactions_panel_template_tmpl = [
-        f"comments/{theme_dir}/reactions_panel_template.html",
-        "comments/reactions_panel_template.html",
-    ]
-else:
-    _reactions_panel_template_tmpl = "comments/reactions_panel_template.html"
+    _reactions_panel_template_tmpl.extend(
+        [
+            "comments/{theme_dir}/reactions_panel_template.html",
+            "comments/reactions_panel_template.html",
+        ]
+    )
+_reactions_panel_template_tmpl.append("comments/reactions_panel_template.html")
 
 
+_reactions_buttons_tmpl = []
 if theme_dir_exists:
-    _reactions_buttons_tmpl = [
-        f"comments/{theme_dir}/reactions_buttons.html",
-        "comments/reactions_buttons.html",
-    ]
-else:
-    _reactions_buttons_tmpl = "comments/reactions_buttons.html"
+    _reactions_buttons_tmpl.extend(
+        [
+            "comments/{theme_dir}/reactions_buttons.html",
+            "comments/reactions_buttons.html",
+        ]
+    )
+_reactions_buttons_tmpl.append("comments/reactions_buttons.html")
 
 
 def paginate_queryset(queryset, context):
@@ -303,8 +307,8 @@ class RenderInkCommentFormNode(RenderCommentFormNode):
     """
 
     def render(self, context):
-        ctype, object_pk = self.get_target_ctype_pk(context)
-        if object_pk:
+        try:
+            ctype, _ = self.get_target_ctype_pk(context)
             template_list = [
                 pth.format(
                     theme_dir=theme_dir,
@@ -317,7 +321,7 @@ class RenderInkCommentFormNode(RenderCommentFormNode):
             context_dict["form"] = self.get_form(context)
             formstr = loader.render_to_string(template_list, context_dict)
             return formstr
-        else:
+        except:
             return ""
 
 
@@ -469,7 +473,10 @@ class RenderReactionsButtons(Node):
             "user_reactions": self.user_reactions.resolve(context),
             "break_every": settings.COMMENTS_INK_REACTIONS_ROW_LENGTH,
         }
-        htmlstr = loader.render_to_string(_reactions_buttons_tmpl, context)
+        template_list = [
+            pth.format(theme_dir=theme_dir) for pth in _reactions_buttons_tmpl
+        ]
+        htmlstr = loader.render_to_string(template_list, context)
         return htmlstr
 
 
@@ -654,15 +661,37 @@ def render_only_users_can_post_template(object):
     return {"html_id_suffix": utils.get_html_id_suffix(object)}
 
 
-@register.inclusion_tag(_reactions_panel_template_tmpl)
-def render_reactions_panel_template():
-    enums_details = [
-        (enum.value, enum.label, enum.icon) for enum in get_reactions_enum()
-    ]
-    return {
-        "enums_details": enums_details,
-        "break_every": settings.COMMENTS_INK_REACTIONS_ROW_LENGTH,
-    }
+# This one is wrong, an inclusion_tag can't use a list of templates.
+# Rewrite it as render_reactions_buttons.
+# @register.inclusion_tag(_reactions_panel_template_tmpl)
+# def render_reactions_panel_template():
+#     enums_details = [
+#         (enum.value, enum.label, enum.icon) for enum in get_reactions_enum()
+#     ]
+#     return {
+#         "enums_details": enums_details,
+#         "break_every": settings.COMMENTS_INK_REACTIONS_ROW_LENGTH,
+#     }
+class RenderReactionsPanelTemplate(Node):
+    def render(self, context):
+        enums_details = [
+            (enum.value, enum.label, enum.icon) for enum in get_reactions_enum()
+        ]
+        context = {
+            "enums_details": enums_details,
+            "break_every": settings.COMMENTS_INK_REACTIONS_ROW_LENGTH,
+        }
+        template_list = [
+            pth.format(theme_dir=theme_dir)
+            for pth in _reactions_panel_template_tmpl
+        ]
+        htmlstr = loader.render_to_string(template_list, context)
+        return htmlstr
+
+
+@register.tag
+def render_reactions_panel_template(parser, token):
+    return RenderReactionsPanelTemplate()
 
 
 # ----------------------------------------------------------------------
