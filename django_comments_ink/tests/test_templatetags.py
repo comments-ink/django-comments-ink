@@ -783,6 +783,12 @@ def test_render_reactions_buttons(a_comments_reaction):
     assert output.find(not_active_reaction) > -1
 
 
+def test_render_reactions_buttons_raises_TemplateSyntaxError():
+    t = "{% load comments_ink %}" "{% render_reactions_buttons %}"
+    with pytest.raises(TemplateSyntaxError):
+        Template(t).render(Context({}))
+
+
 @pytest.mark.django_db
 def test_authors_list(a_comments_reaction, an_user):
     t = "{% load comments_ink %}" "{{ reaction|authors_list }}"
@@ -851,26 +857,12 @@ def test_using_a_theme_dir(monkeypatch):
 
 # ---------------------------------------------------------------------
 
-re_form = (
-    r'<form method="(?P<method>\w+)" autocomplete="off"'
-    r' action="(?P<action>[\w\/]+)">'
-)
-
 re_field_1 = r'<input type="{type}" name="{name}" value="{value}" id="{id}">'
 re_field_2 = r'<input type="{type}" name="{name}" value="[\d]+" id="{id}">'
 re_field_3 = r'<input type="{type}" name="{name}" value="[\w]+" id="{id}">'
 
 
-@pytest.mark.django_db
-def test_render_inkcomment_form_for_object(monkeypatch, an_article):
-    t = "{% load comments_ink %}" "{% render_inkcomment_form for object %}"
-    output = Template(t).render(Context({"object": an_article}))
-
-    # Check <form> element.
-    match = re.search(re_form, output)
-    assert match.group("method") == "POST"
-    assert match.group("action") == "/comments/post/"
-
+def check_form_fields_in_output(output):
     # Check field 'content_type':
     re_field_formated = re_field_1.format(
         type="hidden",
@@ -967,6 +959,23 @@ def test_render_inkcomment_form_for_object(monkeypatch, an_article):
 
 
 @pytest.mark.django_db
+def test_render_inkcomment_form_for_object(an_article):
+    re_form = (
+        r'<form method="(?P<method>\w+)" autocomplete="off"'
+        r' action="(?P<action>[\w\/]+)">'
+    )
+
+    t = "{% load comments_ink %}" "{% render_inkcomment_form for object %}"
+    output = Template(t).render(Context({"object": an_article}))
+
+    # Check <form> element.
+    match = re.search(re_form, output)
+    assert match.group("method") == "POST"
+    assert match.group("action") == "/comments/post/"
+    check_form_fields_in_output(output)
+
+
+@pytest.mark.django_db
 def test_render_inkcomment_form_for_non_existing_object():
     t = "{% load comments_ink %}" "{% render_inkcomment_form for object %}"
     output = Template(t).render(Context({"object": {}}))
@@ -983,3 +992,110 @@ def test_render_inkcomment_form_for_app_model_pk():
     )
     output = Template(t).render(Context({}))
     assert output == ""
+
+
+# ---------------------------------------------------------------------
+@pytest.mark.django_db
+def test_render_comment_reply_template_for_object(an_article):
+    re_form = (
+        r'<form method="(?P<method>\w+)" autocomplete="off"'
+        r' action="(?P<action>[\w\/]+)" id="reply-form"'
+        r' style="display: none;">'
+    )
+
+    t = (
+        "{% load comments_ink %}"
+        "{% render_comment_reply_template for object %}"
+    )
+    output = Template(t).render(Context({"object": an_article}))
+
+    # Check <form> element.
+    match = re.search(re_form, output)
+    assert match.group("method") == "POST"
+    assert match.group("action") == "/comments/post/"
+    check_form_fields_in_output(output)
+
+    # Check field 'comment':
+    match = re.search(
+        r'<textarea rows="1" placeholder="Your reply"></textarea>',
+        output,
+    )
+    assert match != None
+
+
+@pytest.mark.django_db
+def test_render_comment_reply_template_for_non_existing_object():
+    t = (
+        "{% load comments_ink %}"
+        "{% render_comment_reply_template for object %}"
+    )
+    output = Template(t).render(Context({"object": {}}))
+    assert output == ""
+    output = Template(t).render(Context({"object": None}))
+    assert output == ""
+
+
+@pytest.mark.django_db
+def test_render_comment_reply_template_for_app_model_pk():
+    t = (
+        "{% load comments_ink %}"
+        "{% render_comment_reply_template for tests.article 1 %}"
+    )
+    output = Template(t).render(Context({}))
+    assert output == ""
+
+
+# ---------------------------------------------------------------------
+def test_get_dci_theme_dir_is_empty():
+    t = "{% load comments_ink %}" "{% get_dci_theme_dir %}"
+    output = Template(t).render(Context({}))
+    assert output == ""
+
+
+def test_get_dci_theme_dir_is__feedback_in_header(monkeypatch):
+    monkeypatch.setattr(
+        comments_ink.settings, "COMMENTS_INK_THEME_DIR", "feedback_in_header"
+    )
+    importlib.reload(comments_ink)
+    t = "{% load comments_ink %}" "{% get_dci_theme_dir %}"
+    output = Template(t).render(Context({}))
+    assert output == "themes/feedback_in_header"
+    monkeypatch.setattr(comments_ink.settings, "COMMENTS_INK_THEME_DIR", "")
+    importlib.reload(comments_ink)
+
+
+# ---------------------------------------------------------------------
+def test_render_reactions_panel_template():
+    t = "{% load comments_ink %}" "{% render_reactions_panel_template %}"
+    output = Template(t).render(Context({}))
+    enum_tuples = [
+        (enum.value, enum.label, enum.icon) for enum in get_reactions_enum()
+    ]
+    for value, label, icon in enum_tuples:
+        reaction_button = (
+            rf"<button"
+            rf' data-title="{label}"'
+            rf' data-code="{value}"'
+            rf' class="emoji">&{icon};</button>'
+        )
+        output.find(reaction_button) > -1
+
+
+# ---------------------------------------------------------------------
+def test_get_gravatar_url():
+    output = comments_ink.get_gravatar_url("lena.rosenthal@example.com")
+    assert output.startswith("//www.gravatar.com/avatar/")
+
+
+# ---------------------------------------------------------------------
+def test_get_user_avatar_or_gravatar():
+    t = "{% load comments_ink %}" "{% get_user_avatar_or_gravatar %}"
+    try:
+        Template(t).render(Context({}))
+    except TemplateSyntaxError as exc:
+        assert exc.args[0] == (
+            "The 'get_user_avatar_or_gravatar' template tag requires "
+            "to have installed the package 'django-avatar'."
+        )
+    else:
+        assert False

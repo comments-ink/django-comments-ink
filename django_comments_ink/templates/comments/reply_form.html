@@ -1,7 +1,7 @@
 {% load i18n %}
 {% load comments %}
 
-<form id="reply-form" method="POST" autocomplete="off" action="{% comment_form_target %}"  style="display: none;">
+<form method="POST" autocomplete="off" action="{% comment_form_target %}" id="reply-form" style="display: none;">
   {% csrf_token %}
   {% for field in form %}
     {% if field.is_hidden %}{{ field }}{% endif %}

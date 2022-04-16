@@ -341,8 +341,8 @@ def render_inkcomment_form(parser, token):
 class RenderCommentReplyTemplateNode(RenderCommentFormNode):
     def render(self, context):
         qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
-        ctype, object_pk = self.get_target_ctype_pk(context)
-        if object_pk:
+        try:
+            ctype, _ = self.get_target_ctype_pk(context)
             template_list = [
                 pth.format(
                     theme_dir=theme_dir,
@@ -361,7 +361,7 @@ class RenderCommentReplyTemplateNode(RenderCommentFormNode):
             )
             formstr = loader.render_to_string(template_list, context_dict)
             return formstr
-        else:
+        except:
             return ""
 
 
@@ -715,7 +715,7 @@ def get_gravatar_url(email, size=48, avatar="identicon"):
 # ----------------------------------------------------------------------
 # The following code requires django-avatar.
 
-if apps.is_installed("avatar"):
+if apps.is_installed("avatar"):  # pragma: no cover
 
     from avatar.templatetags.avatar_tags import avatar
     from avatar.utils import cache_result
