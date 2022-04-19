@@ -22,22 +22,20 @@
           <div id="c{{ comment.id }}" class="comment-box">
             <div class="comment">
               <div class="header">
-                <div>{% if comment.url and not comment.is_removed %}<a href="{{ comment.url }}" target="_new">{{ comment.name }}</a>{% else %}{{ comment.name }}{% endif %}&nbsp;&sdot;&nbsp;<span class="muted">{{ comment.submit_date }}</span>&nbsp;&nbsp;<a class="permalink" title="comment permalink" href="{% get_inkcomment_permalink comment page_number %}">¶</a></div>
+                <div>{% if comment.url and not comment.is_removed %}<a href="{{ comment.url }}" target="_new">{{ comment.name }}</a>{% else %}{{ comment.name }}{% endif %}&nbsp;&sdot;&nbsp;<span class="muted">{{ comment.submit_date }}</span>&nbsp;&nbsp;<a class="permalink" title="comment permalink" href="{% get_inkcomment_permalink comment cpage cfold %}">¶</a></div>
               </div>
               <div class="body body-bordered">
                 {{ comment.comment|linebreaks|escape }}
               </div>
               <div class="feedback feedback-bordered">
-                <div class="reactions">
-                  {% include "comments/comment_reactions.html" %}
-                </div>
+                {% include "comments/comment_reactions.html" %}
               </div>
             </div>
           </div>
 
         </div>
         <h6 class="text-center">
-          <a href="{% get_inkcomment_permalink comment page_number %}">{% trans "Go back to the comment's page." %}</a>
+          <a href="{% get_inkcomment_permalink comment cpage cfold %}">{% trans "Go back to the comment's page." %}</a>
         </h6>
       </div>
     {% endif %}

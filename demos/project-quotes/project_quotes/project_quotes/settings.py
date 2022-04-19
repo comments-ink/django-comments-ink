@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "django.contrib.sites",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "debug_toolbar",
     "django_comments_ink",
     "django_comments",
     "users",
@@ -56,6 +57,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -108,6 +110,14 @@ else:
         }
     }
 
+
+# CACHES = {
+#     'default': {
+#         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+#         'LOCATION': 'dci-project-quotes',
+#         'TIMEOUT': None
+#     }
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -221,6 +231,6 @@ COMMENTS_INK_MAX_LAST_PAGE_ORPHANS = 4
 # Number of comments per page. When <=0 pagination is disabled.
 COMMENTS_INK_ITEMS_PER_PAGE = 10
 
-COMMENTS_INK_THEME_DIR = "feedback_in_header"
+# COMMENTS_INK_THEME_DIR = "feedback_in_header"
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

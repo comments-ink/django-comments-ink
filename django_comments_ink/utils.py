@@ -7,6 +7,7 @@ from urllib.parse import urlencode
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMultiAlternatives
+from django.db.models import Q
 from django.http.response import HttpResponseRedirect
 from django.utils.crypto import salted_hmac
 from django_comments_ink import get_model
@@ -187,7 +188,9 @@ def redirect_to(comment, request=None, page_number=None):
     return HttpResponseRedirect(url)
 
 
-def get_comment_page_number(request, content_type_id, object_id, comment_id):
+def get_comment_page_number(
+    request, content_type_id, object_id, comment_id, comments_folded=None
+):
     """
     Returns the page number in which the `comment_id` is listed.
     """
@@ -199,9 +202,7 @@ def get_comment_page_number(request, content_type_id, object_id, comment_id):
     # Replicate the logic in django_comments/templatetags/comments.py,
     # BaseCommentNode.get_queryset method.
 
-    site_id = getattr(settings, "SITE_ID", None)
-    if not site_id:
-        site_id = get_current_site_id(request)
+    site_id = get_current_site_id(request)
 
     qs = get_model().objects.filter(
         content_type_id=content_type_id, object_pk=object_id, site__pk=site_id
@@ -214,6 +215,7 @@ def get_comment_page_number(request, content_type_id, object_id, comment_id):
     field_names = [f.name for f in get_model()._meta.fields]
     if "is_public" in field_names:
         qs = qs.filter(is_public=True)
+
     if (
         getattr(settings, "COMMENTS_HIDE_REMOVED", True)
         and "is_removed" in field_names
@@ -224,7 +226,15 @@ def get_comment_page_number(request, content_type_id, object_id, comment_id):
         qs = qs.select_related("user")
 
     comment_id = int(comment_id)
-    paginator = CommentsPaginator(qs, page_size, orphans=num_orphans)
+
+    if comments_folded:  # Adapt qs so that it filters out folded comments.
+        print(f"Compute comment's {comment_id} with cfold: {comments_folded}")
+        cfold_list = {int(cid) for cid in comments_folded.split(",")}
+        qs = qs.filter(~Q(level__gt=0, thread_id__in=cfold_list))
+
+    paginator = CommentsPaginator(
+        qs, page_size, orphans=num_orphans, comments_folded=comments_folded
+    )
     for page_number in range(1, paginator.num_pages + 1):
         page = paginator.page(page_number)
         if comment_id in [cm.id for cm in page.object_list]:

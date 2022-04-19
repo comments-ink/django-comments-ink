@@ -244,7 +244,7 @@ COMMENTS_INK_CSS_CUSTOM_SELECTOR = "dci dci-custom"
 
 # The theme dir, corresponds with any of the directories listed
 # with the template directory: comments/themes/<theme_dir>.
-COMMENTS_INK_THEME_DIR = "avatar_in_header"
+COMMENTS_INK_THEME_DIR = ""
 
 COMMENTS_INK_REACTIONS_ENUM = "project_stories.enums.ReactionEnum"
 

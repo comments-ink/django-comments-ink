@@ -2,6 +2,7 @@
 {% load comments %}
 {% load comments_ink %}
 
+{% with anchor=comment|get_anchor %}
 <div id="comment-{{ comment.id }}" class="comment-box py16 px0 {% comment_css_thread_range comment %}">
   {{ comment.level|indent_divs }}
   <div class="comment">
@@ -22,7 +23,7 @@
           {% endif %}
           {% if comment_reactions_enabled and is_input_allowed %}
             <div>
-              <a data-dci="reactions-panel" data-comment="{{ comment.id }}" class="small" data-user-auth="{{ user.is_authenticated }}" href="{% url 'comments-ink-react' comment.id %}?{{ cpage_qs_param }}={{ page_obj.number }}" {% if not user.is_authenticated %}data-login-next="{% get_inkcomment_permalink comment page_number %}{% endif %}">{% trans "React" %}</a>
+              <a data-dci="reactions-panel" data-comment="{{ comment.id }}" class="small" data-user-auth="{{ user.is_authenticated }}" href="{% url 'comments-ink-react' comment.id %}?{{ comments_page_qs_param }}={{ page_obj.number }}" {% if not user.is_authenticated %}data-login-next="{% get_inkcomment_permalink comment page_number %}{% endif %}">{% trans "React" %}</a>
             </div>
           {% endif %}
         {% endif %}
@@ -30,6 +31,7 @@
         {% if comment.nested_count and not comment.is_removed %}
           <div>
             <span id="comment-{{ comment.id}}-replies" data-dci="nreplies" data-comment="{{ comment.id }}" class="small">{% blocktrans count replies=comment.nested_count%}One reply{% plural %}{{ replies }} replies{% endblocktrans %}</span>
+            {% if cfold|has_comment:comment %}<a {% if comment.level == 0 %}href="?{% render_qs_params unfold comment %}#{{ anchor }}"{% else %}href="#" data-dci="unfold"{% endif %} class="rotate180">&mapstoup;</a>{% else %}<a {% if comment.level == 0 %}href="?{% render_qs_params fold comment %}#{{ anchor }}"{% else %}href="#" data-dci="fold"{% endif %} class="rotate180">&mapstodown;</a>{% endif %}
           </div>
         {% endif %}
 
@@ -47,3 +49,4 @@
     </div>
   </div>
 </div>
+{% endwith %}

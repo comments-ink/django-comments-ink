@@ -91,6 +91,9 @@ COMMENTS_INK_ITEMS_PER_PAGE = 25
 # Name of the query string parameter containing the page number.
 COMMENTS_INK_PAGE_QUERY_STRING_PARAM = "cpage"
 
+# Name of the query string parameter containing the comments to fold.
+COMMENTS_INK_FOLD_QUERY_STRING_PARAM = "cfold"
+
 # All HTML elements rendered by django-comments-ink use the 'dci' CSS selector,
 # defined in 'django_comments_ink/static/django_comments_ink/css/comments.css'.
 # You can alter the CSS rules applied to your comments adding your own custom

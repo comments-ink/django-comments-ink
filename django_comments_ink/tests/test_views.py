@@ -1719,8 +1719,8 @@ def test_GET_react_renders_react_tmpl(
         "user_reactions",
         "next",
         "page_number",
-        "cpage_qs_param",
-        "dcx_theme_dir",
+        "comments_page_qs_param",
+        "comments_fold_qs_param",
     ]
     for key in ctx_keys:
         assert key in context
@@ -1743,8 +1743,8 @@ def test_POST_react(monkeypatch, rf, an_user, an_articles_comment):
     template, context = views.react_done(request)
     assert template == "comments/reacted.html"
     assert context["comment"] == an_articles_comment
-    assert context["page_number"] == 1
-    assert context["dcx_theme_dir"] == ""
+    assert context["cpage"] == 1
+    assert context["cfold"] == ""
 
 
 @pytest.mark.django_db
