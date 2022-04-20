@@ -1,7 +1,9 @@
+import logging
 from collections import OrderedDict
 
 from django.contrib.contenttypes.models import ContentType
 from django.core import signing
+from django.core.cache import InvalidCacheBackendError, caches
 from django.db import models
 from django.db.models import F, Max, Min, Prefetch, Q
 from django.db.models.signals import post_delete
@@ -13,6 +15,29 @@ from django_comments.models import Comment, CommentFlag
 from django_comments_ink import get_model, get_reactions_enum
 from django_comments_ink.conf import settings
 from django_comments_ink.utils import get_current_site_id
+
+logger = logging.getLogger(__name__)
+
+
+dci_cache = None
+
+
+def get_cache():
+    global dci_cache
+    if dci_cache != None:
+        return dci_cache
+
+    try:
+        dci_cache = caches[settings.COMMENTS_INK_CACHE_NAME]
+    except InvalidCacheBackendError:
+        logger.warning(
+            "Cache '%s' is not defined in the settings module, "
+            "using 'default' instead.",
+            settings.COMMENTS_INK_CACHE_NAME,
+        )
+        dci_cache = caches["default"]
+
+    return dci_cache
 
 
 def max_thread_level_for_content_type(content_type):
@@ -138,6 +163,12 @@ class InkComment(Comment):
             return False
 
     def get_reactions(self):
+        dci_cache = get_cache()
+        if dci_cache:
+            cached = dci_cache.get("reactions/cm/%d" % self.pk)
+            if cached:
+                return cached
+
         total_counter = 0
         reactions = OrderedDict([(k, {}) for k in get_reactions_enum()])
         # First add the existing reactions sorted by reaction value.
@@ -156,10 +187,14 @@ class InkComment(Comment):
                 "icon": reaction.icon,
             }
         # Return only the values of OrderedDict after it's being sorted.
-        return {
+        result = {
             "counter": total_counter,
             "list": [v for k, v in reactions.items() if len(v)],
         }
+        if dci_cache:
+            dci_cache.set("reactions/cm/%d" % self.pk, result, timeout=None)
+            logger.debug("Caching reactions for comment %d" % self.pk)
+        return result
 
     @staticmethod
     def get_queryset(content_type=None, object_pk=None, content_object=None):
@@ -394,6 +429,19 @@ class CommentReaction(models.Model):
         through="CommentReactionAuthor",
         through_fields=("reaction", "author"),
     )
+
+    def delete_from_cache(self):
+        dci_cache = get_cache()
+        key = "reactions/cm/%d" % self.comment.pk
+        if dci_cache and dci_cache.get(key):
+            logger.debug(
+                "Delete cached reactions for comment %d" % self.comment.pk
+            )
+            dci_cache.delete(key)
+
+    def save(self, *args, **kwargs):
+        self.delete_from_cache()
+        super(CommentReaction, self).save(*args, **kwargs)
 
 
 class CommentReactionAuthor(models.Model):

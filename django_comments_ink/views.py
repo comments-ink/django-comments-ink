@@ -355,7 +355,6 @@ def post(request, next=None, using=None):
                 "is_reply": bool(form.data.get("reply_to")),
                 "next": data.get("next", next),
                 "page_number": cpage,
-                "cpage_qs_param": cpage_qs_param,
                 "dcx_theme_dir": theme_dir,
             },
         )
@@ -503,7 +502,6 @@ def post_js(request, next=None, using=None):
             "is_reply": form.data.get("reply_to", "0") != "0",
             "next": data.get("next", next),
             "page_number": cpage,
-            "cpage_qs_param": cpage_qs_param,
         }
         return json_res(request, template_list, context, status=200)
 
@@ -894,6 +892,8 @@ def reply(request, cid):
 
     cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
     cpage = request.POST.get(cpage_qs_param, None)
+    cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
+    cfold = request.GET.get(cfold_qs_param, "")
 
     template_list = [
         pth.format(
@@ -912,7 +912,7 @@ def reply(request, cid):
             "cid": cid,
             "next": next,
             "page_number": cpage,
-            "cpage_qs_param": cpage_qs_param,
+            "folded_comments": cfold,
         },
     )
 
@@ -1013,10 +1013,12 @@ def react(request, comment_id, next=None):
     )
     utils.check_option(comment, "comment_reactions_enabled")
 
-    cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
-    cpage = request.GET.get(cpage_qs_param, None)
-
     if request.method == "POST":
+        cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
+        cpage = request.POST.get(cpage_qs_param, 1)
+        cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
+        cfold = request.POST.get(cfold_qs_param, "")
+
         created = perform_react(request, comment)
 
         # When the reaction has been sent via JavaScript.
@@ -1033,14 +1035,29 @@ def react(request, comment_id, next=None):
             context = {"comment": comment}
             status = 201 if created else 200
             return json_res(request, template_list, context, status=status)
+
+        page = int(cpage) if cpage != "last" else "last"
+        fold = (len(cfold) and {int(cid) for cid in cfold.split(",")}) or {}
+
         kwargs = {
             "c": comment.pk,
-            cpage_qs_param: cpage or request.POST.get(cpage_qs_param, 1),
+            cpage_qs_param: page,
+            cfold_qs_param: ",".join([str(cid) for cid in fold]),
         }
+
         return next_redirect(
             request, fallback=next or "comments-ink-react-done", **kwargs
         )
+
     else:
+        cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
+        cpage = request.GET.get(cpage_qs_param, 1)
+        cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
+        cfold = request.GET.get(cfold_qs_param, "")
+
+        page = int(cpage) if cpage != "last" else "last"
+        fold = (len(cfold) and {int(cid) for cid in cfold.split(",")}) or {}
+
         user_reactions = []
         cr_qs = CommentReaction.objects.filter(
             comment=comment, authors=request.user
@@ -1055,9 +1072,10 @@ def react(request, comment_id, next=None):
                 "comment": comment,
                 "user_reactions": user_reactions,
                 "next": next,
-                "page_number": cpage,
-                "cpage_qs_param": cpage_qs_param,
-                "dcx_theme_dir": theme_dir,
+                "page_number": page,
+                "folded_comments": fold,
+                "comments_page_qs_param": cpage_qs_param,
+                "comments_fold_qs_param": cfold_qs_param,
             },
         )
 
@@ -1070,9 +1088,11 @@ def perform_react(request, comment):
     )
     if cr_qs.filter(authors=request.user).count() == 1:
         if cr_qs[0].counter == 1:
+            cr_qs[0].delete_from_cache()
             cr_qs.delete()
         else:
             cr_qs.update(counter=F("counter") - 1)
+            cr_qs[0].delete_from_cache()
             cr_qs[0].authors.remove(request.user)
     else:
         cmt_reaction, created = CommentReaction.objects.get_or_create(
@@ -1096,6 +1116,8 @@ def react_done(request):
     comment_pk = request.GET.get("c", None)
     cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
     cpage = request.GET.get(cpage_qs_param, 1)
+    cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
+    cfold = request.GET.get(cfold_qs_param, "")
     if comment_pk:
         comment = get_object_or_404(
             get_comment_model(),
@@ -1104,37 +1126,59 @@ def react_done(request):
         )
     else:
         raise Http404
+
+    page = int(cpage) if cpage != "last" else "last"
+    fold = (len(cfold) and {int(cid) for cid in cfold.split(",")}) or {}
+
     return render(
         request,
         _reacted_tmpl,
         {
             "comment": comment,
-            "page_number": int(cpage),
-            "dcx_theme_dir": theme_dir,
+            "cpage": page,
+            "cfold": ",".join([str(cid) for cid in fold]),
         },
     )
 
 
 def get_inkcomment_url(request, content_type_id, object_id, comment_id):
     response = shortcut(request, content_type_id, object_id)
-    qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
-    page = request and request.GET.get(qs_param, None) or None
-    if not page:
+
+    cpage_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
+    cpage = request and request.GET.get(cpage_param, None) or None
+    cfold_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
+    cfold = request and request.GET.get(cfold_param, None) or ""
+
+    if not cpage:
         # Create a CommentsPaginator and get the page of the comment.
-        page = utils.get_comment_page_number(
+        cpage = utils.get_comment_page_number(
             request, content_type_id, object_id, comment_id
         )
 
+    qs_params = []
+
     try:
-        page_number = int(page)
+        page_number = int(cpage)
+        if page_number > 1:
+            qs_params.append(f"{cpage_param}={page_number}")
     except ValueError:
-        if page == "last":
-            return HttpResponseRedirect(f"{response.url}?{qs_param}={page}")
+        if cpage == "last":
+            qs_params.append(f"{cpage_param}={cpage}")
         else:
             raise Http404(
                 _("Page is not “last”, nor can it be converted to an int.")
             )
-    if page_number > 1:
-        return HttpResponseRedirect(f"{response.url}?{qs_param}={page}")
+
+    try:
+        if len(cfold):
+            {int(cid) for cid in cfold.split(",")}
+            qs_params.append(f"{cfold_param}={cfold}")
+    except (TypeError, ValueError):
+        raise Http404(
+            _("A comment ID in the list of folded comments is not an integer.")
+        )
+
+    if len(qs_params):
+        return HttpResponseRedirect(f"{response.url}?{'&'.join(qs_params)}")
     else:
         return HttpResponseRedirect(response.url)

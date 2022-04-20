@@ -7,6 +7,7 @@ from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.core.paginator import InvalidPage, PageNotAnInteger
+from django.db.models import Q
 from django.http import Http404
 from django.template import Library, Node, TemplateSyntaxError, Variable, loader
 from django.urls import reverse
@@ -21,8 +22,12 @@ from django_comments.templatetags.comments import (
 from django_comments_ink import get_model, get_reactions_enum, utils
 from django_comments_ink.api import frontend
 from django_comments_ink.conf import settings
-from django_comments_ink.models import max_thread_level_for_content_type
+from django_comments_ink.models import (
+    get_cache,
+    max_thread_level_for_content_type,
+)
 from django_comments_ink.paginator import CommentsPaginator
+from django_comments_ink.utils import get_comment_page_number
 
 register = Library()
 
@@ -114,6 +119,27 @@ if theme_dir_exists:
 _reactions_buttons_tmpl.append("comments/reactions_buttons.html")
 
 
+def filter_folded_comments(qs, context):
+    request = context.get("request", None)
+    cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
+    cfold = (request and request.GET.get(cfold_qs_param, None)) or None
+    if cfold:
+        cfold_list = {int(cid) for cid in cfold.split(",")}
+        return qs.filter(~Q(level__gt=0, thread_id__in=cfold_list))
+    return qs
+
+
+def folded_comments(context):
+    """
+    Returns dict with folded comments data to the given context.
+    """
+    request = context.get("request", None)
+    cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
+    cfold = (request and request.GET.get(cfold_qs_param, None)) or None
+
+    return {"comments_fold_qs_param": cfold_qs_param, cfold_qs_param: cfold}
+
+
 def paginate_queryset(queryset, context):
     """
     Returns dict with pagination data for the given queryset and context.
@@ -121,18 +147,25 @@ def paginate_queryset(queryset, context):
     request = context.get("request", None)
     num_orphans = settings.COMMENTS_INK_MAX_LAST_PAGE_ORPHANS
     page_size = settings.COMMENTS_INK_ITEMS_PER_PAGE
-    qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
+    cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
     if page_size == 0:
         return {
             "paginator": None,
             "page_obj": None,
             "is_paginated": False,
-            "cpage_qs_param": qs_param,
+            "comments_page_qs_param": cpage_qs_param,
             "comment_list": queryset,
+            cpage_qs_param: 1,
         }
 
-    paginator = CommentsPaginator(queryset, page_size, orphans=num_orphans)
-    page = (request and request.GET.get(qs_param, None)) or 1
+    cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
+    cfold = (request and request.GET.get(cfold_qs_param, None)) or None
+    paginator = CommentsPaginator(
+        queryset, page_size, orphans=num_orphans, comments_folded=cfold
+    )
+
+    page = (request and request.GET.get(cpage_qs_param, None)) or 1
+
     try:
         page_number = int(page)
     except ValueError:
@@ -142,14 +175,16 @@ def paginate_queryset(queryset, context):
             raise Http404(
                 _("Page is not “last”, nor can it " "be converted to an int.")
             )
+
     try:
         page = paginator.page(page_number)
         return {
             "paginator": paginator,
             "page_obj": page,
             "is_paginated": page.has_other_pages(),
-            "cpage_qs_param": qs_param,
+            "comments_page_qs_param": cpage_qs_param,
             "comment_list": page.object_list,
+            cpage_qs_param: page.number,
         }
     except InvalidPage as exc:
         raise Http404(
@@ -237,19 +272,19 @@ class RenderInkCommentListNode(RenderCommentListNode):
         qs = self.get_queryset(context)
         qs = self.get_context_value_from_queryset(context, qs)
         context_dict = context.flatten()
+        qs = filter_folded_comments(qs, context)
+        context_dict.update(folded_comments(context))
         context_dict.update(paginate_queryset(qs, context))
 
         # Pass max_thread_level in the context.
         app_model = "%s.%s" % (ctype.app_label, ctype.model)
-        qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
         MTL = settings.COMMENTS_INK_MAX_THREAD_LEVEL_BY_APP_MODEL
         mtl = MTL.get(app_model, settings.COMMENTS_INK_MAX_THREAD_LEVEL)
         context_dict.update(
             {
                 "dcx_theme_dir": theme_dir,
-                "comments_page_qs_param": qs_param,
                 "max_thread_level": mtl,
-                "reply_stack": [],  # List to control reply rendering.
+                "reply_stack": [],  # List to control reply widget rendering.
             }
         )
 
@@ -298,6 +333,7 @@ def render_inkcomment_list(parser, token):
     return RenderInkCommentListNode.handle_token(parser, token)
 
 
+# ---------------------------------------------------------------------
 class RenderInkCommentFormNode(RenderCommentFormNode):
     """
     Almost identical to django_comments' RenderCommentFormNode.
@@ -340,7 +376,7 @@ def render_inkcomment_form(parser, token):
 
 class RenderCommentReplyTemplateNode(RenderCommentFormNode):
     def render(self, context):
-        qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
+        cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
         try:
             ctype, _ = self.get_target_ctype_pk(context)
             template_list = [
@@ -355,7 +391,7 @@ class RenderCommentReplyTemplateNode(RenderCommentFormNode):
             context_dict.update(
                 {
                     "form": self.get_form(context),
-                    "comments_page_qs_param": qs_param,
+                    "comments_page_qs_param": cpage_qs_param,
                     "dcx_theme_dir": theme_dir,
                 }
             )
@@ -378,14 +414,149 @@ def render_comment_reply_template(parser, token):
     return RenderCommentReplyTemplateNode.handle_token(parser, token)
 
 
+# ---------------------------------------------------------------------
+class RenderQSParams(Node):
+    def __init__(self, page_expr, comment_action, comment_object):
+        self.page_expr = None
+        self.comment_action = comment_action
+        self.comment_object = None
+        if page_expr != None:
+            self.page_expr = Variable(page_expr)
+        if comment_object != None:
+            self.comment_object = Variable(comment_object)
+
+    def render(self, context):
+        cobj = None
+        qs_params = []
+        cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
+        cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
+        fold_param = context.get(cfold_qs_param, None) or ""
+
+        if self.page_expr:
+            page = self.page_expr.resolve(context)
+            if page != 1:
+                qs_params.append(f"{cpage_qs_param}={page}")
+
+        if self.comment_object:
+            cobj = self.comment_object.resolve(context)
+
+        if self.comment_object == None and self.page_expr == None:
+            page = context.get(cpage_qs_param, None) or None
+            if page != 1:
+                qs_params.append(f"{cpage_qs_param}={page}")
+
+        if cobj:
+            if len(fold_param) > 0:
+                fold = {int(cid) for cid in fold_param.split(",")}
+            else:
+                fold = set()
+
+            if self.comment_action == "fold":
+                fold.add(cobj.id)
+            elif self.comment_action == "unfold":
+                fold.remove(cobj.id)
+
+            fold_csv = ",".join(sorted([str(cid) for cid in fold]))
+
+            if self.page_expr == None:
+                request = context.get("request", None)
+                page = get_comment_page_number(
+                    request,
+                    cobj.content_type.id,
+                    cobj.object_pk,
+                    cobj.id,
+                    comments_folded=fold_csv,
+                )
+                qs_params.append(f"{cpage_qs_param}={page}")
+
+            if len(fold_csv):
+                qs_params.append(f"{cfold_qs_param}={fold_csv}")
+
+        else:  # cobj is None.
+            if len(fold_param) > 0:
+                qs_params.append(f"{cfold_qs_param}={fold_param}")
+
+        return mark_safe(f"{'&'.join(qs_params)}")
+
+
+@register.tag
+def render_qs_params(parser, token):
+    """
+    Render_qs_params to manage comments page and comments muted list.
+
+    Syntax::
+
+        {% render_qs_params [page <var>] [fold|unfold <InkComment>] %}
+    """
+    bits = token.contents.split()
+    tag_name, args = bits[0], bits[1:]
+
+    if len(args) != 0 and len(args) != 2 and len(args) != 4:
+        raise TemplateSyntaxError(
+            "%r tag requires either 0 or 2 or 4 arguments" % tag_name
+        )
+
+    page_expr = None
+    comment_action = None
+    comment_object = None
+
+    if len(args) == 2:
+        if args[0] == "page":
+            page_expr = args[1]
+        elif args[0] in ["fold", "unfold"]:
+            comment_action = args[0]
+            comment_object = args[1]
+    elif len(args) == 4:
+        if args[0] == "page" and args[2] in ["fold", "unfold"]:
+            page_expr = args[1]
+            comment_action = args[2]
+            comment_object = args[3]
+        elif args[0] in ["fold", "unfold"] and args[2] == "page":
+            page_expr = args[3]
+            comment_action = args[0]
+            comment_object = args[1]
+        else:
+            raise TemplateSyntaxError(
+                "%r tag requires 'page <page_var>' and/or 'fold <fold_var>'"
+                " pair arguments" % tag_name
+            )
+
+    return RenderQSParams(page_expr, comment_action, comment_object)
+
+
+@register.filter
+def has_comment(cfold, comment):
+    if cfold and len(cfold) > 0:
+        fold = {int(cid) for cid in cfold.split(",")}
+        return comment.id in fold
+    return False
+
+
+@register.filter
+def get_anchor(comment, anchor_pattern=None):
+    if anchor_pattern:
+        cm_abs_url = comment.get_absolute_url(anchor_pattern)
+    else:
+        cm_abs_url = comment.get_absolute_url()
+
+    hash_pos = cm_abs_url.find("#")
+    return cm_abs_url[hash_pos + 1 :]
+
+
+# ---------------------------------------------------------------------
 @register.simple_tag()
-def get_inkcomment_permalink(comment, page_number=None, anchor_pattern=None):
+def get_inkcomment_permalink(
+    comment, page_number=None, comments_folded=None, anchor_pattern=None
+):
     """
     Get the permalink for a comment, optionally specifying the format of the
     named anchor to be appended to the end of the URL.
 
+    Usage::
+        {% get_inkcomment_permalink comment <page_num> <comments_folded> <anchor_pattern> %}
+
     Example::
-        {% get_inkcomment_permalink comment page_obj.number "#c%(id)s" %}
+        {% get_inkcomment_permalink comment 2 "1,97,145" "#c%(id)s" %}
     """
     try:
         if anchor_pattern:
@@ -407,9 +578,29 @@ def get_inkcomment_permalink(comment, page_number=None, anchor_pattern=None):
         except (TypeError, ValueError):
             raise PageNotAnInteger(_("That page number is not an integer"))
 
+    if not comments_folded:
+        comments_folded = ""
+    else:
+        try:
+            comments_folded = {int(cid) for cid in comments_folded.split(",")}
+        except (TypeError, ValueError):
+            raise PageNotAnInteger(
+                _("A comment ID in comments_folded is not an integer.")
+            )
+
+    qs_params = []
+
     if page_number > 1:
-        qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
-        return f"{cm_abs_url}?{qs_param}={page_number}{cm_anchor}"
+        cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
+        qs_params.append(f"{cpage_qs_param}={page_number}")
+
+    if len(comments_folded):
+        cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
+        csv_of_cids = ",".join([str(cid) for cid in comments_folded])
+        qs_params.append(f"{cfold_qs_param}={csv_of_cids}")
+
+    if len(qs_params):
+        return mark_safe(f"{cm_abs_url}?{'&'.join(qs_params)}{cm_anchor}")
     else:
         return f"{cm_abs_url}{cm_anchor}"
 
@@ -653,6 +844,20 @@ def dci_custom_selector():
 @register.simple_tag()
 def get_dci_theme_dir():
     return theme_dir
+
+
+@register.simple_tag(takes_context=True)
+def get_folded_comments_without(context, comment):
+    folded_comments = context.get("folded_comments", set())
+    folded_comments.remove(comment.id)
+    return ",".join([str(cm) for cm in folded_comments])
+
+
+@register.simple_tag(takes_context=True)
+def get_folded_comments_with(context, comment):
+    folded_comments = context.get("folded_comments", set())
+    folded_comments.add(comment.id)
+    return ",".join([str(cm) for cm in folded_comments])
 
 
 # ----------------------------------------------------------------------

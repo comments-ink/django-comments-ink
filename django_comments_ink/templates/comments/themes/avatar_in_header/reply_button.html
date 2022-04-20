@@ -13,7 +13,8 @@
         <form id="reply-form-{{ comment.id }}" method="post" action="{% url 'comments-ink-reply' comment.id %}">{% csrf_token %}
           <input type="hidden" name="reply_to" value="{{ comment.id }}" />
           {% if is_paginated %}
-          <input type="hidden" name="{{ cpage_qs_param }}" value="{{ page_obj.number }}" />
+          <input type="hidden" name="{{ comments_page_qs_param }}" value="{{ page_obj.number }}" />
+          <input type="hidden" name="{{ comments_fold_qs_param }}" value="{{ cfold }}" />
           {% endif %}
           <div class="col1-2">
             <div class="inline-left">

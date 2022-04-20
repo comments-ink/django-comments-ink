@@ -2,7 +2,6 @@ import collections
 import importlib
 import json
 import re
-from collections import namedtuple
 from datetime import datetime
 from unittest.mock import patch
 
@@ -293,19 +292,24 @@ class RenderInkCommentListTestCase(DjangoTestCase):
         self.assertTrue(pos_c9 > 0)
         self.assertTrue(pos_c1 < pos_c2 < pos_c5 < pos_c6 < pos_c9)
 
-    # ----------------------------------------------------------------------------
-    # testcase cmt.id   parent level-0  level-1  level-2
-    #  step1     1        -      c1                        <-                 cmt1
-    #  step2     3        1      --       c3               <-         cmt1 to cmt1
-    #  step5     8        3      --       --        c8     <- cmt1 to cmt1 to cmt1
-    #  step2     4        1      --       c4               <-         cmt2 to cmt1
-    #  step4     7        4      --       --        c7     <- cmt1 to cmt2 to cmt1
-    #  step1     2        -      c2                        <-                 cmt2
-    #  step3     5        2      --       c5               <-         cmt1 to cmt2
-    #  step4     6        5      --       --        c6     <- cmt1 to cmt1 to cmt2
-    #  step5     9        -      c9                        <-                 cmt9
+    # --------------------------------------------------------------------------
+    # testcase cmid  parent level-0  level-1  level-2
+    #  step1    1      -      c1                       <-                 cmt1
+    #  step2    3      1      --       c3              <-         cmt1 to cmt1
+    #  step5    8      3      --       --        c8    <- cmt1 to cmt1 to cmt1
+    #  step2    4      1      --       c4              <-         cmt2 to cmt1
+    #  step4    7      4      --       --        c7    <- cmt1 to cmt2 to cmt1
+    #  step1    2      -      c2                       <-                 cmt2
+    #  step3    5      2      --       c5              <-         cmt1 to cmt2
+    #  step4    6      5      --       --        c6    <- cmt1 to cmt1 to cmt2
+    #  step5    9      -      c9                       <-                 cmt9
     @patch.multiple(
         "django.conf.settings",
+        COMMENTS_HIDE_REMOVED=False,
+        COMMENTS_INK_PUBLISH_OR_WITHHOLD_NESTED=False,
+    )
+    @patch.multiple(
+        "django_comments_ink.conf.settings",
         COMMENTS_HIDE_REMOVED=False,
         COMMENTS_INK_PUBLISH_OR_WITHHOLD_NESTED=False,
     )
@@ -430,12 +434,14 @@ def test_paginate_queryset(an_article):
     setup_paginator_example_1(an_article)
     queryset = get_model().objects.all()
     d = comments_ink.paginate_queryset(queryset, {})
+    cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
     d_expected_keys = [
         "paginator",
         "page_obj",
         "is_paginated",
-        "cpage_qs_param",
+        "comments_page_qs_param",
         "comment_list",
+        cpage_qs_param,
     ]
     for key in d_expected_keys:
         assert key in d
@@ -443,8 +449,9 @@ def test_paginate_queryset(an_article):
     assert d["paginator"] != None
     assert d["page_obj"].object_list.count() == 22
     assert d["is_paginated"] == True
-    assert d["cpage_qs_param"] == settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
+    assert d["comments_page_qs_param"] == "cpage"
     assert d["comment_list"] == d["page_obj"].object_list
+    assert d[cpage_qs_param] == 1
 
 
 @pytest.mark.django_db
@@ -453,12 +460,14 @@ def test_paginate_queryset_with_pagination_disabled(an_article, monkeypatch):
     monkeypatch.setattr(comments_ink.settings, "COMMENTS_INK_ITEMS_PER_PAGE", 0)
     queryset = get_model().objects.all()
     d = comments_ink.paginate_queryset(queryset, {})
+    cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
     d_expected_keys = [
         "paginator",
         "page_obj",
         "is_paginated",
-        "cpage_qs_param",
+        "comments_page_qs_param",
         "comment_list",
+        cpage_qs_param,
     ]
     for key in d_expected_keys:
         assert key in d
@@ -466,8 +475,9 @@ def test_paginate_queryset_with_pagination_disabled(an_article, monkeypatch):
     assert d["paginator"] == None
     assert d["page_obj"] == None
     assert d["is_paginated"] == False
-    assert d["cpage_qs_param"] == settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
+    assert d["comments_page_qs_param"] == "cpage"
     assert d["comment_list"] == queryset
+    assert d[cpage_qs_param] == 1
 
 
 class FakeRequest:
@@ -499,7 +509,7 @@ def test_paginate_queryset_raises_ValueError_when_page_is_last(an_article):
         "paginator",
         "page_obj",
         "is_paginated",
-        "cpage_qs_param",
+        "comments_page_qs_param",
         "comment_list",
     ]
     for key in d_expected_keys:
@@ -509,7 +519,7 @@ def test_paginate_queryset_raises_ValueError_when_page_is_last(an_article):
     assert d["page_obj"] != None
     assert d["page_obj"].object_list.count() == 33
     assert d["is_paginated"] == True
-    assert d["cpage_qs_param"] == settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
+    assert d["comments_page_qs_param"] == "cpage"
     comment_list_ids = [cm.parent_id for cm in d["comment_list"]]
     assert set(comment_list_ids) == set([5, 6, 7, 8])
     counter = collections.Counter(comment_list_ids)
@@ -647,6 +657,135 @@ def test_render_inkcomment_list_raises_for_non_existing_object():
     assert output == ""
 
 
+# ---------------------------------------------------------------------
+def test_render_qs_params():
+    t = "{% load comments_ink %}{% render_qs_params %}"
+    output = Template(t).render(Context({"cpage": 3, "cfold": "1,97"}))
+    assert output == "cpage=3&cfold=1,97"
+
+
+def test_render_qs_params_with_vars_page_and_fold_to_their_defaults():
+    t = "{% load comments_ink %}" "{% render_qs_params %}"
+    output = Template(t).render(Context({"cpage": 1, "cfold": ""}))
+    assert output == ""
+
+
+def test_render_qs_params_with_vars_page_is_last():
+    t = "{% load comments_ink %}" "{% render_qs_params %}"
+    output = Template(t).render(Context({"cpage": "last", "cfold": ""}))
+    assert output == "cpage=last"
+
+
+def test_render_qs_params_with_page():
+    t = "{% load comments_ink %}{% render_qs_params page 24 %}"
+    output = Template(t).render(Context({"cfold": "1,97"}))
+    assert output == "cpage=24&cfold=1,97"
+
+
+def test_render_qs_params_with_var_page():
+    t = "{% load comments_ink %}{% render_qs_params page the_page %}"
+    output = Template(t).render(Context({"the_page": 24, "cfold": "1,97"}))
+    assert output == "cpage=24&cfold=1,97"
+
+
+def test_render_qs_params_with_literal_page_1():
+    t = "{% load comments_ink %}{% render_qs_params page 1 %}"
+    output = Template(t).render(Context({}))
+    assert output == ""
+
+
+def test_render_qs_params_with_literal_page_24():
+    t = "{% load comments_ink %}{% render_qs_params page 24 %}"
+    output = Template(t).render(Context({}))
+    assert output == "cpage=24"
+
+
+@pytest.mark.django_db
+def test_render_qs_params_with_fold(an_articles_comment):
+    t = "{% load comments_ink %}{% render_qs_params fold comment %}"
+    output = Template(t).render(
+        Context({"comment": an_articles_comment, "cpage": "17", "cfold": "97"})
+    )
+    # In the template t we don't pass a page, but we indicate that we
+    # want to produce the qs_params when the given comment is folded, which
+    # implies to compute the page in which that comment will be listed.
+    # So the template_tag ignores the 'cpage' in the context. It would not
+    # be ignored if the param 'page <page_number>' was given in the template.
+    assert output == "cpage=1&cfold=1,97"
+
+
+@pytest.mark.django_db
+def test_render_qs_params_with_unfold(an_articles_comment):
+    t = "{% load comments_ink %}{% render_qs_params unfold comment %}"
+    output = Template(t).render(
+        Context({"comment": an_articles_comment, "cpage": 24, "cfold": "1,97"})
+    )
+    # As in previous test case, template tag doesn't have a page param:
+    # the template_tag computes in which page the given comment should be
+    # listed should it be unfolded.
+    assert output == "cpage=1&cfold=97"
+
+
+@pytest.mark.django_db
+def test_render_qs_params_with_vars_page_and_unfold(an_articles_comment):
+    t = (
+        "{% load comments_ink %}"
+        "{% render_qs_params page the_page unfold comment %}"
+    )
+    output = Template(t).render(
+        Context({"comment": an_articles_comment, "the_page": 24, "cfold": "1"})
+    )
+    assert output == "cpage=24"
+
+
+# ---------------------------------------------------------------------
+@pytest.mark.django_db
+def test_filter_has_comment_returns_True(an_articles_comment):
+    t = (
+        "{% load comments_ink %}"
+        "{% if cfold|has_comment:comment %}"
+        "Is folded"
+        "{% else %}"
+        "Is not folded"
+        "{% endif %}"
+    )
+    output = Template(t).render(
+        Context({"comment": an_articles_comment, "cfold": "1,97"})
+    )
+    assert output == "Is folded"
+
+
+@pytest.mark.django_db
+def test_filter_has_comment_returns_False(an_articles_comment):
+    t = (
+        "{% load comments_ink %}"
+        "{% if cfold|has_comment:comment %}"
+        "Is folded"
+        "{% else %}"
+        "Is not folded"
+        "{% endif %}"
+    )
+    output = Template(t).render(
+        Context({"comment": an_articles_comment, "cfold": "14,97"})
+    )
+    assert output == "Is not folded"
+
+
+# ---------------------------------------------------------------------
+@pytest.mark.django_db
+def test_filter_get_anchor(an_articles_comment):
+    t = "{% load comments_ink %}#{{ comment|get_anchor }}"
+    output = Template(t).render(
+        Context(
+            {
+                "comment": an_articles_comment,
+            }
+        )
+    )
+    assert output == "#comment-1"
+
+
+# ---------------------------------------------------------------------
 @pytest.mark.django_db
 def test_get_inkcomment_permalink_in_page_eq_1(an_articles_comment):
     t = "{% load comments_ink %}" "{% get_inkcomment_permalink comment 1 %}"
@@ -662,20 +801,51 @@ def test_get_inkcomment_permalink_in_page_gt_1(an_articles_comment):
 
 
 @pytest.mark.django_db
+def test_get_inkcomment_permalink_in_var_page_gt_1(an_articles_comment):
+    t = "{% load comments_ink %}" "{% get_inkcomment_permalink comment cpage %}"
+    output = Template(t).render(
+        Context({"comment": an_articles_comment, "cpage": 2})
+    )
+    assert output == "/comments/cr/11/1/1/?cpage=2#comment-1"
+
+
+@pytest.mark.django_db
+def test_get_inkcomment_permalink_page_1_fold_1_and_97(an_articles_comment):
+    t = (
+        "{% load comments_ink %}"
+        "{% get_inkcomment_permalink comment 2 '1,97' %}"
+    )
+    output = Template(t).render(Context({"comment": an_articles_comment}))
+    assert output == "/comments/cr/11/1/1/?cpage=2&cfold=1,97#comment-1"
+
+
+@pytest.mark.django_db
+def test_get_inkcomment_permalink_var_page_var_fold(an_articles_comment):
+    t = (
+        "{% load comments_ink %}"
+        "{% get_inkcomment_permalink comment cpage cfold %}"
+    )
+    output = Template(t).render(
+        Context({"comment": an_articles_comment, "cpage": 2, "cfold": "1,97"})
+    )
+    assert output == "/comments/cr/11/1/1/?cpage=2&cfold=1,97#comment-1"
+
+
+@pytest.mark.django_db
 def test_get_inkcomment_permalink_in_page_gt_1_custom(an_articles_comment):
     t = (
         "{% load comments_ink %}"
-        '{% get_inkcomment_permalink comment 2 "#c%(id)s" %}'
+        '{% get_inkcomment_permalink comment 2 "1,97" "#c%(id)s" %}'
     )
     output = Template(t).render(Context({"comment": an_articles_comment}))
-    assert output == "/comments/cr/11/1/1/?cpage=2#c1"
+    assert output == "/comments/cr/11/1/1/?cpage=2&cfold=1,97#c1"
 
 
 @pytest.mark.django_db
 def test_get_inkcomment_permalink_in_page_gt_1_fails(an_articles_comment):
     t = (
         "{% load comments_ink %}"
-        '{% get_inkcomment_permalink comment 2 "$c%(doesnotexist)s" %}'
+        '{% get_inkcomment_permalink comment 2 "" "$c%(doesnotexist)s" %}'
     )
     output = Template(t).render(Context({"comment": an_articles_comment}))
     assert output == an_articles_comment.get_absolute_url()

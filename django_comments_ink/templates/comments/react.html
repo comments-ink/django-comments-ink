@@ -26,9 +26,7 @@
               {{ comment.comment|linebreaks|escape }}
             </div>
             <div class="feedback feedback-bordered">
-              <div class="reactions">
-                {% include "comments/comment_reactions.html" %}
-              </div>
+              {% include "comments/comment_reactions.html" %}
             </div>
           </div>
         </div>
@@ -40,7 +38,8 @@
           {% endif %}
           <form method="POST" autocomplete="off" action="{% comment_reaction_form_target comment %}">
             {% csrf_token %}
-            <input type="hidden" name="{{ cpage_qs_param }}" value="{{ page_number }}" />
+            <input type="hidden" name="{{ comments_page_qs_param }}" value="{{ page_number }}" />
+            <input type="hidden" name="{{ comments_fold_qs_param }}" value="{{ folded_comments }}" />
             {% render_reactions_buttons user_reactions %}
             {% if user_reactions %}
               <h6 class="text-center">{% trans "Click on a button to select or deselect your reaction." %}</h6>

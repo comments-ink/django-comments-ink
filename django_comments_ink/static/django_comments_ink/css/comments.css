@@ -713,6 +713,18 @@
 .dci .step-links > * {
     padding: 0 8px;
 }
+
+
+.rotate180 {
+    display: inline-block;
+    transition: 0.25s;
+}
+
+.rotate180:hover {
+    transform: rotate(180deg);
+    transition: 0.25s;
+}
+
 /* ----------------------------------------------------- */
 .dci label {
     margin: auto 0;

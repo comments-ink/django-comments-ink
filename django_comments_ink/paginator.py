@@ -72,9 +72,21 @@ class CommentsPaginator(Paginator):
     """
 
     def __init__(self, *args, **kwargs):
+        self.cfolded = {}
+        comments_folded = kwargs.pop("comments_folded", None)
+        if comments_folded and len(comments_folded) > 0:
+            self.cfolded = {int(cid) for cid in comments_folded.split(",")}
+
         super().__init__(*args, **kwargs)
+
         if type(self.object_list) is not QuerySet:
             raise TypeError("'object_list' is not a QuerySet.")
+
+    def get_count_in_thread(self, comment):
+        if comment.id in self.cfolded:
+            return 1
+        else:
+            return comment.nested_count + 1
 
     @cached_property
     def in_page(self):
@@ -86,8 +98,10 @@ class CommentsPaginator(Paginator):
         """
         ptotal = 0  # Page total number of comments.
         in_page = []
+
         cgroups = [
-            cm.nested_count + 1 for cm in self.object_list.filter(level=0)
+            self.get_count_in_thread(cm)
+            for cm in self.object_list.filter(level=0)
         ]
         for index, group_count in enumerate(cgroups):
             if ptotal > 0 and ptotal + group_count > self.per_page:
