@@ -1013,12 +1013,12 @@ def react(request, comment_id, next=None):
     )
     utils.check_option(comment, "comment_reactions_enabled")
 
-    cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
-    cpage = request.GET.get(cpage_qs_param, None)
-    cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
-    cfold = request.GET.get(cfold_qs_param, "")
-
     if request.method == "POST":
+        cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
+        cpage = request.POST.get(cpage_qs_param, 1)
+        cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
+        cfold = request.POST.get(cfold_qs_param, "")
+
         created = perform_react(request, comment)
 
         # When the reaction has been sent via JavaScript.
@@ -1035,15 +1035,29 @@ def react(request, comment_id, next=None):
             context = {"comment": comment}
             status = 201 if created else 200
             return json_res(request, template_list, context, status=status)
+
+        page = int(cpage) if cpage != "last" else "last"
+        fold = (len(cfold) and {int(cid) for cid in cfold.split(",")}) or {}
+
         kwargs = {
             "c": comment.pk,
-            cpage_qs_param: cpage or request.POST.get(cpage_qs_param, 1),
-            cfold_qs_param: cfold or request.POST.get(cfold_qs_param, ""),
+            cpage_qs_param: page,
+            cfold_qs_param: ",".join([str(cid) for cid in fold]),
         }
+
         return next_redirect(
             request, fallback=next or "comments-ink-react-done", **kwargs
         )
+
     else:
+        cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
+        cpage = request.GET.get(cpage_qs_param, 1)
+        cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
+        cfold = request.GET.get(cfold_qs_param, "")
+
+        page = int(cpage) if cpage != "last" else "last"
+        fold = (len(cfold) and {int(cid) for cid in cfold.split(",")}) or {}
+
         user_reactions = []
         cr_qs = CommentReaction.objects.filter(
             comment=comment, authors=request.user
@@ -1058,8 +1072,8 @@ def react(request, comment_id, next=None):
                 "comment": comment,
                 "user_reactions": user_reactions,
                 "next": next,
-                "page_number": cpage,
-                "folded_comments": cfold,
+                "page_number": page,
+                "folded_comments": fold,
                 "comments_page_qs_param": cpage_qs_param,
                 "comments_fold_qs_param": cfold_qs_param,
             },
@@ -1074,9 +1088,11 @@ def perform_react(request, comment):
     )
     if cr_qs.filter(authors=request.user).count() == 1:
         if cr_qs[0].counter == 1:
+            cr_qs[0].delete_from_cache()
             cr_qs.delete()
         else:
             cr_qs.update(counter=F("counter") - 1)
+            cr_qs[0].delete_from_cache()
             cr_qs[0].authors.remove(request.user)
     else:
         cmt_reaction, created = CommentReaction.objects.get_or_create(
@@ -1110,13 +1126,17 @@ def react_done(request):
         )
     else:
         raise Http404
+
+    page = int(cpage) if cpage != "last" else "last"
+    fold = (len(cfold) and {int(cid) for cid in cfold.split(",")}) or {}
+
     return render(
         request,
         _reacted_tmpl,
         {
             "comment": comment,
-            "cpage": int(cpage),
-            "cfold": cfold,
+            "cpage": page,
+            "cfold": ",".join([str(cid) for cid in fold]),
         },
     )
 

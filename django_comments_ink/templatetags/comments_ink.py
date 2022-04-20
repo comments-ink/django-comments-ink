@@ -22,7 +22,10 @@ from django_comments.templatetags.comments import (
 from django_comments_ink import get_model, get_reactions_enum, utils
 from django_comments_ink.api import frontend
 from django_comments_ink.conf import settings
-from django_comments_ink.models import max_thread_level_for_content_type
+from django_comments_ink.models import (
+    get_cache,
+    max_thread_level_for_content_type,
+)
 from django_comments_ink.paginator import CommentsPaginator
 from django_comments_ink.utils import get_comment_page_number
 
@@ -275,15 +278,13 @@ class RenderInkCommentListNode(RenderCommentListNode):
 
         # Pass max_thread_level in the context.
         app_model = "%s.%s" % (ctype.app_label, ctype.model)
-        # cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
         MTL = settings.COMMENTS_INK_MAX_THREAD_LEVEL_BY_APP_MODEL
         mtl = MTL.get(app_model, settings.COMMENTS_INK_MAX_THREAD_LEVEL)
         context_dict.update(
             {
                 "dcx_theme_dir": theme_dir,
-                # "comments_page_qs_param": cpage_qs_param,
                 "max_thread_level": mtl,
-                "reply_stack": [],  # List to control reply rendering.
+                "reply_stack": [],  # List to control reply widget rendering.
             }
         )
 
@@ -332,6 +333,7 @@ def render_inkcomment_list(parser, token):
     return RenderInkCommentListNode.handle_token(parser, token)
 
 
+# ---------------------------------------------------------------------
 class RenderInkCommentFormNode(RenderCommentFormNode):
     """
     Almost identical to django_comments' RenderCommentFormNode.
@@ -464,10 +466,6 @@ class RenderQSParams(Node):
                     cobj.object_pk,
                     cobj.id,
                     comments_folded=fold_csv,
-                )
-                print(
-                    f"{self.comment_action} comment "
-                    f"{cobj.id} to page {page}"
                 )
                 qs_params.append(f"{cpage_qs_param}={page}")
 

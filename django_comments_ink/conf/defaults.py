@@ -123,3 +123,6 @@ COMMENTS_INK_CSS_CUSTOM_SELECTOR = "dci"
 # under `comments/themes/<your-theme>`.
 #
 COMMENTS_INK_THEME_DIR = ""
+
+
+COMMENTS_INK_CACHE_NAME = "dci"

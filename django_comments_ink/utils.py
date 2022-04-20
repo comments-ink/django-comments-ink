@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import os
 import queue as queue
 import threading
@@ -16,6 +17,8 @@ from django_comments_ink.conf.defaults import COMMENTS_INK_APP_MODEL_OPTIONS
 from django_comments_ink.paginator import CommentsPaginator
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
+
+logger = logging.getLogger(__name__)
 
 mail_sent_queue = queue.Queue()
 
@@ -228,7 +231,6 @@ def get_comment_page_number(
     comment_id = int(comment_id)
 
     if comments_folded:  # Adapt qs so that it filters out folded comments.
-        print(f"Compute comment's {comment_id} with cfold: {comments_folded}")
         cfold_list = {int(cid) for cid in comments_folded.split(",")}
         qs = qs.filter(~Q(level__gt=0, thread_id__in=cfold_list))
 

@@ -111,13 +111,13 @@ else:
     }
 
 
-# CACHES = {
-#     'default': {
-#         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-#         'LOCATION': 'dci-project-quotes',
-#         'TIMEOUT': None
-#     }
-# }
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "dci-project-quotes",
+        "TIMEOUT": None,
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -234,3 +234,58 @@ COMMENTS_INK_ITEMS_PER_PAGE = 10
 # COMMENTS_INK_THEME_DIR = "feedback_in_header"
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "require_debug_false": {"()": "django.utils.log.RequireDebugFalse"},
+        "require_debug_true": {"()": "django.utils.log.RequireDebugTrue"},
+    },
+    "formatters": {
+        "simple": {
+            "format": "%(levelname)s %(asctime)s %(module)s %(message)s"
+        },
+        "console": {
+            "format": (
+                "[%(asctime)s][%(levelname)s] %(name)s "
+                "%(filename)s:%(funcName)s:%(lineno)d | %(message)s"
+            ),
+            "datefmt": "%H:%M:%S",
+        },
+    },
+    "handlers": {
+        "mail_admins": {
+            "level": "ERROR",
+            "filters": ["require_debug_false"],
+            "class": "django.utils.log.AdminEmailHandler",
+        },
+        "console": {
+            "level": "INFO",
+            "filters": ["require_debug_true"],
+            "class": "logging.StreamHandler",
+            "formatter": "console",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+        },
+        "django.request": {
+            "handlers": ["console", "mail_admins"],
+            "level": "ERROR",
+            "propagate": True,
+        },
+        "django.security": {
+            "handlers": ["console", "mail_admins"],
+            "level": "ERROR",
+            "propagate": True,
+        },
+        "django_comments_ink": {
+            "handlers": ["console", "mail_admins"],
+            "level": "DEBUG",
+            "propagate": True,
+        },
+    },
+}
