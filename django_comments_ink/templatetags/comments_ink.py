@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 import re
 from urllib.parse import urlencode
 
@@ -17,17 +18,14 @@ from django.utils.translation import gettext as _
 from django_comments.templatetags.comments import (
     BaseCommentNode,
     RenderCommentFormNode,
-    RenderCommentListNode,
 )
-from django_comments_ink import get_model, get_reactions_enum, utils
+from django_comments_ink import caching, get_model, get_reactions_enum, utils
 from django_comments_ink.api import frontend
 from django_comments_ink.conf import settings
-from django_comments_ink.models import (
-    get_cache,
-    max_thread_level_for_content_type,
-)
+from django_comments_ink.models import max_thread_level_for_content_type
 from django_comments_ink.paginator import CommentsPaginator
-from django_comments_ink.utils import get_comment_page_number
+
+logger = logging.getLogger(__name__)
 
 register = Library()
 
@@ -140,14 +138,21 @@ def folded_comments(context):
     return {"comments_fold_qs_param": cfold_qs_param, cfold_qs_param: cfold}
 
 
-def paginate_queryset(queryset, context):
+def paginate_queryset(queryset, context, ckey_prefix):
     """
     Returns dict with pagination data for the given queryset and context.
     """
     request = context.get("request", None)
     num_orphans = settings.COMMENTS_INK_MAX_LAST_PAGE_ORPHANS
     page_size = settings.COMMENTS_INK_ITEMS_PER_PAGE
+
     cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
+    page = (request and request.GET.get(cpage_qs_param, None)) or 1
+
+    cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
+    cfold = (request and request.GET.get(cfold_qs_param, None)) or None
+    fold = (cfold and {int(cid) for cid in cfold.split(",")}) or {}
+
     if page_size == 0:
         return {
             "paginator": None,
@@ -158,13 +163,13 @@ def paginate_queryset(queryset, context):
             cpage_qs_param: 1,
         }
 
-    cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
-    cfold = (request and request.GET.get(cfold_qs_param, None)) or None
     paginator = CommentsPaginator(
-        queryset, page_size, orphans=num_orphans, comments_folded=cfold
+        queryset,
+        page_size,
+        orphans=num_orphans,
+        comments_folded=fold,
+        cache_key_prefix=ckey_prefix,
     )
-
-    page = (request and request.GET.get(cpage_qs_param, None)) or 1
 
     try:
         page_number = int(page)
@@ -193,62 +198,73 @@ def paginate_queryset(queryset, context):
         )
 
 
-class RenderInkCommentListNode(RenderCommentListNode):
+class BaseInkCommentNode(BaseCommentNode):
+    def get_queryset(self, context):
+        ctype, object_pk = self.get_target_ctype_pk(context)
+        if not object_pk:
+            return self.comment_model.objects.none()
+
+        site_id = utils.get_current_site_id(context.get("request", None))
+
+        kwargs = {
+            "ctype_pk": ctype.pk,
+            "object_pk": object_pk,
+            "site_id": site_id,
+        }
+        comments_qs_ptn = settings.COMMENTS_INK_CACHE_KEYS["comments_qs"]
+        comments_count_ptn = settings.COMMENTS_INK_CACHE_KEYS["comments_count"]
+        comments_paged_ptn = settings.COMMENTS_INK_CACHE_KEYS["comments_paged"]
+        self.ckey_comments_qs = comments_qs_ptn.format(**kwargs)
+        self.ckey_comments_count = comments_count_ptn.format(**kwargs)
+        self.ckey_comments_paged = comments_paged_ptn.format(**kwargs)
+
+        # Check whether there is already a qs in the dci cache.
+        qs = None
+        dci_cache = caching.get_cache()
+        if dci_cache:
+            cached = dci_cache.get(self.ckey_comments_qs)
+            if cached:
+                logger.debug(
+                    "Fetching %s from the cache", self.ckey_comments_qs
+                )
+                qs = cached
+
+        if not qs:
+            qs = super().get_queryset(context)
+            if dci_cache:
+                logger.debug("Adding %s to the cache", self.ckey_comments_qs)
+                dci_cache.set(self.ckey_comments_qs, qs, timeout=None)
+
+        return qs
+
+
+class InkCommentListNode(BaseInkCommentNode):
+    def get_context_value_from_queryset(self, context, qs):
+        return qs
+
+
+class RenderInkCommentListNode(InkCommentListNode):
     """Render the comment list directly."""
 
     @classmethod
     def handle_token(cls, parser, token):
-        """Class method to parse render_inkcomment_list and return a Node."""
+        """Class method to parse render_comment_list and return a Node."""
         tokens = token.split_contents()
         if tokens[1] != "for":
             raise TemplateSyntaxError(
                 "Second argument in %r tag must be 'for'" % tokens[0]
             )
 
-        # {% render_inkcomment_list for obj %}
+        # {% render_comment_list for obj %}
         if len(tokens) == 3:
             return cls(object_expr=parser.compile_filter(tokens[2]))
 
-        # {% render_inkcomment_list for app.model pk %}
+        # {% render_comment_list for app.models pk %}
         elif len(tokens) == 4:
             return cls(
                 ctype=BaseCommentNode.lookup_content_type(tokens[2], tokens[0]),
                 object_pk_expr=parser.compile_filter(tokens[3]),
             )
-
-        # {% render_inkcomment_list for [obj | app.model pk] [using tmpl] %}
-        elif len(tokens) > 4 and len(tokens) < 7:
-            template_path = tokens[-1]
-            num_tokens_between = tokens.index("using") - tokens.index("for")
-            if num_tokens_between == 2:
-                # {% render_inkcomment_list for object using tmpl}
-                return cls(
-                    object_expr=parser.compile_filter(tokens[2]),
-                    template_path=template_path,
-                )
-            elif num_tokens_between == 3:
-                # {% render_inkcomment_list for app.model pk using tmpl}
-                tag_t, app_t = tokens[0], tokens[2]
-                ctype = BaseCommentNode.lookup_content_type(app_t, tag_t)
-                return cls(
-                    ctype=ctype,
-                    object_pk_expr=parser.compile_filter(tokens[3]),
-                    template_path=template_path,
-                )
-        else:
-            msg = (
-                "Wrong syntax in %r tag. Valid syntaxes are: "
-                "{%% render_inkcomment_list for [object] [using "
-                "<template>] %%} or {%% render_inkcomment_list for "
-                "[app].[model] [obj_id] [using <tmpl>] %%}"
-            )
-            raise TemplateSyntaxError(msg % tokens[0])
-
-    def __init__(self, *args, **kwargs):
-        self.template_path = None
-        if "template_path" in kwargs:
-            self.template_path = kwargs.pop("template_path")
-        super().__init__(*args, **kwargs)
 
     def render(self, context):
         try:
@@ -260,6 +276,7 @@ class RenderInkCommentListNode(RenderCommentListNode):
             # in the context. Therefore, this except raises when used as:
             # {% render_inkcomment_list for var_not_in_context %}
             return ""
+
         template_list = [
             pth.format(
                 theme_dir=theme_dir,
@@ -274,7 +291,9 @@ class RenderInkCommentListNode(RenderCommentListNode):
         context_dict = context.flatten()
         qs = filter_folded_comments(qs, context)
         context_dict.update(folded_comments(context))
-        context_dict.update(paginate_queryset(qs, context))
+        context_dict.update(
+            paginate_queryset(qs, context, self.ckey_comments_paged)
+        )
 
         # Pass max_thread_level in the context.
         app_model = "%s.%s" % (ctype.app_label, ctype.model)
@@ -307,9 +326,7 @@ class RenderInkCommentListNode(RenderCommentListNode):
         options["is_input_allowed"] = check_func(target_obj)
         context_dict.update(options)
 
-        liststr = loader.render_to_string(
-            self.template_path or template_list, context_dict
-        )
+        liststr = loader.render_to_string(template_list, context_dict)
         return liststr
 
 
@@ -321,9 +338,8 @@ def render_inkcomment_list(parser, token):
 
     Syntax::
 
-        {% render_inkcomment_list for [object] [...] %}
-        {% render_inkcomment_list for [app].[model] [obj_id] [...] %}
-        {% render_inkcomment_list for ... [using <tmpl>] %}
+        {% render_inkcomment_list for [object] %}
+        {% render_inkcomment_list for [app].[model] [obj_id] %}
 
     Example usage::
 
@@ -331,6 +347,64 @@ def render_inkcomment_list(parser, token):
 
     """
     return RenderInkCommentListNode.handle_token(parser, token)
+
+
+# ---------------------------------------------------------------------
+class InkCommentCountNode(BaseInkCommentNode):
+    """Insert a count of comments into the context."""
+
+    def get_context_value_from_queryset(self, context, qs):
+        return qs.count()
+
+    def render(self, context):
+        ctype, object_pk = self.get_target_ctype_pk(context)
+        if not object_pk:
+            context[self.as_varname] = 0
+        site_id = utils.get_current_site_id(context.get("request", None))
+
+        result = None
+        dci_cache = caching.get_cache()
+        key = settings.COMMENTS_INK_CACHE_KEYS["comments_count"].format(
+            ctype_pk=ctype.pk, object_pk=object_pk, site_id=site_id
+        )
+
+        if dci_cache:
+            cached = dci_cache.get(key)
+            if cached:
+                logger.debug("Fetching %s from the cache", key)
+                result = cached
+
+        if not result:
+            qs = self.get_queryset(context)
+            result = self.get_context_value_from_queryset(context, qs)
+            if dci_cache:
+                logger.debug("Adding %s to the cache", key)
+                dci_cache.set(key, result, timeout=None)
+
+        context[self.as_varname] = result
+        return ""
+
+
+@register.tag
+def get_inkcomment_count(parser, token):
+    """
+    Gets the comment count for the given params and populates the template
+    context with a variable containing that value, whose name is defined by the
+    'as' clause.
+
+    Syntax::
+
+        {% get_comment_count for [object] as [varname]  %}
+        {% get_comment_count for [app].[model] [object_id] as [varname]  %}
+
+    Example usage::
+
+        {% get_comment_count for event as comment_count %}
+        {% get_comment_count for calendar.event event.id as comment_count %}
+        {% get_comment_count for calendar.event 17 as comment_count %}
+
+    """
+    return InkCommentCountNode.handle_token(parser, token)
 
 
 # ---------------------------------------------------------------------
@@ -460,12 +534,12 @@ class RenderQSParams(Node):
 
             if self.page_expr == None:
                 request = context.get("request", None)
-                page = get_comment_page_number(
+                page = utils.get_comment_page_number(
                     request,
                     cobj.content_type.id,
                     cobj.object_pk,
                     cobj.id,
-                    comments_folded=fold_csv,
+                    comments_folded=fold,
                 )
                 qs_params.append(f"{cpage_qs_param}={page}")
 

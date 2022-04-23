@@ -12,32 +12,11 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django_comments.managers import CommentManager
 from django_comments.models import Comment, CommentFlag
-from django_comments_ink import get_model, get_reactions_enum
+from django_comments_ink import caching, get_model, get_reactions_enum
 from django_comments_ink.conf import settings
 from django_comments_ink.utils import get_current_site_id
 
 logger = logging.getLogger(__name__)
-
-
-dci_cache = None
-
-
-def get_cache():
-    global dci_cache
-    if dci_cache != None:
-        return dci_cache
-
-    try:
-        dci_cache = caches[settings.COMMENTS_INK_CACHE_NAME]
-    except InvalidCacheBackendError:
-        logger.warning(
-            "Cache '%s' is not defined in the settings module, "
-            "using 'default' instead.",
-            settings.COMMENTS_INK_CACHE_NAME,
-        )
-        dci_cache = caches["default"]
-
-    return dci_cache
 
 
 def max_thread_level_for_content_type(content_type):
@@ -101,6 +80,7 @@ class InkComment(Comment):
         ) + (anchor_pattern % self.__dict__)
 
     def save(self, *args, **kwargs):
+        caching.clear_cache(self.content_type.id, self.object_pk, self.site.pk)
         is_new = self.pk is None
         super(Comment, self).save(*args, **kwargs)
         if is_new:
@@ -163,11 +143,15 @@ class InkComment(Comment):
             return False
 
     def get_reactions(self):
-        dci_cache = get_cache()
+        dci_cache = caching.get_cache()
+        key = settings.COMMENTS_INK_CACHE_KEYS["reactions"].format(
+            comment_id=self.pk
+        )
         if dci_cache:
-            cached = dci_cache.get("reactions/cm/%d" % self.pk)
-            if cached:
-                return cached
+            result = dci_cache.get(key)
+            if result != None:
+                logger.debug("Fetching %s from the cache", key)
+                return result
 
         total_counter = 0
         reactions = OrderedDict([(k, {}) for k in get_reactions_enum()])
@@ -192,12 +176,14 @@ class InkComment(Comment):
             "list": [v for k, v in reactions.items() if len(v)],
         }
         if dci_cache:
-            dci_cache.set("reactions/cm/%d" % self.pk, result, timeout=None)
+            dci_cache.set(key, result, timeout=None)
             logger.debug("Caching reactions for comment %d" % self.pk)
         return result
 
     @staticmethod
-    def get_queryset(content_type=None, object_pk=None, content_object=None):
+    def get_queryset(
+        content_type=None, object_pk=None, content_object=None, site_id=None
+    ):
         """
         Given either a content_object or the pair content_type and object_pk
         it returns the queryset with the comments posted to that object.
@@ -225,7 +211,7 @@ class InkComment(Comment):
         fkwds = {
             "content_type": content_type,
             "object_pk": object_pk,
-            "site__pk": get_current_site_id(),
+            "site__pk": site_id or get_current_site_id(),
             "is_public": True,
         }
 
@@ -431,12 +417,12 @@ class CommentReaction(models.Model):
     )
 
     def delete_from_cache(self):
-        dci_cache = get_cache()
-        key = "reactions/cm/%d" % self.comment.pk
+        dci_cache = caching.get_cache()
+        key = settings.COMMENTS_INK_CACHE_KEYS["reactions"].format(
+            comment_id=self.comment.pk
+        )
         if dci_cache and dci_cache.get(key):
-            logger.debug(
-                "Delete cached reactions for comment %d" % self.comment.pk
-            )
+            logger.debug("Delete cached list of reactions in key %s" % key)
             dci_cache.delete(key)
 
     def save(self, *args, **kwargs):

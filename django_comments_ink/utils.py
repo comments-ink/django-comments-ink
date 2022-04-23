@@ -157,7 +157,10 @@ def check_input_allowed(object):
 # --------------------------------------------------------------------
 def get_current_site_id(request=None):
     """it's a shortcut"""
-    return getattr(get_current_site(request), "pk", 1)  # fallback value
+    site_id = getattr(settings, "SITE_ID", None)
+    if not site_id and request:
+        site_id = getattr(get_current_site(request), "pk", 1)  # fallback value
+    return site_id
 
 
 def get_html_id_suffix(object):
@@ -230,13 +233,21 @@ def get_comment_page_number(
 
     comment_id = int(comment_id)
 
-    if comments_folded:  # Adapt qs so that it filters out folded comments.
-        cfold_list = {int(cid) for cid in comments_folded.split(",")}
-        qs = qs.filter(~Q(level__gt=0, thread_id__in=cfold_list))
+    if comments_folded:
+        qs = qs.filter(~Q(level__gt=0, thread_id__in=comments_folded))
+
+    ckey_prefix = settings.COMMENTS_INK_CACHE_KEYS["comments_paged"].format(
+        ctype_pk=content_type_id, object_pk=object_id, site_id=site_id
+    )
 
     paginator = CommentsPaginator(
-        qs, page_size, orphans=num_orphans, comments_folded=comments_folded
+        qs,
+        page_size,
+        orphans=num_orphans,
+        comments_folded=comments_folded,
+        cache_key_prefix=ckey_prefix,
     )
+
     for page_number in range(1, paginator.num_pages + 1):
         page = paginator.page(page_number)
         if comment_id in [cm.id for cm in page.object_list]:

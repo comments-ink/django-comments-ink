@@ -209,9 +209,8 @@ def test_get_comment_page_number_when_page_size_is_0(an_article, monkeypatch):
 
 
 @pytest.mark.django_db
-def test_get_comment_page_number(an_article, monkeypatch):
+def test_get_comment_page_number(an_article):
     article_ct = create_scenario_1(an_article)
-    monkeypatch.setattr(utils.settings, "SITE_ID", None)
     page_size = 25
     orphans = 10
     assert settings.COMMENTS_INK_MAX_LAST_PAGE_ORPHANS == orphans
@@ -222,21 +221,21 @@ def test_get_comment_page_number(an_article, monkeypatch):
     page = paginator.page(1)
     for comment in page.object_list:
         page_number = utils.get_comment_page_number(
-            None, article_ct, an_article.pk, comment.id
+            None, article_ct.pk, an_article.pk, comment.id
         )
         assert page_number == 1
 
     page = paginator.page(2)
     for comment in page.object_list:
         page_number = utils.get_comment_page_number(
-            None, article_ct, an_article.pk, comment.id
+            None, article_ct.pk, an_article.pk, comment.id
         )
         assert page_number == 2
 
     page = paginator.page(3)
     for comment in page.object_list:
         page_number = utils.get_comment_page_number(
-            None, article_ct, an_article.pk, comment.id
+            None, article_ct.pk, an_article.pk, comment.id
         )
         assert page_number == 3
 
