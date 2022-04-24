@@ -57,9 +57,14 @@ Example 3:
   per_page + orphans, so the 2nd page will contain 18 comments.
 
 """
+import logging
+
 from django.core.paginator import Paginator
 from django.db.models.query import QuerySet
 from django.utils.functional import cached_property
+from django_comments_ink import caching
+
+logger = logging.getLogger(__name__)
 
 
 class CommentsPaginator(Paginator):
@@ -72,21 +77,56 @@ class CommentsPaginator(Paginator):
     """
 
     def __init__(self, *args, **kwargs):
-        self.cfolded = {}
-        comments_folded = kwargs.pop("comments_folded", None)
-        if comments_folded and len(comments_folded) > 0:
-            self.cfolded = {int(cid) for cid in comments_folded.split(",")}
-
+        self.comments_folded = kwargs.pop("comments_folded", {})
+        self.ckey_prefix = kwargs.pop("cache_key_prefix", "")
+        self.dci_cache = caching.get_cache()
         super().__init__(*args, **kwargs)
-
         if type(self.object_list) is not QuerySet:
             raise TypeError("'object_list' is not a QuerySet.")
 
+    def get_subkey_cache(self, subkey):
+        if self.dci_cache == None or self.ckey_prefix == "":
+            return
+        # If the key <sub_ckey> does exist as a key in
+        # the set stored in the <ckey_prefix> in the cache, then
+        # access the combinaned <self.ckey_prefix>/<sub_ckey>
+        # to get the previously computed object_list.
+        sub_keys_set = self.dci_cache.get(self.ckey_prefix)
+        if sub_keys_set and subkey in sub_keys_set:
+            composed_key = f"{self.ckey_prefix}/{subkey}"
+            result = self.dci_cache.get(composed_key)
+            if result != None:
+                return result
+
+    def set_subkey_cache(self, subkey, value):
+        if self.dci_cache == None or self.ckey_prefix == "":
+            return
+        # Save the object_list in cache.
+        sub_keys_set = self.dci_cache.get(self.ckey_prefix)
+        if sub_keys_set != None:
+            if not subkey in sub_keys_set:
+                sub_keys_set.add(subkey)
+        else:
+            sub_keys_set = {subkey}
+        logger.debug("Caching key %s, value %s", self.ckey_prefix, sub_keys_set)
+        self.dci_cache.set(self.ckey_prefix, sub_keys_set, timeout=None)
+
+        # Store the object_list in cache using a composed key.
+        composed_key = f"{self.ckey_prefix}/{subkey}"
+        logger.debug("Adding %s to the cache", composed_key)
+        self.dci_cache.set(composed_key, value, timeout=None)
+
     def get_count_in_thread(self, comment):
-        if comment.id in self.cfolded:
+        if self.comments_folded and comment.id in self.comments_folded:
             return 1
         else:
             return comment.nested_count + 1
+
+    def get_sub_ckey(self, page, fold):
+        if fold:
+            return f"{str(page)}-{','.join([str(cid) for cid in fold])}"
+        else:
+            return f"{str(page)}-"
 
     @cached_property
     def in_page(self):
@@ -96,8 +136,13 @@ class CommentsPaginator(Paginator):
         Returns a list. Each index item represents the number of comments to
         display in the page index + 1.
         """
+        inpage_subkey = "in_page_list"
+        inpage = self.get_subkey_cache(inpage_subkey)
+        if inpage != None:
+            return inpage
+
         ptotal = 0  # Page total number of comments.
-        in_page = []
+        inpage = []
 
         cgroups = [
             self.get_count_in_thread(cm)
@@ -107,26 +152,49 @@ class CommentsPaginator(Paginator):
             if ptotal > 0 and ptotal + group_count > self.per_page:
                 if sum(cgroups[index:], ptotal) > self.per_page + self.orphans:
                     # All comments are too many to be in this page.
-                    in_page.append(ptotal)
+                    inpage.append(ptotal)
                     ptotal = group_count
                 else:
-                    in_page.append(sum(cgroups[index:], ptotal))
+                    inpage.append(sum(cgroups[index:], ptotal))
                     ptotal = 0
                     break
             else:
                 ptotal += group_count
         if ptotal:
-            in_page.append(ptotal)
-        return in_page
+            inpage.append(ptotal)
+        self.set_subkey_cache(inpage_subkey, inpage)  # Store it in cache.
+        return inpage
 
     def page(self, number):
         number = self.validate_number(number)
+
+        # See whether the object_list has been stored in the cache.
+        sub_ckey = self.get_sub_ckey(number, self.comments_folded)
+        object_list = self.get_subkey_cache(sub_ckey)
+        if object_list != None:
+            return self._get_page(object_list, number, self)
+
         if number == 1:
             bottom = 0
         else:
             bottom = sum(self.in_page[0 : number - 1])
         top = bottom + self.in_page[number - 1]
-        return self._get_page(self.object_list[bottom:top], number, self)
+        object_list = self.object_list[bottom:top]
+
+        # Store it in cache.
+        self.set_subkey_cache(sub_ckey, object_list)
+
+        return self._get_page(object_list, number, self)
+
+    @cached_property
+    def count(self):
+        subkey = "count"
+        result = self.get_subkey_cache(subkey)
+        if result != None:
+            return result
+        count = super().count
+        self.set_subkey_cache(subkey, count)  # Store it in cache.
+        return count
 
     @cached_property
     def num_pages(self):

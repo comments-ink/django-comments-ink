@@ -65,13 +65,16 @@ class CommentList(DefaultsMixin, generics.ListAPIView):
         content_type_arg = self.kwargs.get("content_type", None)
         object_pk_arg = self.kwargs.get("object_pk", None)
         app, model = content_type_arg.split("-")
+        site_id = get_current_site_id(self.request)
         try:
             content_type = ContentType.objects.get_by_natural_key(app, model)
         except ContentType.DoesNotExist:
             return InkComment.objects.none()
         else:
             return InkComment.get_queryset(
-                content_type=content_type, object_pk=object_pk_arg
+                content_type=content_type,
+                object_pk=object_pk_arg,
+                site_id=site_id,
             )
 
 

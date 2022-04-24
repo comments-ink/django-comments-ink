@@ -124,5 +124,21 @@ COMMENTS_INK_CSS_CUSTOM_SELECTOR = "dci"
 #
 COMMENTS_INK_THEME_DIR = ""
 
-
+# Name of the entry in settings.CACHE to use for caching django-comments-ink.
 COMMENTS_INK_CACHE_NAME = "dci"
+
+COMMENTS_INK_CACHE_KEYS = {
+    # The key 'comments_qs' holds the QuerySet by the given params.
+    "comments_qs": "/comments_qs/{ctype_pk}/{object_pk}/{site_id}",
+    # The key 'comments_count' stores the number of
+    # comments returned by the previous QuerySet.
+    "comments_count": "/comments_count/{ctype_pk}/{object_pk}/{site_id}",
+    # The key 'comments_paged' stores a dictionary of k: v, where
+    # keys are combinations of page number and folded comments, and
+    # values are cache keys where to find the computed values that
+    # correspond to the output of paginate_querysey.
+    "comments_paged": "/comments_paged/{ctype_pk}/{object_pk}/{site_id}",
+    # The key 'reactions' stores the output of self.get_reactions()
+    # for the given comment_id.
+    "reactions": "/reactions/cm/{comment_id}",
+}

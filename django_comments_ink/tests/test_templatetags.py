@@ -15,7 +15,7 @@ from django.http.response import Http404
 from django.template import Context, Template, TemplateSyntaxError, loader
 from django.test import TestCase as DjangoTestCase
 from django.urls import reverse
-from django_comments_ink import get_model, get_reactions_enum
+from django_comments_ink import caching, get_model, get_reactions_enum
 from django_comments_ink.conf import settings
 from django_comments_ink.models import (
     InkComment,
@@ -37,6 +37,9 @@ _ink_model = "django_comments_ink.tests.models.MyComment"
 
 class RenderInkCommentListTestCase(DjangoTestCase):
     def setUp(self):
+        dci_cache = caching.get_cache()
+        if dci_cache:
+            dci_cache.clear()
         self.article = Article.objects.create(
             title="September", slug="september", body="During September..."
         )
@@ -44,13 +47,13 @@ class RenderInkCommentListTestCase(DjangoTestCase):
     def _create_comments(self, use_custom_model=False):
         #  step   id   parent level-0  level-1  level-2
         #    1     1      -      c1                     <- cm1
-        #    2     3      1      --       c3            <-  cm1 to cm1
-        #    5     8      3      --       --       c8   <-   cm1 to cm1 to cm1
-        #    2     4      1      --       c4            <-  cm2 to cm1
-        #    4     7      4      --       --       c7   <-   cm1 to cm2 to cm1
+        #    2     3      1      --       c3            <- cm1 to cm1
+        #    5     8      3      --       --       c8   <- cm1 to cm1 to cm1
+        #    2     4      1      --       c4            <- cm2 to cm1
+        #    4     7      4      --       --       c7   <- cm1 to cm2 to cm1
         #    1     2      -      c2                     <- cm2
-        #    3     5      2      --       c5            <-  cm1 to cm2
-        #    4     6      5      --       --       c6   <-   cm1 to cm1 to cm2
+        #    3     5      2      --       c5            <- cm1 to cm2
+        #    4     6      5      --       --       c6   <- cm1 to cm1 to cm2
         #    5     9      -      c9                     <- cm9
         kwargs = {}
         if use_custom_model:
@@ -62,14 +65,10 @@ class RenderInkCommentListTestCase(DjangoTestCase):
         thread_test_step_5(self.article, **kwargs)
 
     def _assert_all_comments_are_published(self, use_custom_model=False):
-        t = "{% load comments comments_ink %}"
-        if use_custom_model:
-            t += (
-                "{% render_inkcomment_list for object "
-                "using my_comments/list.html %}"
-            )
-        else:
-            t += "{% render_inkcomment_list for object %}"
+        t = (
+            "{% load comments comments_ink %}"
+            "{% render_inkcomment_list for object %}"
+        )
         output = Template(t).render(
             Context({"object": self.article, "user": AnonymousUser()})
         )
@@ -188,6 +187,7 @@ class RenderInkCommentListTestCase(DjangoTestCase):
         self.assertEqual(MyComment.objects.count(), 9)
 
     @patch.multiple("django.conf.settings", SITE_ID=2)
+    @patch.multiple("django_comments_ink.conf.settings", SITE_ID=2)
     def test_render_inkcomment_list_for_one_site(self):
         site2 = Site.objects.create(domain="site2.com", name="site2.com")
         self.assertEqual(get_current_site_id(), 2)
@@ -225,7 +225,7 @@ class RenderInkCommentListTestCase(DjangoTestCase):
     #  step4     6        5      --       --        c6     <- cmt1 to cmt1 to cmt2
     #  step5     9        -      c9                        <-                 cmt9
     @patch.multiple(
-        "django.conf.settings",
+        "django_comments_ink.conf.settings",
         COMMENTS_HIDE_REMOVED=True,
         COMMENTS_INK_PUBLISH_OR_WITHHOLD_NESTED=True,
     )
@@ -261,8 +261,14 @@ class RenderInkCommentListTestCase(DjangoTestCase):
     #  step3     5        2      --       c5               <-         cmt1 to cmt2
     #  step4     6        5      --       --        c6     <- cmt1 to cmt1 to cmt2
     #  step5     9        -      c9                        <-                 cmt9
+
     @patch.multiple(
         "django.conf.settings",
+        COMMENTS_HIDE_REMOVED=False,
+        COMMENTS_INK_PUBLISH_OR_WITHHOLD_NESTED=True,
+    )
+    @patch.multiple(
+        "django_comments_ink.conf.settings",
         COMMENTS_HIDE_REMOVED=False,
         COMMENTS_INK_PUBLISH_OR_WITHHOLD_NESTED=True,
     )
@@ -433,8 +439,9 @@ def setup_paginator_example_1(an_article):
 def test_paginate_queryset(an_article):
     setup_paginator_example_1(an_article)
     queryset = get_model().objects.all()
-    d = comments_ink.paginate_queryset(queryset, {})
+    d = comments_ink.paginate_queryset(queryset, {}, "")  # Use empty cache key.
     cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
+
     d_expected_keys = [
         "paginator",
         "page_obj",
@@ -459,8 +466,9 @@ def test_paginate_queryset_with_pagination_disabled(an_article, monkeypatch):
     setup_paginator_example_1(an_article)
     monkeypatch.setattr(comments_ink.settings, "COMMENTS_INK_ITEMS_PER_PAGE", 0)
     queryset = get_model().objects.all()
-    d = comments_ink.paginate_queryset(queryset, {})
+    d = comments_ink.paginate_queryset(queryset, {}, "")  # Use "" as cacke key.
     cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
+
     d_expected_keys = [
         "paginator",
         "page_obj",
@@ -495,7 +503,9 @@ def test_paginate_queryset_raises_ValueError(an_article):
     setup_paginator_example_1(an_article)
     queryset = get_model().objects.all()
     with pytest.raises(Http404):
-        comments_ink.paginate_queryset(queryset, {"request": FakeRequest("x")})
+        comments_ink.paginate_queryset(
+            queryset, {"request": FakeRequest("x")}, ""  # Use empty cache key.
+        )
 
 
 @pytest.mark.django_db
@@ -503,7 +513,7 @@ def test_paginate_queryset_raises_ValueError_when_page_is_last(an_article):
     setup_paginator_example_1(an_article)
     queryset = get_model().objects.all()
     d = comments_ink.paginate_queryset(
-        queryset, {"request": FakeRequest("last")}
+        queryset, {"request": FakeRequest("last")}, ""
     )
     d_expected_keys = [
         "paginator",
@@ -534,7 +544,9 @@ def test_paginate_queryset_raises_InvalidPage(an_article):
     setup_paginator_example_1(an_article)
     queryset = get_model().objects.all()
     with pytest.raises(Http404):
-        comments_ink.paginate_queryset(queryset, {"request": FakeRequest("4")})
+        comments_ink.paginate_queryset(
+            queryset, {"request": FakeRequest("4")}, ""
+        )
 
 
 @pytest.mark.django_db
@@ -607,9 +619,7 @@ def test_render_inkcomment_list_for_app_model_pk_using_tmpl(an_article):
     setup_small_comments_thread(an_article)
     t = (
         "{% load comments_ink %}"
-        "{% render_inkcomment_list"
-        "   for tests.article 1 using my_comments/list.html"
-        "%}"
+        "{% render_inkcomment_list for tests.article 1 %}"
     )
     output = Template(t).render(
         Context({"object": an_article, "user": AnonymousUser()})
@@ -635,16 +645,6 @@ def test_render_inkcomment_list_for_app_model_pk_using_tmpl(an_article):
         < pos_c6
         < pos_c9
     )
-
-
-@pytest.mark.django_db
-def test_render_inkcomment_list_raises_with_many_args(an_article):
-    t = (
-        "{% load comments_ink %}"
-        "{% render_inkcomment_list for tests.article 1 using tal pascual %}"
-    )
-    with pytest.raises(TemplateSyntaxError):
-        Template(t).render(Context({"object": an_article}))
 
 
 @pytest.mark.django_db
