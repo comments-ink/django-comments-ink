@@ -147,7 +147,7 @@ class InkComment(Comment):
         key = settings.COMMENTS_INK_CACHE_KEYS["reactions"].format(
             comment_id=self.pk
         )
-        if dci_cache:
+        if dci_cache != None and key != "":
             result = dci_cache.get(key)
             if result != None:
                 logger.debug("Fetching %s from the cache", key)
@@ -175,7 +175,7 @@ class InkComment(Comment):
             "counter": total_counter,
             "list": [v for k, v in reactions.items() if len(v)],
         }
-        if dci_cache:
+        if dci_cache != None and key != "":
             dci_cache.set(key, result, timeout=None)
             logger.debug("Caching reactions for comment %d" % self.pk)
         return result
@@ -421,7 +421,7 @@ class CommentReaction(models.Model):
         key = settings.COMMENTS_INK_CACHE_KEYS["reactions"].format(
             comment_id=self.comment.pk
         )
-        if dci_cache and dci_cache.get(key):
+        if dci_cache != None and key != "" and dci_cache.get(key):
             logger.debug("Delete cached list of reactions in key %s" % key)
             dci_cache.delete(key)
 

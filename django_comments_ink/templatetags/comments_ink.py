@@ -221,17 +221,15 @@ class BaseInkCommentNode(BaseCommentNode):
         # Check whether there is already a qs in the dci cache.
         qs = None
         dci_cache = caching.get_cache()
-        if dci_cache:
+        if dci_cache != None and self.ckey_comments_qs != "":
             cached = dci_cache.get(self.ckey_comments_qs)
             if cached:
-                logger.debug(
-                    "Fetching %s from the cache", self.ckey_comments_qs
-                )
+                logger.debug("Get %s from the cache", self.ckey_comments_qs)
                 qs = cached
 
         if not qs:
             qs = super().get_queryset(context)
-            if dci_cache:
+            if dci_cache != None and self.ckey_comments_qs != "":
                 logger.debug("Adding %s to the cache", self.ckey_comments_qs)
                 dci_cache.set(self.ckey_comments_qs, qs, timeout=None)
 
@@ -368,7 +366,7 @@ class InkCommentCountNode(BaseInkCommentNode):
             ctype_pk=ctype.pk, object_pk=object_pk, site_id=site_id
         )
 
-        if dci_cache:
+        if dci_cache != None and key != "":
             cached = dci_cache.get(key)
             if cached:
                 logger.debug("Fetching %s from the cache", key)
@@ -377,7 +375,7 @@ class InkCommentCountNode(BaseInkCommentNode):
         if not result:
             qs = self.get_queryset(context)
             result = self.get_context_value_from_queryset(context, qs)
-            if dci_cache:
+            if dci_cache != None and key != "":
                 logger.debug("Adding %s to the cache", key)
                 dci_cache.set(key, result, timeout=None)
 
