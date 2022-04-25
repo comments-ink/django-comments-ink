@@ -80,6 +80,15 @@ class CommentsPaginator(Paginator):
         self.comments_folded = kwargs.pop("comments_folded", {})
         self.ckey_prefix = kwargs.pop("cache_key_prefix", "")
         self.dci_cache = caching.get_cache()
+
+        # Comment out next lines when debugging paginator's cache keys.
+        if self.dci_cache != None and self.ckey_prefix != "":
+            sub_keys_set = self.dci_cache.get(self.ckey_prefix)
+            if sub_keys_set:
+                logger.debug(
+                    "sub_keys_set for %s: %s", self.ckey_prefix, sub_keys_set
+                )
+
         super().__init__(*args, **kwargs)
         if type(self.object_list) is not QuerySet:
             raise TypeError("'object_list' is not a QuerySet.")
@@ -123,10 +132,12 @@ class CommentsPaginator(Paginator):
             return comment.nested_count + 1
 
     def get_sub_ckey(self, page, fold):
+        page_part = "all-pages" if page == None else f"page-{str(page)}"
         if fold:
-            return f"{str(page)}-{','.join([str(cid) for cid in fold])}"
+            fold_part = f"folded-{','.join([str(cid) for cid in fold])}"
         else:
-            return f"{str(page)}-"
+            fold_part = "all-unfolded"
+        return page_part + "-" + fold_part
 
     @cached_property
     def in_page(self):
@@ -136,9 +147,12 @@ class CommentsPaginator(Paginator):
         Returns a list. Each index item represents the number of comments to
         display in the page index + 1.
         """
-        inpage_subkey = "in_page_list"
+        inpage_subkey = (
+            self.get_sub_ckey(None, self.comments_folded) + ":in_page_list"
+        )
         inpage = self.get_subkey_cache(inpage_subkey)
         if inpage != None:
+            logger.debug("in_page from cache %s: %s", self.ckey_prefix, inpage)
             return inpage
 
         ptotal = 0  # Page total number of comments.
@@ -163,6 +177,9 @@ class CommentsPaginator(Paginator):
         if ptotal:
             inpage.append(ptotal)
         self.set_subkey_cache(inpage_subkey, inpage)  # Store it in cache.
+        logger.debug(
+            "in_page computed (saved in cache) %s: %s", self.ckey_prefix, inpage
+        )
         return inpage
 
     def page(self, number):
