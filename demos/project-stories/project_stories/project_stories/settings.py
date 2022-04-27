@@ -257,7 +257,9 @@ COMMENTS_INK_CSS_CUSTOM_SELECTOR = "dci dci-custom"
 # with the template directory: comments/themes/<theme_dir>.
 COMMENTS_INK_THEME_DIR = ""
 
-COMMENTS_INK_REACTIONS_ENUM = "project_stories.enums.ReactionEnum"
+COMMENTS_INK_COMMENT_REACTIONS_ENUM = (
+    "project_stories.enums.CommentReactionEnum"
+)
 
 # Display up to the given number of comments in the last page to avoid
 # creating another page containing only these amount of comments.

@@ -1,0 +1,45 @@
+{% extends "comments/base.html" %}
+
+{% load i18n %}
+{% load comments_ink %}
+
+{% block title %}{% trans "React to object" %}{% endblock %}
+
+{% block content %}
+<main>
+  <article>
+    <div class="container">
+      <h2 class="text-center">{% trans "Your reaction to this object" %}</h2>
+      <h6 class="text-center pb24">
+        <a href="{{ object.get_absolute_url }}">{{ object }}</a>
+      </h6>
+    </div>
+    <div class="central-column">
+      <div class="{% dci_custom_selector %} pb32">
+        <section class="reaction-form">
+          {% if user_reactions %}
+            <p class="text-center">{% trans "Pressed buttons correspond to your active reactions to this object." %}</p>
+          {% endif %}
+          <form method="POST" autocomplete="off" action="{% object_reaction_form_target object %}">
+            {% csrf_token %}
+            <input type="hidden" name="{{ comments_page_qs_param }}" value="{{ page_number }}" />
+            <input type="hidden" name="{{ comments_fold_qs_param }}" value="{{ folded_comments }}" />
+            <div class="text-center">
+              {% for enum in object_reactions_enum %}
+                <button type="submit" name="reaction" value="{{ enum.value }}" class="secondary">
+                  <span class="emoji">&{{ enum.icon }};</span>&nbsp;&nbsp;{{ enum.label }}
+                </button>
+              {% endfor %}
+            </div>
+            {% if user_reactions %}
+              <h6 class="text-center">{% trans "Click on a button to select or deselect your reaction." %}</h6>
+            {% else %}
+              <h6 class="text-center">{% trans "Click on a button to select your reaction." %}</h6>
+            {% endif %}
+          </form>
+        </section>
+      </div>
+    </div>
+  </article>
+</main>
+{% endblock %}

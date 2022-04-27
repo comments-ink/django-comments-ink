@@ -8,7 +8,12 @@ from django_comments import get_form
 from django_comments.forms import CommentSecurityForm
 from django_comments.models import CommentFlag
 from django_comments.signals import comment_was_posted, comment_will_be_posted
-from django_comments_ink import get_model, get_reactions_enum, signed, views
+from django_comments_ink import (
+    get_comment_reactions_enum,
+    get_model,
+    signed,
+    views,
+)
 from django_comments_ink.conf import settings
 from django_comments_ink.models import (
     CommentReaction,
@@ -220,7 +225,7 @@ class FlagSerializer(serializers.ModelSerializer):
 
 class ReadReactionsField(serializers.RelatedField):
     def to_representation(self, value):
-        reaction_item = get_reactions_enum()(value.reaction)
+        reaction_item = get_comment_reactions_enum()(value.reaction)
         return {
             "reaction": value.reaction,
             "label": reaction_item.label,

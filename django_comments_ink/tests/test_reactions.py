@@ -3,7 +3,7 @@ from datetime import datetime
 import django_comments
 from django.contrib.auth.models import AnonymousUser, User
 from django.test import RequestFactory, TestCase
-from django_comments_ink import get_model, get_reactions_enum
+from django_comments_ink import get_comment_reactions_enum, get_model
 from django_comments_ink.models import CommentReaction
 from django_comments_ink.tests.models import Article, Diary
 from django_comments_ink.tests.test_views import (
@@ -37,7 +37,7 @@ class HTTPMethodsNotAllowedTests(TestCase):
         data.update(form.initial)
         post_diary_comment(data, diary_entry, auth_user=self.user)
         self.comment = get_model().objects.first()
-        self.renum = get_reactions_enum()
+        self.renum = get_comment_reactions_enum()
 
     def test_send_delete_method_raises_405_method_not_allowed(self):
         data = {"comment": self.comment.id, "reaction": self.renum.LIKE_IT}
@@ -83,7 +83,7 @@ class AllowedCommentReactionTests(TestCase):
         data.update(form.initial)
         post_diary_comment(data, diary_entry, auth_user=self.user)
         self.comment = get_model().objects.first()
-        self.renum = get_reactions_enum()
+        self.renum = get_comment_reactions_enum()
 
     def test_post_reaction_as_anonymous_user_results_in_403(self):
         data = {"comment": self.comment.id, "reaction": self.renum.LIKE_IT}
@@ -195,7 +195,7 @@ class DisallowedCommentReactionTests(TestCase):
         data.update(form.initial)
         post_article_comment(data, article_entry, auth_user=self.user)
         self.comment = get_model().objects.first()
-        self.renum = get_reactions_enum()
+        self.renum = get_comment_reactions_enum()
 
     def test_post_reaction_as_anonymous_user_results_in_403(self):
         # This test is also in the class above: AllowedCommentReactionTests.

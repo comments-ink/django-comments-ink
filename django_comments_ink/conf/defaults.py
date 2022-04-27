@@ -32,7 +32,10 @@ COMMENTS_INK_FORM_CLASS = "django_comments_ink.forms.InkCommentForm"
 COMMENTS_INK_MODEL = "django_comments_ink.models.InkComment"
 
 # Enum class for comment reactions.
-COMMENTS_INK_REACTIONS_ENUM = "django_comments_ink.models.ReactionEnum"
+COMMENTS_INK_COMMENT_REACTIONS_ENUM = "django_comments_ink.models.ReactionEnum"
+
+# Enum class for object reactions.
+COMMENTS_INK_OBJECT_REACTIONS_ENUM = "django_comments_ink.models.ReactionEnum"
 
 # Send HTML emails.
 COMMENTS_INK_SEND_HTML_EMAIL = True
@@ -138,7 +141,10 @@ COMMENTS_INK_CACHE_KEYS = {
     # values are cache keys where to find the computed values that
     # correspond to the output of paginate_querysey.
     "comments_paged": "/comments_paged/{ctype_pk}/{object_pk}/{site_id}",
-    # The key 'reactions' stores the output of self.get_reactions()
-    # for the given comment_id.
-    "reactions": "/reactions/cm/{comment_id}",
+    # The key 'comment_reactions' stores the json output produced by
+    # InkComment.get_reactions(), for the comment receiving the method.
+    "comment_reactions": "/comment_reactions/cm/{comment_id}",
+    # The key 'object_reactions' stores the json output produced by
+    # get_object_reactions(ctype_pk, object_pk, site_id).
+    "object_reactions": "/object_reactions/{ctype_pk}/{object_pk}/{site_id}",
 }

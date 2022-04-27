@@ -16,10 +16,16 @@ def get_form():
     return import_string(settings.COMMENTS_INK_FORM_CLASS)
 
 
-def get_reactions_enum():
+def get_comment_reactions_enum():
     from django_comments_ink.conf import settings
 
-    return import_string(settings.COMMENTS_INK_REACTIONS_ENUM)
+    return import_string(settings.COMMENTS_INK_COMMENT_REACTIONS_ENUM)
+
+
+def get_object_reactions_enum():
+    from django_comments_ink.conf import settings
+
+    return import_string(settings.COMMENTS_INK_OBJECT_REACTIONS_ENUM)
 
 
 def get_form_target():

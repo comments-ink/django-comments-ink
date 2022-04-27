@@ -683,6 +683,7 @@
 .dci .flex-grow { flex-grow: 1 }
 .dci .flex-dir-col { flex-direction: column; }
 .dci .flex-justify-flex-end { justify-content: flex-end; }
+.dci .flex-justify-center { justify-content: center; }
 .dci .flex-align-center { align-items: center; }
 .dci .flex-align-flex-end { align-items: flex-end; }
 

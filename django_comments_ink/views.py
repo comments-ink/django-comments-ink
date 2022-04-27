@@ -4,6 +4,7 @@ from django.apps import apps
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import redirect_to_login
+from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.views import shortcut
 from django.contrib.sites.shortcuts import get_current_site
 from django.core import signing
@@ -28,13 +29,19 @@ from django_comments.signals import comment_was_posted, comment_will_be_posted
 from django_comments.views.comments import CommentPostBadRequest
 from django_comments.views.moderation import perform_flag
 from django_comments.views.utils import next_redirect
-from django_comments_ink import get_form
+from django_comments_ink import get_comment_reactions_enum, get_form
 from django_comments_ink import get_model as get_comment_model
-from django_comments_ink import get_reactions_enum, signals, signed, utils
+from django_comments_ink import (
+    get_object_reactions_enum,
+    signals,
+    signed,
+    utils,
+)
 from django_comments_ink.conf import settings
 from django_comments_ink.models import (
     CommentReaction,
     MaxThreadLevelExceededException,
+    ObjectReaction,
     TmpInkComment,
 )
 
@@ -228,24 +235,27 @@ _muted_tmpl.extend(
 )
 
 
-# List of possible paths to the react.html template file.
+# List of possible paths to the react_to_comment.html template file.
 if theme_dir_exists:
-    _react_tmpl = [f"comments/{theme_dir}/react.html", "comments/react.html"]
+    _react_to_comment_tmpl = [
+        f"comments/{theme_dir}/react_to_comment.html",
+        "comments/react_to_comment.html",
+    ]
 else:
-    _react_tmpl = "comments/react.html"
+    _react_to_comment_tmpl = "comments/react_to_comment.html"
 
 
 # List of possible paths to the reacted_js.html template file.
-_reacted_js_tmpl = []
+_reacted_to_comment_js_tmpl = []
 if theme_dir_exists:
-    _reacted_js_tmpl.extend(
+    _reacted_to_comment_js_tmpl.extend(
         [
             "comments/{theme_dir}/{app_label}/{model}/comment_reactions.html",
             "comments/{theme_dir}/{app_label}/comment_reactions.html",
             "comments/{theme_dir}/comment_reactions.html",
         ]
     )
-_reacted_js_tmpl.extend(
+_reacted_to_comment_js_tmpl.extend(
     [
         "comments/{app_label}/{model}/comment_reactions.html",
         "comments/{app_label}/comment_reactions.html",
@@ -254,16 +264,37 @@ _reacted_js_tmpl.extend(
 )
 
 
-# List of possible paths to the reacted.html template file.
+# List of possible paths to the reacted_to_comment.html template file.
 if theme_dir_exists:
-    _reacted_tmpl = [
-        f"comments/{theme_dir}/reacted.html",
-        "comments/reacted.html",
+    _reacted_to_comment_tmpl = [
+        f"comments/{theme_dir}/reacted_to_comment.html",
+        "comments/reacted_to_comment.html",
     ]
 else:
-    _reacted_tmpl = "comments/reacted.html"
+    _reacted_to_comment_tmpl = "comments/reacted_to_comment.html"
 
 
+# List of possible paths to the react_to_object.html template file.
+if theme_dir_exists:
+    _react_to_object_tmpl = [
+        f"comments/{theme_dir}/react_to_object.html",
+        "comments/react_to_object.html",
+    ]
+else:
+    _react_to_object_tmpl = "comments/react_to_object.html"
+
+
+# List of possible paths to the reacted_to_object.html template file.
+if theme_dir_exists:
+    _reacted_to_object_tmpl = [
+        f"comments/{theme_dir}/reacted_to_object.html",
+        "comments/reacted_to_object.html",
+    ]
+else:
+    _reacted_to_object_tmpl = "comments/reacted_to_object.html"
+
+
+# ---------------------------------------------------------------------
 @csrf_protect
 @require_POST
 def post(request, next=None, using=None):
@@ -997,11 +1028,11 @@ def flag(request, comment_id, next=None):
 
 @csrf_protect
 @login_required
-def react(request, comment_id, next=None):
+def react_to_comment(request, comment_id, next=None):
     """
     A registered user reacts to a comment. Confirmation on GET, action on POST.
 
-    Templates: :template:`comments/<theme_dir>/react.html`,
+    Templates: :template:`comments/<theme_dir>/react_to_comment.html`,
     Context:
         comment
             the `comments.comment` object the user reacted to.
@@ -1012,14 +1043,14 @@ def react(request, comment_id, next=None):
         site__pk=utils.get_current_site_id(request),
     )
     utils.check_option(comment, "comment_reactions_enabled")
+    cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
+    cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
 
     if request.method == "POST":
-        cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
         cpage = request.POST.get(cpage_qs_param, 1)
-        cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
         cfold = request.POST.get(cfold_qs_param, "")
 
-        created = perform_react(request, comment)
+        created = perform_react_to_comment(request, comment)
 
         # When the reaction has been sent via JavaScript.
         if request.META.get("HTTP_X_REQUESTED_WITH") == "XMLHttpRequest":
@@ -1030,7 +1061,7 @@ def react(request, comment_id, next=None):
                     app_label=obj_meta.app_label,
                     model=obj_meta.model_name,
                 )
-                for pth in _reacted_js_tmpl
+                for pth in _reacted_to_comment_js_tmpl
             ]
             context = {"comment": comment}
             status = 201 if created else 200
@@ -1046,13 +1077,13 @@ def react(request, comment_id, next=None):
         }
 
         return next_redirect(
-            request, fallback=next or "comments-ink-react-done", **kwargs
+            request,
+            fallback=next or "comments-ink-comment-react-done",
+            **kwargs,
         )
 
     else:
-        cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
         cpage = request.GET.get(cpage_qs_param, 1)
-        cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
         cfold = request.GET.get(cfold_qs_param, "")
 
         page = int(cpage) if cpage != "last" else "last"
@@ -1063,24 +1094,26 @@ def react(request, comment_id, next=None):
             comment=comment, authors=request.user
         )
         for cmt_reaction in cr_qs:
-            user_reactions.append(get_reactions_enum()(cmt_reaction.reaction))
+            user_reactions.append(
+                get_comment_reactions_enum()(cmt_reaction.reaction)
+            )
 
         return render(
             request,
-            _react_tmpl,
+            _react_to_comment_tmpl,
             {
                 "comment": comment,
                 "user_reactions": user_reactions,
                 "next": next,
                 "page_number": page,
-                "folded_comments": fold,
+                "folded_comments": ",".join([str(cid) for cid in fold]),
                 "comments_page_qs_param": cpage_qs_param,
                 "comments_fold_qs_param": cfold_qs_param,
             },
         )
 
 
-def perform_react(request, comment):
+def perform_react_to_comment(request, comment):
     """Save the user reaction and send the signal comment_got_a_reaction."""
     created = False
     cr_qs = CommentReaction.objects.filter(
@@ -1111,7 +1144,7 @@ def perform_react(request, comment):
     return created
 
 
-def react_done(request):
+def react_to_comment_done(request):
     """Displays a "User reacted to this comment" success page."""
     comment_pk = request.GET.get("c", None)
     cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
@@ -1132,11 +1165,156 @@ def react_done(request):
 
     return render(
         request,
-        _reacted_tmpl,
+        _reacted_to_comment_tmpl,
         {
             "comment": comment,
             "cpage": page,
             "cfold": ",".join([str(cid) for cid in fold]),
+        },
+    )
+
+
+@csrf_protect
+@login_required
+def react_to_object(request, content_type_id, object_pk, next=None):
+    """A user reacts to an object identified with content_type and pk."""
+    try:
+        ctype = ContentType.objects.get(pk=content_type_id)
+        object = ctype.get_object_for_this_type(pk=object_pk)
+    except Exception:
+        raise Http404(
+            "Object referenced by pair (ctype_id, obj_id): (%d, %d) "
+            "does not exist" % (content_type_id, object_pk)
+        )
+
+    cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
+    cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
+
+    if request.method == "POST":
+        cpage = request.POST.get(cpage_qs_param, 1)
+        cfold = request.POST.get(cfold_qs_param, "")
+
+        created = perform_react_to_object(request, content_type_id, object_pk)
+
+        page = int(cpage) if not cpage in ["", "last"] else cpage
+        fold = (len(cfold) and {int(cid) for cid in cfold.split(",")}) or {}
+
+        kwargs = {"ct": content_type_id, "o": object_pk}
+
+        if page:
+            kwargs[cpage_qs_param] = f"{page}"
+
+        if len(fold):
+            kwargs[cfold_qs_param] = ",".join([str(cid) for cid in fold])
+
+        return next_redirect(
+            request, fallback=next or "comments-ink-object-react-done", **kwargs
+        )
+
+    else:
+        cpage = request.GET.get(cpage_qs_param, 1)
+        cfold = request.GET.get(cfold_qs_param, "")
+
+        page = int(cpage) if cpage != "last" else "last"
+        fold = (len(cfold) and {int(cid) for cid in cfold.split(",")}) or {}
+
+        user_reactions = []
+        or_qs = ObjectReaction.objects.filter(
+            content_type=ctype, object_pk=object_pk, authors=request.user
+        )
+        for obj_reaction in or_qs:
+            user_reactions.append(
+                get_object_reactions_enum()(obj_reaction.reaction)
+            )
+        print("user_reactions", user_reactions)
+        return render(
+            request,
+            _react_to_object_tmpl,
+            {
+                "content_type_id": content_type_id,
+                "object": object,
+                "user_reactions": user_reactions,
+                "object_reactions_enum": get_object_reactions_enum(),
+                "next": next,
+                "page_number": page,
+                "folded_comments": ",".join([str(cid) for cid in fold]),
+                "comments_page_qs_param": cpage_qs_param,
+                "comments_fold_qs_param": cfold_qs_param,
+            },
+        )
+
+
+def perform_react_to_object(request, content_type_id, object_pk):
+    """Save the user reaction and send the signal object_got_a_reaction."""
+    created = False
+    ctype = ContentType.objects.get(pk=content_type_id)
+    object = ctype.get_object_for_this_type(pk=object_pk)
+    site = get_current_site(request)
+
+    or_qs = ObjectReaction.objects.filter(
+        reaction=request.POST["reaction"],
+        content_type=ctype,
+        object_pk=object_pk,
+        site=site,
+    )
+    if or_qs.filter(authors=request.user).count() == 1:
+        if or_qs[0].counter == 1:
+            or_qs[0].delete_from_cache()
+            or_qs.delete()
+        else:
+            or_qs.update(counter=F("counter") - 1)
+            or_qs[0].delete_from_cache()
+            or_qs[0].authors.remove(request.user)
+    else:
+        obj_reaction, created = ObjectReaction.objects.get_or_create(
+            reaction=request.POST["reaction"],
+            content_type=ctype,
+            object_pk=object_pk,
+            site=site,
+        )
+        obj_reaction.authors.add(request.user)
+        obj_reaction.counter += 1
+        obj_reaction.save()
+    signals.object_got_a_reaction.send(
+        sender=object.__class__,
+        object=object,
+        reaction=request.POST["reaction"],
+        created=created,
+        request=request,
+    )
+    return created
+
+
+def react_to_object_done(request):
+    """Displays a "User reacted to this object" success page."""
+    content_type_id = request.GET.get("ct", None)
+    object_pk = request.GET.get("o", None)
+    cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
+    cpage = request.GET.get(cpage_qs_param, 1)
+    cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
+    cfold = request.GET.get(cfold_qs_param, "")
+
+    if content_type_id and object_pk:
+        ctype = ContentType.objects.get(pk=content_type_id)
+        object = ctype.get_object_for_this_type(pk=object_pk)
+    else:
+        raise Http404
+
+    page = int(cpage) if not cpage in ["", "last"] else cpage
+    fold = (len(cfold) and {int(cid) for cid in cfold.split(",")}) or {}
+
+    qs_params = []
+    if page != "":
+        qs_params.append(f"page={page}")
+    if len(fold):
+        qs_params.append(",".join([str(cid) for cid in fold]))
+
+    return render(
+        request,
+        _reacted_to_object_tmpl,
+        {
+            "object": object,
+            "qs_params": "" if len(qs_params) == 0 else "&".join(qs_params),
         },
     )
 

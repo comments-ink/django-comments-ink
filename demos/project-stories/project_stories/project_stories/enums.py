@@ -2,7 +2,8 @@ from django.utils.translation import ugettext as _
 from django_comments_ink.models import BaseReactionEnum
 
 
-class ReactionEnum(BaseReactionEnum):
+# ----------------------------------------------------
+class CommentReactionEnum(BaseReactionEnum):
     LIKE_IT = "+", _("Like")
     DISLIKE_IT = "-", _("Dislike")
     SMILE = "S", _("Smile")
@@ -13,15 +14,29 @@ class ReactionEnum(BaseReactionEnum):
     EYES = "E", _("Eyes")
 
 
-ReactionEnum.set_icons(
+CommentReactionEnum.set_icons(
     {
-        ReactionEnum.LIKE_IT: "#128077",
-        ReactionEnum.DISLIKE_IT: "#128078",
-        ReactionEnum.SMILE: "#128512",
-        ReactionEnum.CONFUSED: "#128533",
-        ReactionEnum.GREAT: "#127881",
-        ReactionEnum.HEART: "#10084",
-        ReactionEnum.ROCKET: "#128640",
-        ReactionEnum.EYES: "#128064",
+        CommentReactionEnum.LIKE_IT: "#128077",
+        CommentReactionEnum.DISLIKE_IT: "#128078",
+        CommentReactionEnum.SMILE: "#128512",
+        CommentReactionEnum.CONFUSED: "#128533",
+        CommentReactionEnum.GREAT: "#127881",
+        CommentReactionEnum.ROCKET: "#128640",
+        CommentReactionEnum.HEART: "#10084",
+        CommentReactionEnum.EYES: "#128064",
+    }
+)
+
+
+# ----------------------------------------------------
+class ObjectReactionEnum(BaseReactionEnum):
+    LIKE_IT = "+", _("Like")
+    DISLIKE_IT = "-", _("Dislike")
+
+
+ObjectReactionEnum.set_icons(
+    {
+        ObjectReactionEnum.LIKE_IT: "#128077",
+        ObjectReactionEnum.DISLIKE_IT: "#128078",
     }
 )

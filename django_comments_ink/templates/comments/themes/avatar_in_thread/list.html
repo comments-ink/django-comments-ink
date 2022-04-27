@@ -8,7 +8,7 @@
   {% if comment_reactions_enabled %}
     data-dci="config"
     {% if user.is_authenticated %}
-      data-react-url="{% url 'comments-ink-react' 0 %}"
+      data-react-url="{% url 'comments-ink-comment-react' 0 %}"
     {% else %}
       data-login-url="{% url 'login' %}"
     {% endif %}
