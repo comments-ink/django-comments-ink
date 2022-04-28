@@ -3,8 +3,13 @@
 {% load i18n %}
 {% load static %}
 {% load comments %}
+{% load comments_ink %}
 
 {% block title %}{{ block.super }}&nbsp;&bull;&nbsp;quotes{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" type="text/css" href="{% static 'django_comments_ink/css/comments.css' %}">
+{% endblock %}
 
 {% block nav-quotes-class %}active{% endblock %}
 
@@ -12,16 +17,21 @@
 <main>
   <article>
     <h2 class="text-center">List of quotes</h2>
-    <div class="inline-centered">
+    <div class="inline-centered {% dci_custom_selector %}">
       {% if object_list %}
         <ul>
           {% for quote in object_list %}
             {% get_comment_count for quote as comment_count %}
             <li>
-              <a href="{{ quote.get_absolute_url }}">{{ quote.title }}</a>&nbsp;-&nbsp;<span class="small">{{ quote.published_time|date:"d-F-Y" }}</span>
-              {% if comment_count %}
-                <span class="small">- {{ comment_count }} comment{{ comment_count|pluralize }}</span>
-              {% endif %}
+              <div class="inline flex flex-align-center">
+                <a href="{{ quote.get_absolute_url }}">{{ quote.title }}</a>&nbsp;-&nbsp;<span class="small">{{ quote.published_time|date:"d-F-Y" }}</span>
+                {% if comment_count %}
+                  &nbsp;
+                  <span class="emoji">&#128172;</span>
+                  <span class="small">{{ comment_count }}</span>
+                {% endif %}&nbsp;
+                {% render_object_reactions for quote %}
+              </div>
             </li>
           {% endfor %}
         </ul>

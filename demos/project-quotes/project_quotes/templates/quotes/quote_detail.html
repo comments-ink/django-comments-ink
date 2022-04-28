@@ -30,9 +30,9 @@
       </div>
 
       <div class="{% dci_custom_selector %}">
-        <h2 class="text-center flex flex-justify-center">
-          {% render_object_reactions for object %}
-        </h2>
+        <div class="text-center flex flex-justify-center">
+          {% render_object_reactions_form for object %}
+        </div>
         {% get_inkcomment_count for object as comment_count %}
         {% if comment_count %}
           <h6 class="text-center">

@@ -31,7 +31,7 @@
         {% endif %}
         {% if comment_reactions_enabled and is_input_allowed %}
           <div>
-            <a data-dci="reactions-panel" data-comment="{{ comment.id }}" class="small" data-user-auth="{{ user.is_authenticated }}" href="{% url 'comments-ink-comment-react' comment.id %}?{{ comments_page_qs_param }}={{ page_obj.number }}" {% if not user.is_authenticated %}data-login-next="{% get_inkcomment_permalink comment page_number %}{% endif %}">{% trans "React" %}</a>
+            <a data-dci="reactions-panel" data-comment="{{ comment.id }}" class="small" data-user-auth="{{ user.is_authenticated }}" href="{% url 'comments-ink-react' comment.id %}?{{ comments_page_qs_param }}={{ page_obj.number }}" {% if not user.is_authenticated %}data-login-next="{% get_inkcomment_permalink comment page_number %}{% endif %}">{% trans "React" %}</a>
           </div>
         {% endif %}
       {% endif %}

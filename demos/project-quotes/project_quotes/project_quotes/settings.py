@@ -284,7 +284,7 @@ LOGGING = {
         },
         "django_comments_ink": {
             "handlers": ["console", "mail_admins"],
-            "level": "DEBUG",
+            "level": "INFO",
             "propagate": True,
         },
     },

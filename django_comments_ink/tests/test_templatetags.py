@@ -915,7 +915,7 @@ def test_comment_reaction_form_target(an_articles_comment):
     t = "{% load comments_ink %}" "{% comment_reaction_form_target comment %}"
     output = Template(t).render(Context({"comment": an_articles_comment}))
     assert output == reverse(
-        "comments-ink-comment-react", args=(an_articles_comment.id,)
+        "comments-ink-react", args=(an_articles_comment.id,)
     )
 
 

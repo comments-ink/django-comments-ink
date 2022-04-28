@@ -26,25 +26,12 @@ urlpatterns = [
     re_path(r"^deleted/$", delete_done, name="comments-delete-done"),
     re_path(r"^approve/(\d+)/$", approve, name="comments-approve"),
     re_path(r"^approved/$", approve_done, name="comments-approve-done"),
+    re_path(r"^react/(\d+)/$", views.react, name="comments-ink-react"),
+    re_path(r"^reacted/$", views.react_done, name="comments-ink-react-done"),
     re_path(
-        r"^react-to-comment/(\d+)/$",
-        views.react_to_comment,
-        name="comments-ink-comment-react",
-    ),
-    re_path(
-        r"^reacted-to-comment/$",
-        views.react_to_comment_done,
-        name="comments-ink-comment-react-done",
-    ),
-    re_path(
-        r"^react-to-object/(\d+)/(\d+)/$",
+        r"^react/(\d+)/(\d+)/$",
         views.react_to_object,
         name="comments-ink-object-react",
-    ),
-    re_path(
-        r"^reacted-to-object/$",
-        views.react_to_object_done,
-        name="comments-ink-object-react-done",
     ),
     # Remap comments-url-redirect to add query string params.
     re_path(

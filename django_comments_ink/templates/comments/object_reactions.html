@@ -1,14 +1,9 @@
-{% load comments_ink %}
-
-<form method="POST" autocomplete="off" action="{% object_reaction_form_target object %}">
-  {% csrf_token %}
-  <input type="hidden" name="{{ comments_page_qs_param }}" value="{{ page_number }}" />
-  <input type="hidden" name="{{ comments_fold_qs_param }}" value="{{ folded_comments }}" />
-  <div class="flex flex-align-center">
-    {% for reaction in object_reactions %}
-      <button type="submit" class="emoji" name="reaction" id="{{ reaction.value }}" value="{{ reaction.value }}">&{{ reaction.icon }};</button>&nbsp;
-      <span class="small bold" style="color:#444">{{ reaction.counter }}</span>
-      {% if not forloop.last %}&nbsp;&nbsp;&nbsp;{% endif %}
-    {% endfor %}
-  </div>
-</form>
+<div class="inline flex flex-align-center">
+  {% for reaction in object_reactions %}
+    {% if reaction.counter %}
+      <span class="emoji">&{{ reaction.icon }};</span>
+      <span class="small">{{ reaction.counter }}</span>
+      {% if not forloop.last %}&nbsp;{% endif %}
+    {% endif %}
+  {% endfor %}
+</div>

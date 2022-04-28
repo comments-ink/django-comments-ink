@@ -727,6 +727,10 @@
 }
 
 /* ----------------------------------------------------- */
+.dci .inline {
+    display: inline;
+}
+
 .dci label {
     margin: auto 0;
     text-align: right;
