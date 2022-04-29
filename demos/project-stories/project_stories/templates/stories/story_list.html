@@ -3,6 +3,7 @@
 {% load i18n %}
 {% load static %}
 {% load comments %}
+{% load comments_ink %}
 
 {% block title %}{{ block.super }}&nbsp;&bull;&nbsp;stories{% endblock %}
 
@@ -12,17 +13,22 @@
 <main>
   <article>
     <h2 class="text-center">List of stories</h2>
-    <div class="inline-centered">
+    <div class="inline-centered {% dci_custom_selector %}">
       {% if object_list %}
         <ul>
           {% for story in object_list %}
             {% get_comment_count for story as comment_count %}
             <li>
-              <a href="{{ story.get_absolute_url }}">{{ story.title }}</a>
-              <span class="small">{{ story.published_time|date:"d-F-Y" }}</span>
-              {% if comment_count %}
-                <span class="small">- {{ comment_count }} comment{{ comment_count|pluralize }}</span>
-              {% endif %}
+              <div class="inline flex flex-align-center">
+                <a href="{{ story.get_absolute_url }}">{{ story.title }}</a>
+                <span class="small">{{ story.published_time|date:"d-F-Y" }}</span>
+                {% if comment_count %}
+                  &nbsp;
+                  <span class="emoji">&#128172;</span>
+                  <span class="small">{{ comment_count }}</span>
+                  &nbsp;
+                {% endif %}
+                {% render_object_reactions for story %}
             </li>
           {% endfor %}
         </ul>

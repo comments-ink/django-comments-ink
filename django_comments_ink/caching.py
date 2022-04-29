@@ -34,7 +34,7 @@ def clear_cache(content_type_id, object_pk, site_id):
             "for content_type={%d}, object_pk={%d} and site_id={%d}. "
             % (content_type_id, object_pk, site_id)
         )
-        return
+        return False
 
     keys = []
     for key_pattern in [
@@ -51,3 +51,5 @@ def clear_cache(content_type_id, object_pk, site_id):
         if dci_cache.get(key):
             logger.debug("Delete cached key %s" % key)
             dci_cache.delete(key)
+
+    return True

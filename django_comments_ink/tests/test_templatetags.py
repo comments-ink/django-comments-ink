@@ -15,7 +15,7 @@ from django.http.response import Http404
 from django.template import Context, Template, TemplateSyntaxError, loader
 from django.test import TestCase as DjangoTestCase
 from django.urls import reverse
-from django_comments_ink import caching, get_model, get_reactions_enum
+from django_comments_ink import caching, get_comment_reactions_enum, get_model
 from django_comments_ink.conf import settings
 from django_comments_ink.models import (
     InkComment,
@@ -797,7 +797,7 @@ def test_get_inkcomment_permalink_in_page_eq_1(an_articles_comment):
 def test_get_inkcomment_permalink_in_page_gt_1(an_articles_comment):
     t = "{% load comments_ink %}" "{% get_inkcomment_permalink comment 2 %}"
     output = Template(t).render(Context({"comment": an_articles_comment}))
-    assert output == "/comments/cr/11/1/1/?cpage=2#comment-1"
+    assert output == "/comments/cr/13/1/1/?cpage=2#comment-1"
 
 
 @pytest.mark.django_db
@@ -806,7 +806,7 @@ def test_get_inkcomment_permalink_in_var_page_gt_1(an_articles_comment):
     output = Template(t).render(
         Context({"comment": an_articles_comment, "cpage": 2})
     )
-    assert output == "/comments/cr/11/1/1/?cpage=2#comment-1"
+    assert output == "/comments/cr/13/1/1/?cpage=2#comment-1"
 
 
 @pytest.mark.django_db
@@ -816,7 +816,7 @@ def test_get_inkcomment_permalink_page_1_fold_1_and_97(an_articles_comment):
         "{% get_inkcomment_permalink comment 2 '1,97' %}"
     )
     output = Template(t).render(Context({"comment": an_articles_comment}))
-    assert output == "/comments/cr/11/1/1/?cpage=2&cfold=1,97#comment-1"
+    assert output == "/comments/cr/13/1/1/?cpage=2&cfold=1,97#comment-1"
 
 
 @pytest.mark.django_db
@@ -828,7 +828,7 @@ def test_get_inkcomment_permalink_var_page_var_fold(an_articles_comment):
     output = Template(t).render(
         Context({"comment": an_articles_comment, "cpage": 2, "cfold": "1,97"})
     )
-    assert output == "/comments/cr/11/1/1/?cpage=2&cfold=1,97#comment-1"
+    assert output == "/comments/cr/13/1/1/?cpage=2&cfold=1,97#comment-1"
 
 
 @pytest.mark.django_db
@@ -838,7 +838,7 @@ def test_get_inkcomment_permalink_in_page_gt_1_custom(an_articles_comment):
         '{% get_inkcomment_permalink comment 2 "1,97" "#c%(id)s" %}'
     )
     output = Template(t).render(Context({"comment": an_articles_comment}))
-    assert output == "/comments/cr/11/1/1/?cpage=2&cfold=1,97#c1"
+    assert output == "/comments/cr/13/1/1/?cpage=2&cfold=1,97#c1"
 
 
 @pytest.mark.django_db
@@ -920,17 +920,19 @@ def test_comment_reaction_form_target(an_articles_comment):
 
 
 @pytest.mark.django_db
-def test_render_reactions_buttons(a_comments_reaction):
-    user_reactions = [get_reactions_enum()(a_comments_reaction.reaction)]
+def test_render_comment_reactions_buttons(a_comments_reaction):
+    user_reactions = [
+        get_comment_reactions_enum()(a_comments_reaction.reaction)
+    ]
     t = (
         "{% load comments_ink %}"
-        "{% render_reactions_buttons user_reactions %}"
+        "{% render_comment_reactions_buttons user_reactions %}"
     )
     output = Template(t).render(Context({"user_reactions": user_reactions}))
     template = loader.get_template("comments/reactions_buttons.html")
     expected = template.render(
         {
-            "reactions": get_reactions_enum(),
+            "reactions": get_comment_reactions_enum(),
             "user_reactions": user_reactions,
             "break_every": settings.COMMENTS_INK_REACTIONS_ROW_LENGTH,
         }
@@ -953,8 +955,8 @@ def test_render_reactions_buttons(a_comments_reaction):
     assert output.find(not_active_reaction) > -1
 
 
-def test_render_reactions_buttons_raises_TemplateSyntaxError():
-    t = "{% load comments_ink %}" "{% render_reactions_buttons %}"
+def test_render_comment_reactions_buttons_raises_TemplateSyntaxError():
+    t = "{% load comments_ink %}" "{% render_comment_reactions_buttons %}"
     with pytest.raises(TemplateSyntaxError):
         Template(t).render(Context({}))
 
@@ -971,11 +973,15 @@ def test_authors_list(a_comments_reaction, an_user):
 
 @pytest.mark.django_db
 def test_reaction_enum(a_comments_reaction):
-    t = "{% load comments_ink %}" "{{ reaction|get_reaction_enum }}"
+    t = "{% load comments_ink %}" "{{ reaction|get_comment_reaction_enum }}"
     output = Template(t).render(Context({"reaction": a_comments_reaction}))
     expected = Template("{{ reaction }}").render(
         Context(
-            {"reaction": get_reactions_enum()(a_comments_reaction.reaction)}
+            {
+                "reaction": get_comment_reactions_enum()(
+                    a_comments_reaction.reaction
+                )
+            }
         )
     )
     assert output == expected
@@ -1236,10 +1242,14 @@ def test_get_dci_theme_dir_is__feedback_in_header(monkeypatch):
 
 # ---------------------------------------------------------------------
 def test_render_reactions_panel_template():
-    t = "{% load comments_ink %}" "{% render_reactions_panel_template %}"
+    t = (
+        "{% load comments_ink %}"
+        "{% render_comment_reactions_panel_template %}"
+    )
     output = Template(t).render(Context({}))
     enum_tuples = [
-        (enum.value, enum.label, enum.icon) for enum in get_reactions_enum()
+        (enum.value, enum.label, enum.icon)
+        for enum in get_comment_reactions_enum()
     ]
     for value, label, icon in enum_tuples:
         reaction_button = (

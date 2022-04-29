@@ -1684,7 +1684,7 @@ def test_redirect_to_sent__not_public_comment__uses_moderated_tmpl(
 
 # ---------------------------------------------------------------------
 @pytest.mark.django_db
-def test_GET_react_to_comment_without_reactions_enabled_raises(
+def test_GET_react_without_reactions_enabled_raises(
     monkeypatch, rf, an_user, an_articles_comment
 ):
     def raise_PermissionDenied(*args):
@@ -1751,8 +1751,9 @@ def test_POST_react(monkeypatch, rf, an_user, an_articles_comment):
 def test_POST_react_two_users_add_same_reaction_2nd_user_withdraws_it(
     monkeypatch, rf, an_user, an_user_2, an_articles_comment
 ):
-    # This function tests perform_react: two users add the same reaction
-    # to the same comment, and then the second user withdraws the reaction.
+    # This function tests perform_react: two users add the same
+    # reaction to the same comment, and then the second user withdraws the
+    # reaction.
     def get_cr_counter():
         return CommentReaction.objects.get(
             reaction="+", comment=an_articles_comment

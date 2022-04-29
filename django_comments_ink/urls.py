@@ -26,10 +26,14 @@ urlpatterns = [
     re_path(r"^deleted/$", delete_done, name="comments-delete-done"),
     re_path(r"^approve/(\d+)/$", approve, name="comments-approve"),
     re_path(r"^approved/$", approve_done, name="comments-approve-done"),
-    # New flags in addition to those provided by django-contrib-comments.
     re_path(r"^react/(\d+)/$", views.react, name="comments-ink-react"),
     re_path(r"^reacted/$", views.react_done, name="comments-ink-react-done"),
-    # Remap comments-url-redirect to add query string with page number.
+    re_path(
+        r"^react/(\d+)/(\d+)/$",
+        views.react_to_object,
+        name="comments-ink-object-react",
+    ),
+    # Remap comments-url-redirect to add query string params.
     re_path(
         r"^cr/(\d+)/(\d+)/(\d+)/$",
         views.get_inkcomment_url,

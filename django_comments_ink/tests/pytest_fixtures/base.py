@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
 from django_comments.models import CommentFlag
-from django_comments_ink import get_reactions_enum
+from django_comments_ink import get_comment_reactions_enum
 from django_comments_ink.models import CommentReaction, InkComment
 from django_comments_ink.tests.models import Article
 
@@ -61,7 +61,7 @@ def an_user_2():
 @pytest.fixture
 def a_comments_reaction(an_articles_comment, an_user):
     """Send a reaction to a comment."""
-    reaction = get_reactions_enum().LIKE_IT
+    reaction = get_comment_reactions_enum().LIKE_IT
     cmr = CommentReaction.objects.create(
         reaction=reaction, comment=an_articles_comment, counter=1
     )

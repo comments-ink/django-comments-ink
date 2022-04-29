@@ -6,18 +6,15 @@
   id="comments"
   class="comment-list"
   {% if comment_reactions_enabled %}
-    data-dcx="config"
+    data-dci="config"
     {% if user.is_authenticated %}
-      data-reactions-url="{% url 'comments-ink-api-react' %}"
+      data-react-url="{% url 'comments-ink-react' 0 %}"
     {% else %}
       data-login-url="{% url 'login' %}"
     {% endif %}
     data-guest-user="{% if user.is_authenticated %}0{% else %}1{% endif %}"
-    data-popover-pos-bottom="{{ reactions_popover_pos_bottom }}"
-    data-popover-pos-left="{{ reactions_popover_pos_left }}"
-    data-tooltip-pos-bottom="{{ reactions_tooltip_pos_bottom }}"
-    data-tooltip-pos-left="{{ reactions_tooltip_pos_left }}"
     data-page-qs-param="{{ comments_page_qs_param }}"
+    data-fold-qs-param="{{ comments_fold_qs_param }}"
   {% endif %}
 >
   {% if is_paginated %}

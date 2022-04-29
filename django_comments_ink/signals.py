@@ -21,3 +21,6 @@ should_request_be_authorized = Signal()
 
 # Sent after a comment got a reaction.
 comment_got_a_reaction = Signal()
+
+# Sent after a comment got a reaction.
+object_got_a_reaction = Signal()

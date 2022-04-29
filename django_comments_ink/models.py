@@ -1,9 +1,10 @@
 import logging
 from collections import OrderedDict
 
+from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.sites.models import Site
 from django.core import signing
-from django.core.cache import InvalidCacheBackendError, caches
 from django.db import models
 from django.db.models import F, Max, Min, Prefetch, Q
 from django.db.models.signals import post_delete
@@ -12,7 +13,12 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django_comments.managers import CommentManager
 from django_comments.models import Comment, CommentFlag
-from django_comments_ink import caching, get_model, get_reactions_enum
+from django_comments_ink import (
+    caching,
+    get_comment_reactions_enum,
+    get_model,
+    get_object_reactions_enum,
+)
 from django_comments_ink.conf import settings
 from django_comments_ink.utils import get_current_site_id
 
@@ -144,7 +150,7 @@ class InkComment(Comment):
 
     def get_reactions(self):
         dci_cache = caching.get_cache()
-        key = settings.COMMENTS_INK_CACHE_KEYS["reactions"].format(
+        key = settings.COMMENTS_INK_CACHE_KEYS["comment_reactions"].format(
             comment_id=self.pk
         )
         if dci_cache != None and key != "":
@@ -154,11 +160,11 @@ class InkComment(Comment):
                 return result
 
         total_counter = 0
-        reactions = OrderedDict([(k, {}) for k in get_reactions_enum()])
+        reactions = OrderedDict([(k, {}) for k in get_comment_reactions_enum()])
         # First add the existing reactions sorted by reaction value.
         for item in self.reactions.order_by("reaction"):
             total_counter += item.counter
-            reaction = get_reactions_enum()(item.reaction)
+            reaction = get_comment_reactions_enum()(item.reaction)
             authors = [
                 settings.COMMENTS_INK_API_USER_REPR(author)
                 for author in item.authors.all()
@@ -399,9 +405,19 @@ class ReactionField(models.TextField):
         return name, path, args, kwargs
 
 
+# It allows the implementation of two models:
+#  * CommentReaction
+#  * ObjectReaction
+
+# -----------------------------------------------
+# Comment reaction model.
+
+
 class CommentReaction(models.Model):
     reaction = ReactionField(
-        _("reaction"), db_index=True, choices=get_reactions_enum().choices
+        _("reaction"),
+        db_index=True,
+        choices=get_comment_reactions_enum().choices,
     )
     comment = models.ForeignKey(
         get_model(),
@@ -416,13 +432,19 @@ class CommentReaction(models.Model):
         through_fields=("reaction", "author"),
     )
 
+    class Meta:
+        verbose_name = _("comment reactions")
+        verbose_name_plural = _("comments reactions")
+
     def delete_from_cache(self):
         dci_cache = caching.get_cache()
-        key = settings.COMMENTS_INK_CACHE_KEYS["reactions"].format(
+        key = settings.COMMENTS_INK_CACHE_KEYS["comment_reactions"].format(
             comment_id=self.comment.pk
         )
         if dci_cache != None and key != "" and dci_cache.get(key):
-            logger.debug("Delete cached list of reactions in key %s" % key)
+            logger.debug(
+                "Delete cached list of comment reactions in key %s" % key
+            )
             dci_cache.delete(key)
 
     def save(self, *args, **kwargs):
@@ -432,6 +454,63 @@ class CommentReaction(models.Model):
 
 class CommentReactionAuthor(models.Model):
     reaction = models.ForeignKey(CommentReaction, on_delete=models.CASCADE)
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE
+    )
+
+
+# -----------------------------------------------
+# Object reaction model.
+
+
+class ObjectReaction(models.Model):
+    reaction = ReactionField(
+        _("reaction"),
+        db_index=True,
+        choices=get_object_reactions_enum().choices,
+    )
+    content_type = models.ForeignKey(
+        ContentType,
+        verbose_name=_("content type"),
+        related_name="content_type_set_for_%(class)s",
+        on_delete=models.CASCADE,
+    )
+    object_pk = models.CharField(_("object ID"), db_index=True, max_length=64)
+    content_object = GenericForeignKey(
+        ct_field="content_type", fk_field="object_pk"
+    )
+    site = models.ForeignKey(Site, on_delete=models.CASCADE)
+    counter = models.IntegerField(default=0)
+    authors = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        through="ObjectReactionAuthor",
+        through_fields=("reaction", "author"),
+    )
+
+    class Meta:
+        verbose_name = _("object reactions")
+        verbose_name_plural = _("objects reactions")
+
+    def delete_from_cache(self):
+        dci_cache = caching.get_cache()
+        key = settings.COMMENTS_INK_CACHE_KEYS["object_reactions"].format(
+            ctype_pk=self.content_type.id,
+            object_pk=self.object_pk,
+            site_id=self.site.id,
+        )
+        if dci_cache != None and key != "" and dci_cache.get(key):
+            logger.debug(
+                "Delete cached list of object reactions in key %s" % key
+            )
+            dci_cache.delete(key)
+
+    def save(self, *args, **kwargs):
+        self.delete_from_cache()
+        super(ObjectReaction, self).save(*args, **kwargs)
+
+
+class ObjectReactionAuthor(models.Model):
+    reaction = models.ForeignKey(ObjectReaction, on_delete=models.CASCADE)
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE
     )

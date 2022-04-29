@@ -1,0 +1,9 @@
+<div class="inline flex flex-align-center">
+  {% for reaction in object_reactions %}
+    {% if reaction.counter %}
+      <span class="emoji">&{{ reaction.icon }};</span>
+      <span class="small">{{ reaction.counter }}</span>
+      {% if not forloop.last %}&nbsp;{% endif %}
+    {% endif %}
+  {% endfor %}
+</div>
