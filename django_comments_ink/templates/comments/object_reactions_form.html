@@ -17,7 +17,7 @@
 {% else %}
 <a id="reactions" class="flex flex-align-center" href="{% url 'login' %}?next={{ object.get_absolute_url }}#reactions">
   {% for reaction in object_reactions %}
-    <span class="emoji">&{{ reaction.icon }};</button>&nbsp;
+    <span class="emoji">&{{ reaction.icon }};</span>&nbsp;
     <span class="small bold" style="color:#444">{{ reaction.counter }}</span>
     {% if not forloop.last %}&nbsp;&nbsp;&nbsp;{% endif %}
   {% endfor %}
