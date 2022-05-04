@@ -1,16 +1,29 @@
 from datetime import datetime
+import pytest
+
+from django.contrib.auth.models import AnonymousUser, User
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.sites.models import Site
+from django.test import RequestFactory, TestCase
 
 import django_comments
-from django.contrib.auth.models import AnonymousUser, User
-from django.test import RequestFactory, TestCase
-from django_comments_ink import get_comment_reactions_enum, get_model
-from django_comments_ink.models import CommentReaction
+
+from django_comments_ink import (
+    caching,
+    get_comment_reactions_enum,
+    get_model,
+    get_object_reactions_enum,
+)
+from django_comments_ink.conf import settings
+from django_comments_ink.models import CommentReaction, ObjectReaction
+
 from django_comments_ink.tests.models import Article, Diary
 from django_comments_ink.tests.test_views import (
     post_article_comment,
     post_diary_comment,
 )
 from django_comments_ink.tests.utils import post_flag, send_reaction
+
 
 request_factory = RequestFactory()
 comments_model = django_comments.get_model()
@@ -263,3 +276,51 @@ class AllowedCreateReportFlagTests(TestCase):
         data = {"comment": self.comment.id, "flag": "report"}
         response = post_flag(data, auth_user=self.user)
         self.assertEqual(response.status_code, 201)
+
+
+# ---------------------------------------------------------------------
+# Test ObjectReaction class.
+
+
+@pytest.mark.django_db
+def test_create_object_reaction_for_an_article(an_article):
+    obj_reactions_enum = get_object_reactions_enum()
+    ct = ContentType.objects.get_for_model(an_article)
+    site = Site.objects.get(pk=1)
+    object_reaction = ObjectReaction.objects.create(
+        reaction=obj_reactions_enum.LIKE_IT,
+        content_type=ct,
+        object_pk=an_article.id,
+        site=site,
+    )
+    assert object_reaction.counter == 0
+    assert object_reaction.authors.count() == 0
+
+
+@pytest.mark.django_db
+def test_object_reaction_is_deleted_from_cache(an_user, an_article):
+    obj_reactions_enum = get_object_reactions_enum()
+    ct = ContentType.objects.get_for_model(an_article)
+    site = Site.objects.get(pk=1)
+    object_reaction = ObjectReaction.objects.create(
+        reaction=obj_reactions_enum.LIKE_IT,
+        content_type=ct,
+        object_pk=an_article.id,
+        site=site,
+    )
+    assert object_reaction.counter == 0
+    assert object_reaction.authors.count() == 0
+
+    # Create key and put it in the cache.
+    dci_cache = caching.get_cache()
+    key = settings.COMMENTS_INK_CACHE_KEYS["object_reactions"].format(
+        ctype_pk=ct.id, object_pk=an_article.id, site_id=site.id
+    )
+    dci_cache.set(key, "nothing-in-particular")
+    assert dci_cache.get(key) != None
+
+    # Add user and increment counter.
+    object_reaction.authors.add(an_user)
+    object_reaction.counter += 1
+    object_reaction.save()  # It deletes the key on save.
+    assert dci_cache.get(key) == None

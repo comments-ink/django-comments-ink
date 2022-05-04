@@ -263,9 +263,6 @@ def paginate_queryset(queryset, context, ckey_prefix):
 class BaseInkCommentNode(BaseCommentNode):
     def get_queryset(self, context):
         ctype, object_pk = self.get_target_ctype_pk(context)
-        if not object_pk:
-            return self.comment_model.objects.none()
-
         site_id = utils.get_current_site_id(context.get("request", None))
 
         kwargs = {
@@ -330,9 +327,9 @@ class RenderInkCommentListNode(InkCommentListNode):
         try:
             ctype, object_pk = self.get_target_ctype_pk(context)
         except AttributeError:
-            # in get_target_ctype_pk the call to FilterExpression.resolve does
-            # not raise VariableDoesNotExist, however in a latter step an
-            # AttributeError is raised when the object_expr does not exist
+            # in get_target_ctype_pk the call to FilterExpression.resolve
+            # does not raise VariableDoesNotExist, however in a latter step
+            # an AttributeError is raised when the object_expr does not exist
             # in the context. Therefore, this except raises when used as:
             # {% render_inkcomment_list for var_not_in_context %}
             return ""
@@ -418,8 +415,6 @@ class InkCommentCountNode(BaseInkCommentNode):
 
     def render(self, context):
         ctype, object_pk = self.get_target_ctype_pk(context)
-        if not object_pk:
-            context[self.as_varname] = 0
         site_id = utils.get_current_site_id(context.get("request", None))
 
         result = None
@@ -427,7 +422,6 @@ class InkCommentCountNode(BaseInkCommentNode):
         key = settings.COMMENTS_INK_CACHE_KEYS["comments_count"].format(
             ctype_pk=ctype.pk, object_pk=object_pk, site_id=site_id
         )
-
         if dci_cache != None and key != "":
             cached = dci_cache.get(key)
             if cached:
@@ -449,19 +443,19 @@ class InkCommentCountNode(BaseInkCommentNode):
 def get_inkcomment_count(parser, token):
     """
     Gets the comment count for the given params and populates the template
-    context with a variable containing that value, whose name is defined by the
-    'as' clause.
+    context with a variable containing that value, whose name is defined by the 'as' clause. It differs from {% get_comment_count %} in which it
+    caches the result.
 
     Syntax::
 
-        {% get_comment_count for [object] as [varname]  %}
-        {% get_comment_count for [app].[model] [object_id] as [varname]  %}
+        {% get_inkcomment_count for [object] as [varname]  %}
+        {% get_inkcomment_count for [app].[model] [object_id] as [varname]  %}
 
     Example usage::
 
-        {% get_comment_count for event as comment_count %}
-        {% get_comment_count for calendar.event event.id as comment_count %}
-        {% get_comment_count for calendar.event 17 as comment_count %}
+        {% get_inkcomment_count for event as comment_count %}
+        {% get_inkcomment_count for calendar.event event.id as comment_count %}
+        {% get_inkcomment_count for calendar.event 17 as comment_count %}
 
     """
     return InkCommentCountNode.handle_token(parser, token)

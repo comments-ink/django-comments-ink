@@ -1,8 +1,8 @@
 import collections
+from datetime import datetime
 import importlib
 import json
 import re
-from datetime import datetime
 from unittest.mock import patch
 
 import pytest
@@ -10,11 +10,13 @@ from django.contrib.auth.models import AnonymousUser
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
 from django.core.paginator import PageNotAnInteger
+from django.db.models import Q
 from django.db.models.signals import pre_save
 from django.http.response import Http404
 from django.template import Context, Template, TemplateSyntaxError, loader
 from django.test import TestCase as DjangoTestCase
 from django.urls import reverse
+
 from django_comments_ink import caching, get_comment_reactions_enum, get_model
 from django_comments_ink.conf import settings
 from django_comments_ink.models import (
@@ -22,6 +24,8 @@ from django_comments_ink.models import (
     publish_or_withhold_on_pre_save,
 )
 from django_comments_ink.templatetags import comments_ink
+from django_comments_ink.utils import get_current_site_id, get_html_id_suffix
+
 from django_comments_ink.tests.models import Article, MyComment
 from django_comments_ink.tests.test_models import (
     thread_test_step_1,
@@ -30,7 +34,7 @@ from django_comments_ink.tests.test_models import (
     thread_test_step_4,
     thread_test_step_5,
 )
-from django_comments_ink.utils import get_current_site_id, get_html_id_suffix
+
 
 _ink_model = "django_comments_ink.tests.models.MyComment"
 
@@ -342,15 +346,15 @@ class CommentCSSThreadRangeTestCase(DjangoTestCase):
         )
 
         # testcase cmt.id   parent level-0  level-1  level-2
-        #  step1     1        -      c1                        <-                 cmt1
-        #  step2     3        1      --       c3               <-         cmt1 to cmt1
-        #  step5     8        3      --       --        c8     <- cmt1 to cmt1 to cmt1
-        #  step2     4        1      --       c4               <-         cmt2 to cmt1
-        #  step4     7        4      --       --        c7     <- cmt1 to cmt2 to cmt1
-        #  step1     2        -      c2                        <-                 cmt2
-        #  step3     5        2      --       c5               <-         cmt1 to cmt2
-        #  step4     6        5      --       --        c6     <- cmt1 to cmt1 to cmt2
-        #  step5     9        -      c9                        <-                 cmt9
+        #  step1     1        -      c1                        c1
+        #  step2     3        1      --       c3               c1 <- c3
+        #  step5     8        3      --       --        c8     c1 <- c3 <- c8
+        #  step2     4        1      --       c4               c1 <- c4
+        #  step4     7        4      --       --        c7     c1 <- c4 <- c7
+        #  step1     2        -      c2                        c2
+        #  step3     5        2      --       c5               c2 <- c5
+        #  step4     6        5      --       --        c6     c2 <- c5 <- c6
+        #  step5     9        -      c9                        c9
 
         thread_test_step_1(self.article)
         thread_test_step_2(self.article)
@@ -409,6 +413,10 @@ class CommentCSSThreadRangeTestCase(DjangoTestCase):
             self.assertEqual(output, "thread-0-mid thread-1-mid thread-2")
 
 
+# ---------------------------------------------------------------------
+# Pytest-based tests.
+
+
 def setup_paginator_example_1(an_article):
     """Set up the Example 1 (detailed in the paginator.py __docs__)."""
     article_ct = ContentType.objects.get(app_label="tests", model="article")
@@ -435,6 +443,67 @@ def setup_paginator_example_1(an_article):
             InkComment.objects.create(**attrs, parent_id=cmt_level_0.pk)
 
 
+class FakeRequest:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    def get_property(self):
+        return self.kwargs
+
+    GET = property(get_property)
+
+
+class FakeCache:
+    def __init__(self):
+        self.store = {}
+        self.found = {}
+
+    def get(self, key):
+        value = self.store.get(key, None)
+        self.found[key] = value != None
+        return value
+
+    def set(self, key, value, timeout=None):
+        self.store[key] = value
+
+    def delete(self, key):
+        if key in self.store:
+            self.store.pop(key)
+        if key in self.found:
+            self.found.pop(key)
+
+
+# -----------------------------------------------
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "an_article, cfold",
+    [
+        ("an_article", ""),
+        ("an_article", "1"),
+        ("an_article", "1,2"),
+    ],
+    indirect=["an_article"],
+)
+def test_filter_folded_comments(an_article, cfold):
+    """
+    Fold param is empty -> filter_folded_comments returns the same qs.
+    """
+    setup_paginator_example_1(an_article)
+    ctype = ContentType.objects.get_for_model(an_article)
+    queryset = get_model().objects.filter(
+        content_type__id=ctype.id, object_pk=an_article.id, site__id=1
+    )
+    cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
+    result_qs = comments_ink.filter_folded_comments(
+        queryset, {"request": FakeRequest(**{cfold_qs_param: cfold})}
+    )
+    cfold_list = {int(cid) for cid in cfold.split(",")} if cfold else {}
+    expected_qs = queryset.filter(~Q(thread_id__in=cfold_list, level__gt=0))
+    assert result_qs.count() == expected_qs.count()
+    assert [cm.id for cm in result_qs] == [cm.id for cm in expected_qs]
+
+
+# -----------------------------------------------
 @pytest.mark.django_db
 def test_paginate_queryset(an_article):
     setup_paginator_example_1(an_article)
@@ -488,23 +557,16 @@ def test_paginate_queryset_with_pagination_disabled(an_article, monkeypatch):
     assert d[cpage_qs_param] == 1
 
 
-class FakeRequest:
-    def __init__(self, page_number=0):
-        self.page_number = page_number
-
-    def get_property(self):
-        return {"cpage": self.page_number}
-
-    GET = property(get_property)
-
-
 @pytest.mark.django_db
 def test_paginate_queryset_raises_ValueError(an_article):
     setup_paginator_example_1(an_article)
     queryset = get_model().objects.all()
+    cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
     with pytest.raises(Http404):
         comments_ink.paginate_queryset(
-            queryset, {"request": FakeRequest("x")}, ""  # Use empty cache key.
+            queryset,
+            {"request": FakeRequest(**{cpage_qs_param: "x"})},
+            "",  # Use empty cache key.
         )
 
 
@@ -512,8 +574,9 @@ def test_paginate_queryset_raises_ValueError(an_article):
 def test_paginate_queryset_raises_ValueError_when_page_is_last(an_article):
     setup_paginator_example_1(an_article)
     queryset = get_model().objects.all()
+    cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
     d = comments_ink.paginate_queryset(
-        queryset, {"request": FakeRequest("last")}, ""
+        queryset, {"request": FakeRequest(**{cpage_qs_param: "last"})}, ""
     )
     d_expected_keys = [
         "paginator",
@@ -543,17 +606,84 @@ def test_paginate_queryset_raises_ValueError_when_page_is_last(an_article):
 def test_paginate_queryset_raises_InvalidPage(an_article):
     setup_paginator_example_1(an_article)
     queryset = get_model().objects.all()
+    cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
     with pytest.raises(Http404):
         comments_ink.paginate_queryset(
-            queryset, {"request": FakeRequest("4")}, ""
+            queryset, {"request": FakeRequest(**{cpage_qs_param: "4"})}, ""
         )
 
 
+# -----------------------------------------------
+@pytest.mark.django_db
+def test_get_inkcomment_count_raises_IndexError(an_article):
+    t = "{% load comments_ink %}" "{% get_inkcomment_count %}"
+    with pytest.raises(IndexError):
+        Template(t).render(Context({"object": an_article}))
+
+
+@pytest.mark.django_db
+def test_get_inkcomment_count_raises_AttributeError():
+    t = (
+        "{% load comments_ink %}"
+        "{% get_inkcomment_count for object as count %}"
+        "{{ count }}"
+    )
+    with pytest.raises(AttributeError):
+        Template(t).render(Context({"object": None}))
+
+
+@pytest.mark.django_db
+def test_get_inkcomment_count_returns_77(an_article):
+    setup_paginator_example_1(an_article)
+    t = (
+        "{% load comments_ink %}"
+        "{% get_inkcomment_count for object as count %}"
+        "{{ count }}"
+    )
+    result = Template(t).render(Context({"object": an_article}))
+    assert result == "77"
+
+
+@pytest.mark.django_db
+def test_get_inkcomment_count_uses_cached_count(monkeypatch, an_article):
+    fake_cache = FakeCache()
+    monkeypatch.setattr(comments_ink.caching, "get_cache", lambda: fake_cache)
+    setup_paginator_example_1(an_article)
+    t = (
+        "{% load comments_ink %}"
+        "{% get_inkcomment_count for object as count %}"
+        "{{ count }}"
+    )
+    assert len(fake_cache.store) == 0
+
+    result_1 = Template(t).render(Context({"object": an_article}))
+    assert len(fake_cache.store) == 2
+    assert "/comments_qs/13/1/1" in fake_cache.store
+    assert "/comments_count/13/1/1" in fake_cache.store
+    assert fake_cache.found["/comments_count/13/1/1"] == False
+
+    result_2 = Template(t).render(Context({"object": an_article}))
+    assert len(fake_cache.store) == 2
+    assert "/comments_qs/13/1/1" in fake_cache.store
+    assert "/comments_count/13/1/1" in fake_cache.store
+    assert fake_cache.found["/comments_count/13/1/1"] == True
+
+    assert result_1 == result_2 == "77"
+
+
+# -----------------------------------------------
 @pytest.mark.django_db
 def test_render_inkcomment_list_raises_IndexError(an_article):
     t = "{% load comments_ink %}" "{% render_inkcomment_list %}"
     with pytest.raises(IndexError):
         Template(t).render(Context({"object": an_article}))
+
+
+@pytest.mark.django_db
+def test_render_inkcomment_list_for_object_None():
+    t = "{% load comments_ink %}" "{% render_inkcomment_list for object %}"
+    result = Template(t).render(Context({"object": None}))
+    assert result == ""
 
 
 @pytest.mark.django_db
@@ -563,17 +693,39 @@ def test_render_inkcomment_list_raises_TemplateSyntaxError(an_article):
         Template(t).render(Context({"object": an_article}))
 
 
+@pytest.mark.django_db
+def test_render_inkcomment_list_uses_cached_qs(monkeypatch, an_article):
+    fake_cache = FakeCache()
+    monkeypatch.setattr(comments_ink.caching, "get_cache", lambda: fake_cache)
+    setup_paginator_example_1(an_article)
+
+    t = "{% load comments_ink %}" "{% render_inkcomment_list for object %}"
+
+    assert len(fake_cache.store) == 0
+    assert not "/comments_qs/13/1/1" in fake_cache.store
+
+    result_1 = Template(t).render(Context({"object": an_article}))
+    assert "/comments_qs/13/1/1" in fake_cache.store
+    assert fake_cache.found["/comments_qs/13/1/1"] == False
+
+    result_2 = Template(t).render(Context({"object": an_article}))
+    assert "/comments_qs/13/1/1" in fake_cache.store
+    assert fake_cache.found["/comments_qs/13/1/1"] == True
+
+    assert result_1 == result_2
+
+
 def setup_small_comments_thread(an_article):
     # testcase cmt.id   parent level-0  level-1  level-2
-    #  step1     1        -      c1                        <-                 cmt1
-    #  step2     3        1      --       c3               <-         cmt1 to cmt1
-    #  step5     8        3      --       --        c8     <- cmt1 to cmt1 to cmt1
-    #  step2     4        1      --       c4               <-         cmt2 to cmt1
-    #  step4     7        4      --       --        c7     <- cmt1 to cmt2 to cmt1
-    #  step1     2        -      c2                        <-                 cmt2
-    #  step3     5        2      --       c5               <-         cmt1 to cmt2
-    #  step4     6        5      --       --        c6     <- cmt1 to cmt1 to cmt2
-    #  step5     9        -      c9                        <-                 cmt9
+    #  step1     1        -      c1                        c1
+    #  step2     3        1      --       c3               c1 <- c3
+    #  step5     8        3      --       --        c8     c1 <- c3 <- c8
+    #  step2     4        1      --       c4               c1 <- c4
+    #  step4     7        4      --       --        c7     c1 <- c4 <- c7
+    #  step1     2        -      c2                        c2
+    #  step3     5        2      --       c5               c2 <- c5
+    #  step4     6        5      --       --        c6     c2 <- c5 <- c6
+    #  step5     9        -      c9                        c9
     thread_test_step_1(an_article)
     thread_test_step_2(an_article)
     thread_test_step_3(an_article)
@@ -715,6 +867,20 @@ def test_render_qs_params_with_fold(an_articles_comment):
 
 
 @pytest.mark.django_db
+def test_render_qs_params_with_fold_but_no_cfold(an_articles_comment):
+    t = "{% load comments_ink %}{% render_qs_params fold comment %}"
+    output = Template(t).render(
+        Context({"comment": an_articles_comment, "cpage": "17"})
+    )
+    # In the template t we don't pass a page, but we indicate that we
+    # want to produce the qs_params when the given comment is folded, which
+    # implies to compute the page in which that comment will be listed.
+    # So the template_tag ignores the 'cpage' in the context. It would not
+    # be ignored if the param 'page <page_number>' was given in the template.
+    assert output == "cpage=1&cfold=1"
+
+
+@pytest.mark.django_db
 def test_render_qs_params_with_unfold(an_articles_comment):
     t = "{% load comments_ink %}{% render_qs_params unfold comment %}"
     output = Template(t).render(
@@ -736,6 +902,20 @@ def test_render_qs_params_with_vars_page_and_unfold(an_articles_comment):
         Context({"comment": an_articles_comment, "the_page": 24, "cfold": "1"})
     )
     assert output == "cpage=24"
+
+
+@pytest.mark.django_db
+def test_render_qs_params_raises_TemplateSyntaxError(an_articles_comment):
+    t = (
+        "{% load comments_ink %}"
+        "{% render_qs_params page the_page unfold comment unexpect_arg %}"
+    )
+    with pytest.raises(TemplateSyntaxError):
+        Template(t).render(
+            Context(
+                {"comment": an_articles_comment, "the_page": 24, "cfold": "1"}
+            )
+        )
 
 
 # ---------------------------------------------------------------------

@@ -1,4 +1,5 @@
 .DEFAULT_GOAL := help
+
 .PHONY: coverage help tox syntax-check syntax-format pip-compile pip-install \
 	sdist-project-quotes collectstatic-project-quotes \
 	compose-project-quotes-build compose-project-quotes-up
@@ -11,10 +12,10 @@ coverage:  ## Run tests with coverage.
 	@sh ./ccsvg.sh ||:
 
 syntax-check:  ## Check syntax code (isort and black).
-	sh ./lint.sh check
+	black --check django_comments_ink demos
 
 syntax-format:  ## Format syntax code (isort and black).
-	sh ./lint.sh format
+	black django_comments_ink demos
 
 tox:  ## Run tox.
 	python -m tox
