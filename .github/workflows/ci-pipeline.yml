@@ -16,8 +16,8 @@ jobs:
           python-version: '3.9'
       - name: Install test dependencies
         run: pip install -r requirements-tests.txt
-      - name: Check syntax with isort and black
-        run: bash ./lint.sh check
+      - name: Check syntax with black
+        run: black --check django_comments_ink
 
   django:
     runs-on: ubuntu-latest
