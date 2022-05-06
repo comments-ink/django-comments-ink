@@ -101,6 +101,7 @@ INSTALLED_APPS = [
     "django_comments_ink.tests",
     "django_comments",
 ]
+
 COMMENTS_APP = "django_comments_ink"
 
 # Default primary key field type
