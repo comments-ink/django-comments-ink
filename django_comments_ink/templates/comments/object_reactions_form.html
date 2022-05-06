@@ -15,7 +15,7 @@
   </div>
 </form>
 {% else %}
-<a id="reactions" class="flex flex-align-center" href="{% url 'login' %}?next={{ object.get_absolute_url }}#reactions">
+<a id="reactions" class="flex flex-align-center" href="{{ login_url }}?next={{ object.get_absolute_url }}#reactions">
   {% for reaction in object_reactions %}
     <span class="emoji">&{{ reaction.icon }};</span>&nbsp;
     <span class="small bold" style="color:#444">{{ reaction.counter }}</span>

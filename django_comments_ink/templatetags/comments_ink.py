@@ -15,10 +15,10 @@ from django.template import (
     Node,
     TemplateSyntaxError,
     Variable,
-    VariableDoesNotExist,
     loader,
 )
 from django.urls import reverse
+from django.urls.exceptions import NoReverseMatch
 from django.utils.module_loading import import_string
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _
@@ -712,7 +712,7 @@ def get_inkcomment_permalink(
         try:
             comments_folded = {int(cid) for cid in comments_folded.split(",")}
         except (TypeError, ValueError):
-            raise PageNotAnInteger(
+            raise TemplateSyntaxError(
                 _("A comment ID in comments_folded is not an integer.")
             )
 
@@ -975,20 +975,6 @@ def get_dci_theme_dir():
     return theme_dir
 
 
-@register.simple_tag(takes_context=True)
-def get_folded_comments_without(context, comment):
-    folded_comments = context.get("folded_comments", set())
-    folded_comments.remove(comment.id)
-    return ",".join([str(cm) for cm in folded_comments])
-
-
-@register.simple_tag(takes_context=True)
-def get_folded_comments_with(context, comment):
-    folded_comments = context.get("folded_comments", set())
-    folded_comments.add(comment.id)
-    return ",".join([str(cm) for cm in folded_comments])
-
-
 # ----------------------------------------------------------------------
 @register.inclusion_tag("comments/only_users_can_post.html")
 def render_only_users_can_post_template(object):
@@ -1041,10 +1027,10 @@ class BaseObjectReactionsNode(Node):
         if len(tokens) == 3:
             return cls(object_expr=parser.compile_filter(tokens[2]))
 
-        # {% render_object_reactions for app.models pk %}
+        # {% render_object_reactions for app.model pk %}
         elif len(tokens) == 4:
             return cls(
-                ctype=BaseCommentNode.lookup_content_type(tokens[2], tokens[0]),
+                ctype=cls.lookup_content_type(tokens[2], tokens[0]),
                 object_pk_expr=parser.compile_filter(tokens[3]),
             )
 
@@ -1065,11 +1051,6 @@ class BaseObjectReactionsNode(Node):
             )
 
     def __init__(self, ctype=None, object_pk_expr=None, object_expr=None):
-        if ctype is None and object_expr is None:
-            raise TemplateSyntaxError(
-                "Template tag must be given either a literal object "
-                "or a ctype and object pk."
-            )
         self.ctype = ctype
         self.object_pk_expr = object_pk_expr
         self.object_expr = object_expr
@@ -1085,21 +1066,22 @@ class BaseObjectReactionsNode(Node):
         self.site_id = utils.get_current_site_id(request)
 
         if self.object_expr:
-            try:
-                obj = self.object_expr.resolve(context)
-            except VariableDoesNotExist:
-                return
-            else:
+            obj = self.object_expr.resolve(context)
+            if obj:
                 self.ctype = ContentType.objects.get_for_model(obj)
                 self.object_pk = obj.pk
+            else:
+                raise TemplateSyntaxError(
+                    "Variable '%s' does not exist" % self.object_expr
+                )
         else:
             self.object_pk = self.object_pk_expr.resolve(
-                context, gnore_failures=True
+                context, ignore_failures=True
             )
 
         app_model = "%s.%s" % (self.ctype.app_label, self.ctype.model)
         options = utils.get_app_model_options(content_type=app_model)
-        if not "object_reactions_enabled" in options:
+        if not options["object_reactions_enabled"]:
             raise Exception(
                 "Object reactions for '%s' is not enabled in the setting "
                 "COMMENTS_INK_APP_MODEL_OPTIONS in the settings module"
@@ -1149,11 +1131,8 @@ class BaseObjectReactionsNode(Node):
 
     def render(self, context):
         request = context.get("request", None)
-        try:
-            self.resolve_ctype_and_object_pk(context)
-            object = self.ctype.get_object_for_this_type(pk=self.object_pk)
-        except AttributeError:
-            return ""
+        self.resolve_ctype_and_object_pk(context)
+        object = self.ctype.get_object_for_this_type(pk=self.object_pk)
 
         cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
         page = (request and request.GET.get(cpage_qs_param, None)) or 1
@@ -1162,6 +1141,11 @@ class BaseObjectReactionsNode(Node):
         cfold = (request and request.GET.get(cfold_qs_param, None)) or None
         fold = (cfold and {int(cid) for cid in cfold.split(",")}) or {}
 
+        try:
+            login_url = reverse("login")
+        except NoReverseMatch as exc:
+            login_url = settings.LOGIN_URL
+
         context = {
             "object": object,
             "object_reactions": self.get_object_reactions(),
@@ -1169,6 +1153,7 @@ class BaseObjectReactionsNode(Node):
             cpage_qs_param: page,
             "comments_fold_qs_param": cfold_qs_param,
             cfold_qs_param: ",".join([str(cid) for cid in fold]),
+            "login_url": login_url,
         }
         htmlstr = loader.render_to_string(self.template_list, context, request)
         return htmlstr
@@ -1251,49 +1236,6 @@ def object_reactions_form_target(object):
     """
     ctype = ContentType.objects.get_for_model(object)
     return reverse("comments-ink-object-react", args=(ctype.id, object.id))
-
-
-class RenderObjectReactionsButtons(Node):
-    def __init__(self, user_reactions):
-        self.user_reactions = Variable(user_reactions)
-
-    def render(self, context):
-        context = {
-            "reactions": get_object_reactions_enum(),
-            "user_reactions": self.user_reactions.resolve(context),
-        }
-        template_list = [
-            pth.format(theme_dir=theme_dir)
-            for pth in _object_reactions_buttons_tmpl
-        ]
-        htmlstr = loader.render_to_string(template_list, context)
-        return htmlstr
-
-
-@register.tag
-def render_object_reactions_buttons(parser, token):
-    """
-    Renders template with reactions buttons, depending on the selected theme.
-
-    Example usage::
-
-        {% render_object_reactions_buttons user_reactions %}
-
-    Argument `user_reactions` is a list with `ReactionEnum` items, it
-    contains a user's reactions to an object. The template displays a button
-    per each reaction returned from get_object_reactions_enum().
-    Each reaction that is already in the `user_reactions` list is marked as
-    already clicked. This templatetag is used within the `react_to_object.html`
-    template.
-    """
-    try:
-        _, args = token.contents.split(None, 1)
-    except ValueError:
-        raise TemplateSyntaxError(
-            "%r tag requires argument" % token.contents.split()[0]
-        )
-    user_reactions = args
-    return RenderObjectReactionsButtons(user_reactions)
 
 
 # ----------------------------------------------------------------------

@@ -262,7 +262,7 @@ def test_get_comment_page_number_raises_Exception(an_article, monkeypatch):
     comment = page.object_list[0]
     with pytest.raises(Exception):
         utils.get_comment_page_number(
-            None, article_ct, an_article.pk, comment.id
+            None, article_ct.id, an_article.id, comment.id
         )
 
 

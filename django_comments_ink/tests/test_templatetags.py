@@ -17,7 +17,12 @@ from django.template import Context, Template, TemplateSyntaxError, loader
 from django.test import TestCase as DjangoTestCase
 from django.urls import reverse
 
-from django_comments_ink import caching, get_comment_reactions_enum, get_model
+from django_comments_ink import (
+    caching,
+    get_comment_reactions_enum,
+    get_model,
+    get_object_reactions_enum,
+)
 from django_comments_ink.conf import settings
 from django_comments_ink.models import (
     InkComment,
@@ -905,11 +910,36 @@ def test_render_qs_params_with_vars_page_and_unfold(an_articles_comment):
 
 
 @pytest.mark.django_db
-def test_render_qs_params_raises_TemplateSyntaxError(an_articles_comment):
+def test_render_qs_params_with_vars_fold_and_page(an_articles_comment):
     t = (
         "{% load comments_ink %}"
-        "{% render_qs_params page the_page unfold comment unexpect_arg %}"
+        "{% render_qs_params fold comment page the_page %}"
     )
+    output = Template(t).render(
+        Context({"comment": an_articles_comment, "the_page": 24, "cfold": "1"})
+    )
+    assert output == "cpage=24&cfold=1"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "an_articles_comment, tag_args",
+    [
+        (
+            "an_articles_comment",
+            ["page", "the_page", "unfold", "comment", "unexpect_arg"],
+        ),
+        ("an_articles_comment", ["this", "is_a", "wrong", "list"]),
+    ],
+    indirect=[
+        "an_articles_comment",
+    ],
+)
+def test_render_qs_params_raises_TemplateSyntaxError(
+    an_articles_comment, tag_args
+):
+    tag = "render_qs_params %s" % " ".join(tag_args)
+    t = "{% load comments_ink %}{%" + tag + "%}"
     with pytest.raises(TemplateSyntaxError):
         Template(t).render(
             Context(
@@ -936,7 +966,17 @@ def test_filter_has_comment_returns_True(an_articles_comment):
 
 
 @pytest.mark.django_db
-def test_filter_has_comment_returns_False(an_articles_comment):
+@pytest.mark.parametrize(
+    "an_articles_comment, cfold",
+    [
+        ("an_articles_comment", "14,97"),
+        ("an_articles_comment", ""),
+    ],
+    indirect=[
+        "an_articles_comment",
+    ],
+)
+def test_filter_has_comment_returns_False(an_articles_comment, cfold):
     t = (
         "{% load comments_ink %}"
         "{% if cfold|has_comment:comment %}"
@@ -945,9 +985,10 @@ def test_filter_has_comment_returns_False(an_articles_comment):
         "Is not folded"
         "{% endif %}"
     )
-    output = Template(t).render(
-        Context({"comment": an_articles_comment, "cfold": "14,97"})
-    )
+    context = {"comment": an_articles_comment}
+    if cfold:
+        context["cfold"] = cfold
+    output = Template(t).render(Context(context))
     assert output == "Is not folded"
 
 
@@ -963,6 +1004,19 @@ def test_filter_get_anchor(an_articles_comment):
         )
     )
     assert output == "#comment-1"
+
+
+@pytest.mark.django_db
+def test_filter_get_anchor_with_anchor_pattern(an_articles_comment):
+    t = "{% load comments_ink %}#{{ comment|get_anchor:'#c%(id)s' }}"
+    output = Template(t).render(
+        Context(
+            {
+                "comment": an_articles_comment,
+            }
+        )
+    )
+    assert output == "#c1"
 
 
 # ---------------------------------------------------------------------
@@ -1012,6 +1066,16 @@ def test_get_inkcomment_permalink_var_page_var_fold(an_articles_comment):
 
 
 @pytest.mark.django_db
+def test_get_inkcomment_permalink_wrong_comments_folded(an_articles_comment):
+    t = (
+        "{% load comments_ink %}"
+        '{% get_inkcomment_permalink comment 2 "1,X" %}'
+    )
+    with pytest.raises(TemplateSyntaxError):
+        Template(t).render(Context({"comment": an_articles_comment}))
+
+
+@pytest.mark.django_db
 def test_get_inkcomment_permalink_in_page_gt_1_custom(an_articles_comment):
     t = (
         "{% load comments_ink %}"
@@ -1022,7 +1086,7 @@ def test_get_inkcomment_permalink_in_page_gt_1_custom(an_articles_comment):
 
 
 @pytest.mark.django_db
-def test_get_inkcomment_permalink_in_page_gt_1_fails(an_articles_comment):
+def test_get_inkcomment_permalink_wrong_anchor_pattern(an_articles_comment):
     t = (
         "{% load comments_ink %}"
         '{% get_inkcomment_permalink comment 2 "" "$c%(doesnotexist)s" %}'
@@ -1449,7 +1513,7 @@ def test_get_gravatar_url():
 
 # ---------------------------------------------------------------------
 def test_get_user_avatar_or_gravatar():
-    t = "{% load comments_ink %}" "{% get_user_avatar_or_gravatar %}"
+    t = "{% load comments_ink %}{% get_user_avatar_or_gravatar %}"
     try:
         Template(t).render(Context({}))
     except TemplateSyntaxError as exc:
@@ -1459,3 +1523,127 @@ def test_get_user_avatar_or_gravatar():
         )
     else:
         assert False
+
+
+# ---------------------------------------------------------------------
+@pytest.mark.django_db
+def test_render_object_reactions_for_object__when_no_reactions(a_diary_entry):
+    t = "{% load comments_ink %}{% render_object_reactions for object %}"
+    result = Template(t).render(Context({"object": a_diary_entry}))
+    re_expected = r'<div class="inline flex flex-align-center">[\s]+</div>'
+    match = re.search(re_expected, result)
+    assert match != None
+
+
+@pytest.mark.django_db
+def test_render_object_reactions_for_object(a_diary_entry, an_object_reaction):
+    t = "{% load comments_ink %}{% render_object_reactions for object %}"
+    result = Template(t).render(Context({"object": a_diary_entry}))
+    icon = f"{an_object_reaction.reaction.icon};"
+    assert icon in result
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "a_diary_entry, tag_args",
+    [
+        ("a_diary_entry", ["forrrrr", "object"]),
+        ("a_diary_entry", ["for", "object_that_does_not_exist"]),
+        ("a_diary_entry", ["for", "tests-diary", "1"]),
+        ("a_diary_entry", ["for", "tests.diarrry", "1"]),
+    ],
+    indirect=[
+        "a_diary_entry",
+    ],
+)
+def test_render_object_reactions_raises_TemplateSyntaxError(
+    a_diary_entry, tag_args
+):
+    tag = f"render_object_reactions %s" % " ".join(tag_args)
+    t = "{% load comments_ink %}{% " + tag + " %}"
+    with pytest.raises(TemplateSyntaxError):
+        Template(t).render(
+            Context(
+                {
+                    "object": a_diary_entry,
+                }
+            )
+        )
+
+
+@pytest.mark.django_db
+def test_render_object_reactions_raises_Exception(an_article):
+    # tests.article does not have object_reactions_enabled.
+    t = "{% load comments_ink %}{% render_object_reactions for object %}"
+    with pytest.raises(Exception):
+        Template(t).render(
+            Context(
+                {
+                    "object": an_article,
+                }
+            )
+        )
+
+
+@pytest.mark.django_db
+def test_render_object_reactions_with_var_pk(an_object_reaction):
+    t = (
+        "{% load comments_ink %}"
+        "{% render_object_reactions for tests.diary obj_pk %}"
+    )
+    result = Template(t).render(Context({"obj_pk": 1}))
+    icon = f"{an_object_reaction.reaction.icon};"
+    assert icon in result
+
+
+# ---------------------------------------------------------------------
+@pytest.mark.django_db
+def test_render_object_reactions_form_for_object_case_1(a_diary_entry):
+    """
+    User is not authenticated and object didn't received reactions.
+    """
+    t = "{% load comments_ink %}{% render_object_reactions_form for object %}"
+    result = Template(t).render(
+        Context({"object": a_diary_entry, "user": AnonymousUser()})
+    )
+
+    # Template object_reactions_form.html displays reactions,
+    # regardless of whether the object received reactions or not.
+
+    span_counter = '<span class="small bold" style="color:#444">0</span>'
+    assert result.count(span_counter) == 2
+
+    for item in get_object_reactions_enum():
+        span_icon = '<span class="emoji">&' + item.icon + ";</span>"
+        assert result.count(span_icon) == 1
+
+
+@pytest.mark.django_db
+def test_render_object_reactions_form_for_object_case_2(a_diary_entry, an_user):
+    """
+    User is authenticated and object didn't received reactions.
+    """
+    t = "{% load comments_ink %}{% render_object_reactions_form for object %}"
+    result = Template(t).render(
+        Context({"object": a_diary_entry, "user": an_user})
+    )
+
+    ctype = ContentType.objects.get_for_model(a_diary_entry)
+    object_reactions_form_url = reverse(
+        "comments-ink-object-react", args=(ctype.id, a_diary_entry.id)
+    )
+
+    form_tag = (
+        '<form method="POST" autocomplete="off" '
+        'action="' + object_reactions_form_url + '"'
+        ' id="reactions">'
+    )
+    result.count(form_tag) == 1
+
+
+# ---------------------------------------------------------------------
+@pytest.mark.django_db
+def test_object_reactions_form_target(a_diary_entry):
+    t = "{% load comments_ink %}{% object_reactions_form_target object %}"
+    result = Template(t).render(Context({"object": a_diary_entry}))
+    assert result == "/comments/react/14/1/"
