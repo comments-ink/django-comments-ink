@@ -985,7 +985,7 @@ def flag(request, comment_id, next=None):
         pk=comment_id,
         site__pk=utils.get_current_site_id(request),
     )
-    utils.check_option(comment, "comment_flagging_enabled")
+    utils.check_option("comment_flagging_enabled", comment=comment)
 
     # Flag on POST.
     if request.method == "POST":
@@ -1022,7 +1022,7 @@ def react(request, comment_id, next=None):
         pk=comment_id,
         site__pk=utils.get_current_site_id(request),
     )
-    utils.check_option(comment, "comment_reactions_enabled")
+    utils.check_option("comment_reactions_enabled", comment=comment)
     cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
     cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
 
@@ -1168,10 +1168,12 @@ def react_to_object(request, content_type_id, object_pk, next=None):
             "does not exist" % (content_type_id, object_pk)
         )
 
+    ctype_str = ctype.app_label + "." + ctype.model
+    utils.check_option("object_reactions_enabled", content_type=ctype_str)
     cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
     cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
 
-    cpage = request.POST.get(cpage_qs_param, 1)
+    cpage = request.POST.get(cpage_qs_param, "")
     cfold = request.POST.get(cfold_qs_param, "")
 
     perform_react_to_object(request, content_type_id, object_pk)
@@ -1187,9 +1189,21 @@ def react_to_object(request, content_type_id, object_pk, next=None):
         )
 
     next = request.POST.get("next")
-    next, anchor = next.rsplit("#", 1)
-    joiner = ("?" in next) and "&" or "?"
-    next += joiner + "&".join(qs_params) + "#" + anchor
+
+    if "#" in next:
+        bits = next.rsplit("#", 1)
+        next = bits[0]
+        anchor = "#" + bits[1]
+    else:
+        anchor = ""
+
+    if len(qs_params):
+        joiner = ("?" in next) and "&" or "?"
+        next += joiner + "&".join(qs_params)
+
+    if len(anchor):
+        next += anchor
+
     return HttpResponseRedirect(next)
 
 
@@ -1206,6 +1220,7 @@ def perform_react_to_object(request, content_type_id, object_pk):
         object_pk=object_pk,
         site=site,
     )
+
     if or_qs.filter(authors=request.user).count() == 1:
         if or_qs[0].counter == 1:
             or_qs[0].delete_from_cache()

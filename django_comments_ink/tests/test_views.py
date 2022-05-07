@@ -21,7 +21,11 @@ from django.urls import reverse
 from django_comments.views.comments import CommentPostBadRequest
 from django_comments_ink import signals, signed, views
 from django_comments_ink.conf import settings
-from django_comments_ink.models import CommentReaction, InkComment
+from django_comments_ink.models import (
+    CommentReaction,
+    InkComment,
+    ObjectReaction,
+)
 from django_comments_ink.tests.models import Article, Diary
 from rest_framework import status
 from rest_framework.exceptions import ErrorDetail, PermissionDenied
@@ -1687,7 +1691,8 @@ def test_redirect_to_sent__not_public_comment__uses_moderated_tmpl(
 def test_GET_react_without_reactions_enabled_raises(
     monkeypatch, rf, an_user, an_articles_comment
 ):
-    def raise_PermissionDenied(*args):
+    def raise_PermissionDenied(*args, **kwargs):
+        print("in raise_PermissionDenied")
         raise PermissionDenied(detail="Mee", code=status.HTTP_403_FORBIDDEN)
 
     monkeypatch.setattr(views.utils, "check_option", raise_PermissionDenied)
@@ -1706,7 +1711,10 @@ def test_GET_react_without_reactions_enabled_raises(
 def test_GET_react_renders_react_tmpl(
     monkeypatch, rf, an_user, an_articles_comment
 ):
-    monkeypatch.setattr(views.utils, "check_option", lambda *_: True)
+    def fake_check_option(*args, **kwargs):
+        return True
+
+    monkeypatch.setattr(views.utils, "check_option", fake_check_option)
     monkeypatch.setattr(views, "render", lambda x, tmpl, ctx: (tmpl, ctx))
     request = rf.get(
         reverse("comments-ink-react", args=(an_articles_comment.pk,))
@@ -1728,7 +1736,10 @@ def test_GET_react_renders_react_tmpl(
 
 @pytest.mark.django_db
 def test_POST_react(monkeypatch, rf, an_user, an_articles_comment):
-    monkeypatch.setattr(views.utils, "check_option", lambda *_: True)
+    def fake_check_option(*args, **kwargs):
+        return True
+
+    monkeypatch.setattr(views.utils, "check_option", fake_check_option)
     monkeypatch.setattr(views, "render", lambda x, tmpl, ctx: (tmpl, ctx))
     request = rf.post(
         reverse("comments-ink-react", args=(an_articles_comment.pk,)),
@@ -1754,6 +1765,10 @@ def test_POST_react_two_users_add_same_reaction_2nd_user_withdraws_it(
     # This function tests perform_react: two users add the same
     # reaction to the same comment, and then the second user withdraws the
     # reaction.
+
+    def fake_check_option(*args, **kwargs):
+        return True
+
     def get_cr_counter():
         return CommentReaction.objects.get(
             reaction="+", comment=an_articles_comment
@@ -1769,7 +1784,7 @@ def test_POST_react_two_users_add_same_reaction_2nd_user_withdraws_it(
         request._dont_enforce_csrf_checks = True
         return request
 
-    monkeypatch.setattr(views.utils, "check_option", lambda *_: True)
+    monkeypatch.setattr(views.utils, "check_option", fake_check_option)
 
     # 1: an_user sends the "+" reaction to this comment.
     request = prepare_request(an_user)
@@ -1814,7 +1829,10 @@ def test_POST_react_two_users_add_same_reaction_2nd_user_withdraws_it(
 
 @pytest.mark.django_db
 def test_POST_react_js(monkeypatch, rf, an_user, an_articles_comment):
-    monkeypatch.setattr(views.utils, "check_option", lambda *_: True)
+    def fake_check_option(*args, **kwargs):
+        return True
+
+    monkeypatch.setattr(views.utils, "check_option", fake_check_option)
     monkeypatch.setattr(
         views,
         "json_res",
@@ -1851,7 +1869,10 @@ def test_GET_react_with_an_existing_comments_reaction(
     # so that it creates a_comments_reaction. When we then request GET the
     # react view we will get that reaction with the 'active' css class.
 
-    monkeypatch.setattr(views.utils, "check_option", lambda *_: True)
+    def fake_check_option(*args, **kwargs):
+        return True
+
+    monkeypatch.setattr(views.utils, "check_option", fake_check_option)
     request = rf.get(
         reverse("comments-ink-react", args=(an_articles_comment.pk,)),
     )
@@ -1934,3 +1955,258 @@ def test_get_inkcomment_url_with_page(
     assert response.url.endswith(
         an_article.get_absolute_url() + f"?cpage={cpage}"
     )
+
+
+@pytest.mark.django_db
+def test_get_inkcomment_url_with_fold(rf, an_article, an_articles_comment):
+    args = (
+        an_articles_comment.content_type.pk,
+        int(an_articles_comment.object_pk),
+        an_articles_comment.pk,
+    )
+    request = rf.get(
+        reverse("comments-url-redirect", args=args), {"cfold": "12,37"}
+    )
+    response = views.get_inkcomment_url(request, *args)
+    assert response.status_code == 302
+    assert response.url.endswith(
+        an_article.get_absolute_url() + f"?cfold=12,37"
+    )
+
+
+@pytest.mark.django_db
+def test_get_inkcomment_url_with_fold_raises_Http404(rf, an_articles_comment):
+    args = (
+        an_articles_comment.content_type.pk,
+        int(an_articles_comment.object_pk),
+        an_articles_comment.pk,
+    )
+    request = rf.get(
+        reverse("comments-url-redirect", args=args), {"cfold": "12,A"}
+    )
+    with pytest.raises(Http404):
+        views.get_inkcomment_url(request, *args)
+
+
+# ---------------------------------------------------------------------
+@pytest.mark.django_db
+def test_POST_react_to_object_redirects_to_login(rf, an_article):
+    ctype = ContentType.objects.get_for_model(an_article)
+    react_url = reverse(
+        "comments-ink-object-react", args=(ctype.id, an_article.id)
+    )
+    request = rf.post(
+        react_url,
+        data={
+            "reaction": "+",
+        },
+        follow=True,
+    )
+    request.user = AnonymousUser()
+    request._dont_enforce_csrf_checks = True
+    response = views.react_to_object(request, ctype.id, an_article.id)
+    assert response.url == settings.LOGIN_URL + "?next=" + react_url
+    assert response.status_code == 302
+
+
+@pytest.mark.django_db
+def test_POST_react_to_an_article_is_not_enabled(rf, an_article, an_user):
+    ctype = ContentType.objects.get_for_model(an_article)
+    react_url = reverse(
+        "comments-ink-object-react", args=(ctype.id, an_article.id)
+    )
+    request = rf.post(
+        react_url,
+        data={
+            "reaction": "+",
+        },
+        follow=True,
+    )
+    request.user = an_user
+    request._dont_enforce_csrf_checks = True
+    with pytest.raises(PermissionDenied):
+        views.react_to_object(request, ctype.id, an_article.id)
+
+
+@pytest.mark.django_db
+def test_POST_react_to_a_diary_entry_is_enabled(rf, a_diary_entry, an_user):
+    ctype = ContentType.objects.get_for_model(a_diary_entry)
+    site = Site.objects.get(pk=1)
+    react_url = reverse(
+        "comments-ink-object-react", args=(ctype.id, a_diary_entry.id)
+    )
+    request = rf.post(
+        react_url,
+        data={"reaction": "+", "next": a_diary_entry.get_absolute_url()},
+        follow=True,
+    )
+
+    # Assert no reaction has been posted to a_diary_entry yet.
+    num_obj_reactions = ObjectReaction.objects.filter(
+        content_type=ctype, object_pk=a_diary_entry.id, site=site
+    ).count()
+    assert num_obj_reactions == 0
+
+    request.user = an_user
+    request._dont_enforce_csrf_checks = True
+    response = views.react_to_object(request, ctype.id, a_diary_entry.id)
+    assert response.url == a_diary_entry.get_absolute_url()
+
+    # Assert the reaction has been added.
+    num_obj_reactions = ObjectReaction.objects.filter(
+        content_type=ctype, object_pk=a_diary_entry.id, site=site
+    ).count()
+    assert num_obj_reactions == 1
+
+
+@pytest.mark.django_db
+def test_POST_react_twice_to_a_diary_entry_with_same_reaction(
+    rf, a_diary_entry, an_user
+):
+    ctype = ContentType.objects.get_for_model(a_diary_entry)
+    site = Site.objects.get(pk=1)
+    react_url = reverse(
+        "comments-ink-object-react", args=(ctype.id, a_diary_entry.id)
+    )
+    request = rf.post(
+        react_url,
+        data={"reaction": "+", "next": a_diary_entry.get_absolute_url()},
+        follow=True,
+    )
+
+    # First reaction, will add the reaction.
+    request.user = an_user
+    request._dont_enforce_csrf_checks = True
+    response = views.react_to_object(request, ctype.id, a_diary_entry.id)
+    assert response.url == a_diary_entry.get_absolute_url()
+
+    # Second same reaction, will withdraw the reaction.
+    response = views.react_to_object(request, ctype.id, a_diary_entry.id)
+    assert response.url == a_diary_entry.get_absolute_url()
+
+    # Assert the reaction has been added.
+    assert (
+        ObjectReaction.objects.filter(
+            reaction="+",
+            content_type=ctype,
+            object_pk=a_diary_entry.id,
+            site=site,
+        ).count()
+        == 0
+    )
+
+
+@pytest.mark.django_db
+def test_POST_react_three_times_to_a_diary_entry_with_same_reaction(
+    rf, a_diary_entry, an_user, an_user_2
+):
+    # First send the reaction with an_user, then with an_user_2.
+    # Then withdraw the reaction of an_user_2.
+    ctype = ContentType.objects.get_for_model(a_diary_entry)
+    site = Site.objects.get(pk=1)
+    react_url = reverse(
+        "comments-ink-object-react", args=(ctype.id, a_diary_entry.id)
+    )
+    request = rf.post(
+        react_url,
+        data={"reaction": "+", "next": a_diary_entry.get_absolute_url()},
+        follow=True,
+    )
+
+    # First reaction, will add the reaction.
+    request.user = an_user
+    request._dont_enforce_csrf_checks = True
+    response = views.react_to_object(request, ctype.id, a_diary_entry.id)
+    assert response.url == a_diary_entry.get_absolute_url()
+
+    # Second same reaction, with an_user_2.
+    request.user = an_user_2
+    response = views.react_to_object(request, ctype.id, a_diary_entry.id)
+    assert response.url == a_diary_entry.get_absolute_url()
+
+    # Third, send same reaction of an_user_2, will withdraw the reaction.
+    response = views.react_to_object(request, ctype.id, a_diary_entry.id)
+    assert response.url == a_diary_entry.get_absolute_url()
+
+    # Assert the reaction has been added.
+    assert (
+        ObjectReaction.objects.filter(
+            reaction="+",
+            content_type=ctype,
+            object_pk=a_diary_entry.id,
+            site=site,
+        ).count()
+        == 1
+    )
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "rf, a_diary_entry, an_user, post_extra_params, expected_url_qstring",
+    [
+        ("rf", "a_diary_entry", "an_user", {"cpage": 2}, "?cpage=2"),
+        ("rf", "a_diary_entry", "an_user", {"cfold": "1,3"}, "?cfold=1,3"),
+        (
+            "rf",
+            "a_diary_entry",
+            "an_user",
+            {"cpage": 3, "cfold": "12,46"},
+            "?cpage=3&cfold=12,46",
+        ),
+    ],
+    indirect=["rf", "a_diary_entry", "an_user"],
+)
+def test_POST_react_to_object_with_cpage(
+    rf, a_diary_entry, an_user, post_extra_params, expected_url_qstring
+):
+    a_diary_entry_url = a_diary_entry.get_absolute_url()
+    ctype = ContentType.objects.get_for_model(a_diary_entry)
+    react_url = reverse(
+        "comments-ink-object-react", args=(ctype.id, a_diary_entry.id)
+    )
+    data = {"reaction": "+", "next": a_diary_entry_url}
+    data.update(post_extra_params)
+    request = rf.post(react_url, data=data, follow=True)
+
+    request.user = an_user
+    request._dont_enforce_csrf_checks = True
+    response = views.react_to_object(request, ctype.id, a_diary_entry.id)
+    assert response.url == a_diary_entry_url + expected_url_qstring
+
+
+@pytest.mark.django_db
+def test_POST_react_to_a_diary_entry_with_anchor(rf, a_diary_entry, an_user):
+    ctype = ContentType.objects.get_for_model(a_diary_entry)
+    site = Site.objects.get(pk=1)
+    react_url = reverse(
+        "comments-ink-object-react", args=(ctype.id, a_diary_entry.id)
+    )
+    request = rf.post(
+        react_url,
+        data={
+            "reaction": "+",
+            "next": a_diary_entry.get_absolute_url() + "#reactions",
+        },
+        follow=True,
+    )
+
+    request.user = an_user
+    request._dont_enforce_csrf_checks = True
+    response = views.react_to_object(request, ctype.id, a_diary_entry.id)
+    assert response.url == a_diary_entry.get_absolute_url() + "#reactions"
+
+
+@pytest.mark.django_db
+def test_POST_react_to_non_existing_content_type(rf, an_user):
+    react_url = reverse("comments-ink-object-react", args=(234, 1))
+    request = rf.post(
+        react_url,
+        data={
+            "reaction": "+",
+        },
+        follow=True,
+    )
+    request.user = an_user
+    request._dont_enforce_csrf_checks = True
+    with pytest.raises(Http404):
+        views.react_to_object(request, 234, 1)

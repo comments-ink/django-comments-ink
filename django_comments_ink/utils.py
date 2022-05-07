@@ -132,13 +132,20 @@ option_msgs = {
 }
 
 
-def check_option(comment, option):
-    ret_option = get_app_model_options(comment=comment)[option]
+def check_option(option, comment=None, content_type=None):
+    ret_option = get_app_model_options(
+        comment=comment, content_type=content_type
+    )[option]
     if not ret_option:
         message = option_msgs[option]["PROD"]
         if settings.DEBUG:
-            ct = ContentType.objects.get_for_model(comment.content_object)
-            message = option_msgs[option]["DEBUG"] % (ct.app_label, ct.model)
+            app_label, model = "", ""
+            if comment:
+                ct = ContentType.objects.get_for_model(comment.content_object)
+                app_label, model = ct.app_label, ct.model
+            if content_type:
+                app_label, model = content_type.rsplit(".", 1)
+            message = option_msgs[option]["DEBUG"] % (app_label, model)
         raise PermissionDenied(detail=message, code=status.HTTP_403_FORBIDDEN)
 
 

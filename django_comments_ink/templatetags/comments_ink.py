@@ -1088,6 +1088,11 @@ class BaseObjectReactionsNode(Node):
                 % app_model
             )
 
+        self.object = self.ctype.get_object_for_this_type(pk=self.object_pk)
+        check_input_allowed_str = options.pop("check_input_allowed")
+        check_func = import_string(check_input_allowed_str)
+        self.is_input_allowed = check_func(self.object)
+
     @property
     def template_list(self):
         return [
@@ -1132,7 +1137,6 @@ class BaseObjectReactionsNode(Node):
     def render(self, context):
         request = context.get("request", None)
         self.resolve_ctype_and_object_pk(context)
-        object = self.ctype.get_object_for_this_type(pk=self.object_pk)
 
         cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
         page = (request and request.GET.get(cpage_qs_param, None)) or 1
@@ -1147,8 +1151,9 @@ class BaseObjectReactionsNode(Node):
             login_url = settings.LOGIN_URL
 
         context = {
-            "object": object,
+            "object": self.object,
             "object_reactions": self.get_object_reactions(),
+            "is_input_allowed": self.is_input_allowed,
             "comments_page_qs_param": cpage_qs_param,
             cpage_qs_param: page,
             "comments_fold_qs_param": cfold_qs_param,
