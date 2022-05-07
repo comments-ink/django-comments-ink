@@ -122,7 +122,7 @@ class CreateReportFlag(DefaultsMixin, generics.CreateAPIView):
         comment = get_object_or_404(
             get_comment_model(), pk=int(request.data["comment"])
         )
-        check_option(comment, "comment_flagging_enabled")
+        check_option("comment_flagging_enabled", comment=comment)
         return super(CreateReportFlag, self).post(request, *args, **kwargs)
 
     def perform_create(self, serializer):
@@ -139,7 +139,7 @@ class PostCommentReaction(mixins.CreateModelMixin, generics.GenericAPIView):
         comment = get_object_or_404(
             get_comment_model(), pk=int(request.data["comment"])
         )
-        check_option(comment, "comment_reactions_enabled")
+        check_option("comment_reactions_enabled", comment=comment)
         self.create(request, *args, **kwargs)
         # Create a new response object with the list of reactions the
         # comment has received. If other users sent reactions they all will
