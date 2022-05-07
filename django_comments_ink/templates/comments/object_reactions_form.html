@@ -1,25 +1,35 @@
 {% load comments_ink %}
 
-{% if user.is_authenticated %}
-<form method="POST" autocomplete="off" action="{% object_reactions_form_target object %}" id="reactions">
-  {% csrf_token %}
-  <input type="hidden" name="{{ comments_page_qs_param }}" value="{{ cpage }}" />
-  <input type="hidden" name="{{ comments_fold_qs_param }}" value="{{ cfold }}" />
-  <input type="hidden" name="next" value="{{ object.get_absolute_url }}#reactions" />
-  <div class="flex flex-align-center">
+{% if user.is_authenticated and is_input_allowed %}
+  <form method="POST" autocomplete="off" action="{% object_reactions_form_target object %}" id="reactions">
+    {% csrf_token %}
+    <input type="hidden" name="{{ comments_page_qs_param }}" value="{{ cpage }}" />
+    <input type="hidden" name="{{ comments_fold_qs_param }}" value="{{ cfold }}" />
+    <input type="hidden" name="next" value="{{ object.get_absolute_url }}#reactions" />
+    <div class="flex flex-align-center">
+      {% for reaction in object_reactions %}
+        <button type="submit" class="emoji" name="reaction" id="{{ reaction.value }}" value="{{ reaction.value }}">&{{ reaction.icon }};</button>&nbsp;
+        <span class="small bold">{{ reaction.counter }}</span>
+        {% if not forloop.last %}&nbsp;&nbsp;&nbsp;{% endif %}
+      {% endfor %}
+    </div>
+  </form>
+{% elif is_input_allowed %}
+  <a id="reactions" class="flex flex-align-center" href="{{ login_url }}?next={{ object.get_absolute_url }}#reactions">
     {% for reaction in object_reactions %}
-      <button type="submit" class="emoji" name="reaction" id="{{ reaction.value }}" value="{{ reaction.value }}">&{{ reaction.icon }};</button>&nbsp;
-      <span class="small bold">{{ reaction.counter }}</span>
+      <span class="emoji">&{{ reaction.icon }};</span>&nbsp;
+      <span class="small bold" style="color:#444">{{ reaction.counter }}</span>
       {% if not forloop.last %}&nbsp;&nbsp;&nbsp;{% endif %}
     {% endfor %}
-  </div>
-</form>
+  </a>
 {% else %}
-<a id="reactions" class="flex flex-align-center" href="{{ login_url }}?next={{ object.get_absolute_url }}#reactions">
-  {% for reaction in object_reactions %}
-    <span class="emoji">&{{ reaction.icon }};</span>&nbsp;
-    <span class="small bold" style="color:#444">{{ reaction.counter }}</span>
-    {% if not forloop.last %}&nbsp;&nbsp;&nbsp;{% endif %}
-  {% endfor %}
-</a>
+  <div id="reactions" class="flex flex-align-center">
+    {% for reaction in object_reactions %}
+      {% if reaction.counter %}
+        <span class="emoji">&{{ reaction.icon }};</span>
+        <span class="small">{{ reaction.counter }}</span>
+        {% if not forloop.last %}&nbsp;{% endif %}
+      {% endif %}
+    {% endfor %}
+  </div>
 {% endif %}

@@ -1975,9 +1975,7 @@ def test_get_inkcomment_url_with_fold(rf, an_article, an_articles_comment):
 
 
 @pytest.mark.django_db
-def test_get_inkcomment_url_with_fold_raises_Http404(
-    rf, an_article, an_articles_comment
-):
+def test_get_inkcomment_url_with_fold_raises_Http404(rf, an_articles_comment):
     args = (
         an_articles_comment.content_type.pk,
         int(an_articles_comment.object_pk),
