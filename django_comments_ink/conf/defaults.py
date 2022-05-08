@@ -75,7 +75,6 @@ def username(u):
 
 COMMENTS_INK_API_USER_REPR = username
 
-
 # Makes the "Notify me about followup comments" checkbox in the
 # comment form checked (True) or unchecked (False) by default.
 COMMENTS_INK_DEFAULT_FOLLOWUP = False
@@ -83,6 +82,9 @@ COMMENTS_INK_DEFAULT_FOLLOWUP = False
 # How many reaction buttons can be displayed
 # in a row before it breaks into another row.
 COMMENTS_INK_REACTIONS_ROW_LENGTH = 4
+
+# How many users are listed when hovering a reaction.
+COMMENTS_INK_MAX_USERS_IN_TOOLTIP = 10
 
 # Display up to the given number of comments in the last page to avoid
 # creating another page containing only these amount of comments.

@@ -1610,7 +1610,7 @@ def test_render_object_reactions_form_for_object_case_1(a_diary_entry):
     # Template object_reactions_form.html displays reactions,
     # regardless of whether the object received reactions or not.
 
-    span_counter = '<span class="small bold" style="color:#444">0</span>'
+    span_counter = '<span style="color:#444">0</span>'
     assert result.count(span_counter) == 2
 
     for item in get_object_reactions_enum():

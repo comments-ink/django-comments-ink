@@ -39,7 +39,7 @@
               <li>It has reactions:</li>
               <ul class="mx0 my0 small">
                 {% for reaction in comment.reactions.all %}
-                  {% with reaction_enum=reaction|get_reaction_enum %}
+                  {% with reaction_enum=reaction|get_comment_reaction_enum %}
                     <li class="my0">
                       {% blocktrans with r_icon=reaction_enum.icon count r_counter=reaction.counter %}
                       One person reacted with <span class="emoji">&{{ r_icon }}</span>

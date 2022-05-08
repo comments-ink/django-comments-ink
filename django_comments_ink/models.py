@@ -160,6 +160,9 @@ class InkComment(Comment):
                 return result
 
         total_counter = 0
+        max_users_listed = getattr(
+            settings, "COMMENTS_INK_MAX_USERS_IN_TOOLTIP", 10
+        )
         reactions = OrderedDict([(k, {}) for k in get_comment_reactions_enum()])
         # First add the existing reactions sorted by reaction value.
         for item in self.reactions.order_by("reaction"):
@@ -167,7 +170,7 @@ class InkComment(Comment):
             reaction = get_comment_reactions_enum()(item.reaction)
             authors = [
                 settings.COMMENTS_INK_API_USER_REPR(author)
-                for author in item.authors.all()
+                for author in item.authors.all()[:max_users_listed]
             ]
             reactions[reaction.value] = {
                 "value": reaction.value,

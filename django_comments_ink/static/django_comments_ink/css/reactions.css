@@ -86,7 +86,6 @@ button.emoji:hover, button.emoji:focus {
 
 .reaction .emoji {
     padding: 0 0 0 3px;
-    font-size: .65rem;
     font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 

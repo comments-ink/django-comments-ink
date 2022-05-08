@@ -23,7 +23,7 @@
           {% for quote in object_list %}
             {% get_comment_count for quote as comment_count %}
             <li>
-              <div class="inline flex flex-align-center">
+              <h6 class="inline flex flex-align-center">
                 <a href="{{ quote.get_absolute_url }}">{{ quote.title }}</a>&nbsp;-&nbsp;<span class="small">{{ quote.published_time|date:"d-F-Y" }}</span>
                 {% if comment_count %}
                   &nbsp;
@@ -32,7 +32,7 @@
                   &nbsp;
                 {% endif %}
                 {% render_object_reactions for quote %}
-              </div>
+              </h6>
             </li>
           {% endfor %}
         </ul>
