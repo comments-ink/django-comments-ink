@@ -253,6 +253,9 @@ COMMENTS_INK_APP_MODEL_OPTIONS = {
 # selector to the following setting.
 COMMENTS_INK_CSS_CUSTOM_SELECTOR = "dci dci-custom"
 
+# How many users are listed when hovering a reaction.
+COMMENTS_INK_MAX_USERS_IN_TOOLTIP = 5
+
 # The theme dir, corresponds with any of the directories listed
 # with the template directory: comments/themes/<theme_dir>.
 COMMENTS_INK_THEME_DIR = ""

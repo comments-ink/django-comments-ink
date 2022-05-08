@@ -7,6 +7,10 @@
 
 {% block title %}{{ block.super }}&nbsp;&bull;&nbsp;stories{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" type="text/css" href="{% static 'django_comments_ink/css/comments.css' %}">
+{% endblock %}
+
 {% block nav-stories-class %}active{% endblock %}
 
 {% block content %}
@@ -19,9 +23,8 @@
           {% for story in object_list %}
             {% get_comment_count for story as comment_count %}
             <li>
-              <div class="inline flex flex-align-center">
-                <a href="{{ story.get_absolute_url }}">{{ story.title }}</a>
-                <span class="small">{{ story.published_time|date:"d-F-Y" }}</span>
+              <h6 class="inline flex flex-align-center">
+                <a href="{{ story.get_absolute_url }}">{{ story.title }}</a>&nbsp;-&nbsp;<span class="small">{{ story.published_time|date:"d-F-Y" }}</span>
                 {% if comment_count %}
                   &nbsp;
                   <span class="emoji">&#128172;</span>
@@ -29,6 +32,7 @@
                   &nbsp;
                 {% endif %}
                 {% render_object_reactions for story %}
+              </h6>
             </li>
           {% endfor %}
         </ul>

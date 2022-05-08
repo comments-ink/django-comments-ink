@@ -226,6 +226,9 @@ COMMENTS_INK_APP_MODEL_OPTIONS = {
 # selector to the following setting.
 COMMENTS_INK_CSS_CUSTOM_SELECTOR = "dci dci-custom"
 
+# How many users are listed when hovering a reaction.
+COMMENTS_INK_MAX_USERS_IN_TOOLTIP = 5
+
 # Display up to the given number of comments in the last page to avoid
 # creating another page containing only these amount of comments.
 COMMENTS_INK_MAX_LAST_PAGE_ORPHANS = 4

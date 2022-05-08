@@ -1106,9 +1106,21 @@ class BaseObjectReactionsNode(Node):
 
     def get_object_reactions(self):
         """Returns list of dicts with object reactions and their counters."""
+        max_users_listed = getattr(
+            settings, "COMMENTS_INK_MAX_USERS_IN_TOOLTIP", 10
+        )
         reactionsd = dict(
             [
-                (item.reaction, item.counter)
+                (
+                    item.reaction,
+                    {
+                        "counter": item.counter,
+                        "authors": [
+                            settings.COMMENTS_INK_API_USER_REPR(author)
+                            for author in item.authors.all()[:max_users_listed]
+                        ],
+                    },
+                )
                 for item in ObjectReaction.objects.filter(
                     content_type=self.ctype,
                     object_pk=self.object_pk,
@@ -1118,17 +1130,15 @@ class BaseObjectReactionsNode(Node):
         )
 
         object_reactions = []
+        defs = {"counter": 0, "authors": []}
         for item in get_object_reactions_enum():
-            if item.value in reactionsd:
-                counter = reactionsd[item.value]
-            else:
-                counter = 0
             object_reactions.append(
                 {
                     "value": item.value,
                     "label": item.label,
                     "icon": item.icon,
-                    "counter": counter,
+                    "counter": reactionsd.get(item.value, defs)["counter"],
+                    "authors": reactionsd.get(item.value, defs)["authors"],
                 }
             )
 

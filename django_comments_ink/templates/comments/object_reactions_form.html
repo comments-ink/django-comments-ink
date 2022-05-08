@@ -1,3 +1,4 @@
+{% load i18n %}
 {% load comments_ink %}
 
 {% if user.is_authenticated and is_input_allowed %}
@@ -9,26 +10,37 @@
     <div class="flex flex-align-center">
       {% for reaction in object_reactions %}
         <button type="submit" class="emoji" name="reaction" id="{{ reaction.value }}" value="{{ reaction.value }}">&{{ reaction.icon }};</button>&nbsp;
-        <span class="small bold">{{ reaction.counter }}</span>
+        <span class="reaction">
+          <span>{{ reaction.counter }}</span>
+          <div class="reaction_tooltip small">{% if reaction.counter > 0 and reaction.counter > reaction.authors|length %}{% blocktrans with authors=reaction.authors|join:", " label=reaction.label %}{{ authors }} and more reacted with {{ reaction.label }}{% endblocktrans %}{% elif reaction.counter > 0 and reaction.counter == reaction.authors|length %}{% blocktrans with authors=reaction.authors|join:", " label=reaction.label %}{{ authors }} reacted with {{ label }}{% endblocktrans %}{% else %}{% blocktrans with label=reaction.label %}Nobody reacted with {{ label }}{% endblocktrans %}{% endif %}</div>
+        </span>
         {% if not forloop.last %}&nbsp;&nbsp;&nbsp;{% endif %}
       {% endfor %}
     </div>
   </form>
 {% elif is_input_allowed %}
-  <a id="reactions" class="flex flex-align-center" href="{{ login_url }}?next={{ object.get_absolute_url }}#reactions">
+  <div id="reactions" class="flex flex-align-center">
     {% for reaction in object_reactions %}
-      <span class="emoji">&{{ reaction.icon }};</span>&nbsp;
-      <span class="small bold" style="color:#444">{{ reaction.counter }}</span>
+      <a href="{{ login_url }}?next={{ object.get_absolute_url }}#reactions">
+        <span class="emoji">&{{ reaction.icon }};</span>
+      </a>&nbsp;&nbsp;
+      <span class="reaction">
+        <span style="color:#444">{{ reaction.counter }}</span>
+        <div class="reaction_tooltip small">{% if reaction.counter > 0 and reaction.counter > reaction.authors|length %}{% blocktrans with authors=reaction.authors|join:", " label=reaction.label %}{{ authors }} and more reacted with {{ label }}{% endblocktrans %}{% elif reaction.counter > 0 and reaction.counter == reaction.authors|length %}{% blocktrans with authors=reaction.authors|join:", " label=reaction.label %}{{ authors }} reacted with {{ label }}{% endblocktrans %}{% else %}{% blocktrans with label=reaction.label %}Nobody reacted with {{ label }}{% endblocktrans %}{% endif %}</div>
+      </span>
       {% if not forloop.last %}&nbsp;&nbsp;&nbsp;{% endif %}
     {% endfor %}
-  </a>
+  </div>
 {% else %}
   <div id="reactions" class="flex flex-align-center">
     {% for reaction in object_reactions %}
       {% if reaction.counter %}
-        <span class="emoji">&{{ reaction.icon }};</span>
-        <span class="small">{{ reaction.counter }}</span>
-        {% if not forloop.last %}&nbsp;{% endif %}
+        <span class="emoji">&{{ reaction.icon }};</span>&nbsp;&nbsp;
+        <span class="reaction">
+          <span>{{ reaction.counter }}</span>
+          <div class="reaction_tooltip small">{% if reaction.counter > 0 and reaction.counter > reaction.authors|length %}{% blocktrans with authors=reaction.authors|join:", " label=reaction.label %}{{ authors }} and more reacted with {{ label }}{% endblocktrans %}{% elif reaction.counter > 0 and reaction.counter == reaction.authors|length %}{% blocktrans with authors=reaction.authors|join:", " label=reaction.label %}{{ authors }} reacted with {{ label }}{% endblocktrans %}{% else %}{% blocktrans with label=reaction.label %}Nobody reacted with {{ label }}{% endblocktrans %}{% endif %}</div>
+        </span>
+        {% if not forloop.last %}&nbsp;&nbsp;&nbsp;{% endif %}
       {% endif %}
     {% endfor %}
   </div>
