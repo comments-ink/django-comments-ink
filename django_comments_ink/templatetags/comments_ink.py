@@ -356,11 +356,13 @@ class RenderInkCommentListNode(InkCommentListNode):
         app_model = "%s.%s" % (ctype.app_label, ctype.model)
         MTL = settings.COMMENTS_INK_MAX_THREAD_LEVEL_BY_APP_MODEL
         mtl = MTL.get(app_model, settings.COMMENTS_INK_MAX_THREAD_LEVEL)
+        max_users_in_tooltip = settings.COMMENTS_INK_MAX_USERS_IN_TOOLTIP
         context_dict.update(
             {
                 "dcx_theme_dir": theme_dir,
                 "max_thread_level": mtl,
                 "reply_stack": [],  # List to control reply widget rendering.
+                "max_users_in_tooltip": max_users_in_tooltip,
             }
         )
 
