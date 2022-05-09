@@ -29,6 +29,11 @@ urlpatterns = [
     re_path(r"^react/(\d+)/$", views.react, name="comments-ink-react"),
     re_path(r"^reacted/$", views.react_done, name="comments-ink-react-done"),
     re_path(
+        r"^list-reacted/(\d+)/([\w\+\-]+)/$",
+        views.list_reacted,
+        name="comments-ink-list-reacted",
+    ),
+    re_path(
         r"^react/(\d+)/(\d+)/$",
         views.react_to_object,
         name="comments-ink-object-react",

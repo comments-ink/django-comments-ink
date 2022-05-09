@@ -25,18 +25,15 @@ from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
 from django.views.defaults import bad_request
+
 from django_comments.signals import comment_was_posted, comment_will_be_posted
 from django_comments.views.comments import CommentPostBadRequest
 from django_comments.views.moderation import perform_flag
 from django_comments.views.utils import next_redirect
+
 from django_comments_ink import get_comment_reactions_enum, get_form
 from django_comments_ink import get_model as get_comment_model
-from django_comments_ink import (
-    get_object_reactions_enum,
-    signals,
-    signed,
-    utils,
-)
+from django_comments_ink import signals, signed, utils
 from django_comments_ink.conf import settings
 from django_comments_ink.models import (
     CommentReaction,
@@ -272,6 +269,25 @@ if theme_dir_exists:
     ]
 else:
     _reacted_tmpl = "comments/reacted.html"
+
+
+# List of possible paths to the list_reacted.html template file.
+_list_reacted_tmpl = []
+if theme_dir_exists:
+    _list_reacted_tmpl.extend(
+        [
+            "comments/{theme_dir}/{app_label}/{model}/list_reacted.html",
+            "comments/{theme_dir}/{app_label}/list_reacted.html",
+            "comments/{theme_dir}/list_reacted.html",
+        ]
+    )
+_list_reacted_tmpl.extend(
+    [
+        "comments/{app_label}/{model}/list_reacted.html",
+        "comments/{app_label}/list_reacted.html",
+        "comments/list_reacted.html",
+    ]
+)
 
 
 # ---------------------------------------------------------------------
@@ -1138,7 +1154,7 @@ def react_done(request):
             site__pk=utils.get_current_site_id(request),
         )
     else:
-        raise Http404
+        raise Http404(_("Comment does not exist"))
 
     page = int(cpage) if cpage != "last" else "last"
     fold = (len(cfold) and {int(cid) for cid in cfold.split(",")}) or {}
@@ -1247,6 +1263,36 @@ def perform_react_to_object(request, content_type_id, object_pk):
         request=request,
     )
     return created
+
+
+def list_reacted(request, comment_id, reaction_value):
+    comment = get_object_or_404(
+        get_comment_model(),
+        pk=comment_id,
+        site__pk=utils.get_current_site_id(request),
+    )
+    reaction = get_object_or_404(
+        CommentReaction, reaction=reaction_value, comment=comment
+    )
+
+    authors = [
+        settings.COMMENTS_INK_API_USER_REPR(author)
+        for author in reaction.authors.all()
+    ]
+
+    max_users_in_tooltip = settings.COMMENTS_INK_MAX_USERS_IN_TOOLTIP
+    if len(authors) <= max_users_in_tooltip:
+        raise Http404(_("Not enough users"))
+
+    return render(
+        request,
+        _list_reacted_tmpl,
+        {
+            "comment": comment,
+            "reaction": get_comment_reactions_enum()(reaction.reaction),
+            "authors": authors,
+        },
+    )
 
 
 def get_inkcomment_url(request, content_type_id, object_id, comment_id):
