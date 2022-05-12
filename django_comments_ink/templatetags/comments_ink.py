@@ -1162,10 +1162,14 @@ class BaseObjectReactionsNode(Node):
         except NoReverseMatch as exc:
             login_url = settings.LOGIN_URL
 
+        max_users_in_tooltip = settings.COMMENTS_INK_MAX_USERS_IN_TOOLTIP
+
         context = {
+            "content_type": self.ctype,
             "object": self.object,
             "object_reactions": self.get_object_reactions(),
             "is_input_allowed": self.is_input_allowed,
+            "max_users_in_tooltip": max_users_in_tooltip,
             "comments_page_qs_param": cpage_qs_param,
             cpage_qs_param: page,
             "comments_fold_qs_param": cfold_qs_param,
@@ -1252,7 +1256,7 @@ def object_reactions_form_target(object):
         <form action="{% object_reactions_form_target object %}" method="post">
     """
     ctype = ContentType.objects.get_for_model(object)
-    return reverse("comments-ink-object-react", args=(ctype.id, object.id))
+    return reverse("comments-ink-react-to-object", args=(ctype.id, object.id))
 
 
 # ----------------------------------------------------------------------

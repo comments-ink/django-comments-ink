@@ -31,7 +31,11 @@ from django_comments.views.comments import CommentPostBadRequest
 from django_comments.views.moderation import perform_flag
 from django_comments.views.utils import next_redirect
 
-from django_comments_ink import get_comment_reactions_enum, get_form
+from django_comments_ink import (
+    get_comment_reactions_enum,
+    get_form,
+    get_object_reactions_enum,
+)
 from django_comments_ink import get_model as get_comment_model
 from django_comments_ink import signals, signed, utils
 from django_comments_ink.conf import settings
@@ -286,6 +290,26 @@ _list_reacted_tmpl.extend(
         "comments/{app_label}/{model}/list_reacted.html",
         "comments/{app_label}/list_reacted.html",
         "comments/list_reacted.html",
+    ]
+)
+
+
+# List of possible paths to the list_reacted_to_object.html template file.
+_list_reacted_to_object_tmpl = []
+if theme_dir_exists:
+    _list_reacted_to_object_tmpl.extend(
+        [
+            "comments/{theme_dir}/{app_label}/{model}/"
+            "list_reacted_to_object.html",
+            "comments/{theme_dir}/{app_label}/list_reacted_to_object.html",
+            "comments/{theme_dir}/list_reacted_to_object.html",
+        ]
+    )
+_list_reacted_to_object_tmpl.extend(
+    [
+        "comments/{app_label}/{model}/list_reacted_to_object.html",
+        "comments/{app_label}/list_reacted_to_object.html",
+        "comments/list_reacted_to_object.html",
     ]
 )
 
@@ -1290,6 +1314,44 @@ def list_reacted(request, comment_id, reaction_value):
         {
             "comment": comment,
             "reaction": get_comment_reactions_enum()(reaction.reaction),
+            "authors": authors,
+        },
+    )
+
+
+def list_reacted_to_object(request, content_type_id, object_pk, reaction_value):
+    try:
+        ctype = ContentType.objects.get(pk=content_type_id)
+        ctype.get_object_for_this_type(pk=object_pk)
+    except Exception:
+        raise Http404(
+            "Object referenced by pair (ctype_id, obj_id): (%d, %d) "
+            "does not exist" % (content_type_id, object_pk)
+        )
+
+    reaction = get_object_or_404(
+        ObjectReaction,
+        reaction=reaction_value,
+        content_type=ctype,
+        object_pk=object_pk,
+        site=get_current_site(request),
+    )
+
+    authors = [
+        settings.COMMENTS_INK_API_USER_REPR(author)
+        for author in reaction.authors.all()
+    ]
+
+    max_users_in_tooltip = settings.COMMENTS_INK_MAX_USERS_IN_TOOLTIP
+    if len(authors) <= max_users_in_tooltip:
+        raise Http404(_("Not enough users"))
+
+    return render(
+        request,
+        _list_reacted_to_object_tmpl,
+        {
+            "object": reaction.content_object,
+            "reaction": get_object_reactions_enum()(reaction.reaction),
             "authors": authors,
         },
     )

@@ -1630,7 +1630,7 @@ def test_render_object_reactions_form_for_object_case_2(a_diary_entry, an_user):
 
     ctype = ContentType.objects.get_for_model(a_diary_entry)
     object_reactions_form_url = reverse(
-        "comments-ink-object-react", args=(ctype.id, a_diary_entry.id)
+        "comments-ink-react-to-object", args=(ctype.id, a_diary_entry.id)
     )
 
     form_tag = (
