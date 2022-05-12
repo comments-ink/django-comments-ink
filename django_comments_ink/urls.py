@@ -36,7 +36,12 @@ urlpatterns = [
     re_path(
         r"^react/(\d+)/(\d+)/$",
         views.react_to_object,
-        name="comments-ink-object-react",
+        name="comments-ink-react-to-object",
+    ),
+    re_path(
+        r"^list-reacted/(\d+)/(\d+)/([\w\+\-]+)/$",
+        views.list_reacted_to_object,
+        name="comments-ink-list-reacted-to-object",
     ),
     # Remap comments-url-redirect to add query string params.
     re_path(

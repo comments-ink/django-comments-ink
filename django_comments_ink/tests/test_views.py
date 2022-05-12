@@ -1993,7 +1993,7 @@ def test_get_inkcomment_url_with_fold_raises_Http404(rf, an_articles_comment):
 def test_POST_react_to_object_redirects_to_login(rf, an_article):
     ctype = ContentType.objects.get_for_model(an_article)
     react_url = reverse(
-        "comments-ink-object-react", args=(ctype.id, an_article.id)
+        "comments-ink-react-to-object", args=(ctype.id, an_article.id)
     )
     request = rf.post(
         react_url,
@@ -2013,7 +2013,7 @@ def test_POST_react_to_object_redirects_to_login(rf, an_article):
 def test_POST_react_to_an_article_is_not_enabled(rf, an_article, an_user):
     ctype = ContentType.objects.get_for_model(an_article)
     react_url = reverse(
-        "comments-ink-object-react", args=(ctype.id, an_article.id)
+        "comments-ink-react-to-object", args=(ctype.id, an_article.id)
     )
     request = rf.post(
         react_url,
@@ -2033,7 +2033,7 @@ def test_POST_react_to_a_diary_entry_is_enabled(rf, a_diary_entry, an_user):
     ctype = ContentType.objects.get_for_model(a_diary_entry)
     site = Site.objects.get(pk=1)
     react_url = reverse(
-        "comments-ink-object-react", args=(ctype.id, a_diary_entry.id)
+        "comments-ink-react-to-object", args=(ctype.id, a_diary_entry.id)
     )
     request = rf.post(
         react_url,
@@ -2066,7 +2066,7 @@ def test_POST_react_twice_to_a_diary_entry_with_same_reaction(
     ctype = ContentType.objects.get_for_model(a_diary_entry)
     site = Site.objects.get(pk=1)
     react_url = reverse(
-        "comments-ink-object-react", args=(ctype.id, a_diary_entry.id)
+        "comments-ink-react-to-object", args=(ctype.id, a_diary_entry.id)
     )
     request = rf.post(
         react_url,
@@ -2105,7 +2105,7 @@ def test_POST_react_three_times_to_a_diary_entry_with_same_reaction(
     ctype = ContentType.objects.get_for_model(a_diary_entry)
     site = Site.objects.get(pk=1)
     react_url = reverse(
-        "comments-ink-object-react", args=(ctype.id, a_diary_entry.id)
+        "comments-ink-react-to-object", args=(ctype.id, a_diary_entry.id)
     )
     request = rf.post(
         react_url,
@@ -2162,7 +2162,7 @@ def test_POST_react_to_object_with_cpage(
     a_diary_entry_url = a_diary_entry.get_absolute_url()
     ctype = ContentType.objects.get_for_model(a_diary_entry)
     react_url = reverse(
-        "comments-ink-object-react", args=(ctype.id, a_diary_entry.id)
+        "comments-ink-react-to-object", args=(ctype.id, a_diary_entry.id)
     )
     data = {"reaction": "+", "next": a_diary_entry_url}
     data.update(post_extra_params)
@@ -2179,7 +2179,7 @@ def test_POST_react_to_a_diary_entry_with_anchor(rf, a_diary_entry, an_user):
     ctype = ContentType.objects.get_for_model(a_diary_entry)
     site = Site.objects.get(pk=1)
     react_url = reverse(
-        "comments-ink-object-react", args=(ctype.id, a_diary_entry.id)
+        "comments-ink-react-to-object", args=(ctype.id, a_diary_entry.id)
     )
     request = rf.post(
         react_url,
@@ -2198,7 +2198,7 @@ def test_POST_react_to_a_diary_entry_with_anchor(rf, a_diary_entry, an_user):
 
 @pytest.mark.django_db
 def test_POST_react_to_non_existing_content_type(rf, an_user):
-    react_url = reverse("comments-ink-object-react", args=(234, 1))
+    react_url = reverse("comments-ink-react-to-object", args=(234, 1))
     request = rf.post(
         react_url,
         data={
