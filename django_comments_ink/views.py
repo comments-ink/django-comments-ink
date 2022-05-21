@@ -46,6 +46,7 @@ from django_comments_ink.models import (
     TmpInkComment,
 )
 
+
 InkComment = get_comment_model()
 
 
@@ -1083,7 +1084,11 @@ def react(request, comment_id, next=None):
                 )
                 for pth in _reacted_js_tmpl
             ]
-            context = {"comment": comment}
+            max_users_in_tooltip = settings.COMMENTS_INK_MAX_USERS_IN_TOOLTIP
+            context = {
+                "comment": comment,
+                "max_users_in_tooltip": max_users_in_tooltip,
+            }
             status = 201 if created else 200
             return json_res(request, template_list, context, status=status)
 

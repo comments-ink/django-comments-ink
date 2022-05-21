@@ -17,7 +17,7 @@ with open(BASE_DIR / "requirements.in", "r") as req_file:
 
 setup(
     name="django-comments-ink",
-    version="0.0.1",
+    version="0.0.2",
     packages=find_packages(),
     include_package_data=True,
     license="MIT",
