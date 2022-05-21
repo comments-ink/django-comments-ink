@@ -32,7 +32,7 @@ def get_form_target():
     return reverse("comments-ink-post")
 
 
-VERSION = (0, 0, 1, "a", 0)  # following PEP 440
+VERSION = (0, 0, 2, "a", 0)  # following PEP 440
 
 
 def get_version():
