@@ -269,7 +269,7 @@ COMMENTS_INK_COMMENT_REACTIONS_ENUM = (
 COMMENTS_INK_MAX_LAST_PAGE_ORPHANS = 4
 
 # Number of comments per page. When <=0 pagination is disabled.
-COMMENTS_INK_ITEMS_PER_PAGE = 10
+COMMENTS_INK_COMMENTS_PER_PAGE = 10
 
 AVATAR_PROVIDERS = [
     "avatar.providers.PrimaryAvatarProvider",

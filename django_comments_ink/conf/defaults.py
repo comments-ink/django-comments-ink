@@ -83,15 +83,18 @@ COMMENTS_INK_DEFAULT_FOLLOWUP = False
 # in a row before it breaks into another row.
 COMMENTS_INK_REACTIONS_ROW_LENGTH = 4
 
-# How many users are listed when hovering a reaction.
-COMMENTS_INK_MAX_USERS_IN_TOOLTIP = 10
-
 # Display up to the given number of comments in the last page to avoid
 # creating another page containing only these amount of comments.
 COMMENTS_INK_MAX_LAST_PAGE_ORPHANS = 10
 
 # Number of comments per page. When <=0 pagination is disabled.
-COMMENTS_INK_ITEMS_PER_PAGE = 25
+COMMENTS_INK_COMMENTS_PER_PAGE = 25
+
+# How many users are listed when hovering a reaction.
+COMMENTS_INK_MAX_USERS_IN_TOOLTIP = 10
+
+# How many users are listed with the list_reacted and
+COMMENTS_INK_USERS_REACTED_PER_PAGE = 30
 
 # Name of the query string parameter containing the page number.
 COMMENTS_INK_PAGE_QUERY_STRING_PARAM = "cpage"

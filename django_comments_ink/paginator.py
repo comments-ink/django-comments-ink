@@ -8,7 +8,7 @@ fully displayed in one page. Even if the number of comments in the thread
 exceed the `per_page` value.
 
 Relevant settings:
- * COMMENTS_INK_ITEMS_PER_PAGE = 25
+ * COMMENTS_INK_COMMENTS_PER_PAGE = 25
  * COMMENTS_INK_MAX_LAST_PAGE_ORPHANS = 10
 
 Example 1:

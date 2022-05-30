@@ -161,3 +161,16 @@ BUTTON.emoji {
     padding: 2px 8px;
     font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
+
+/* ----------------------------------------------------- */
+.users-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-gap: 0.5em;
+}
+
+.users-grid > * {
+    background-color: #d5ecff;
+    padding: 1em;
+    border-radius: 0.5em;
+}
