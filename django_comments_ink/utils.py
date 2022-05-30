@@ -208,7 +208,7 @@ def get_comment_page_number(
     Returns the page number in which the `comment_id` is listed.
     """
     num_orphans = settings.COMMENTS_INK_MAX_LAST_PAGE_ORPHANS
-    page_size = settings.COMMENTS_INK_ITEMS_PER_PAGE
+    page_size = settings.COMMENTS_INK_COMMENTS_PER_PAGE
     if page_size == 0:
         return 1  # Pagination is disabled.
 

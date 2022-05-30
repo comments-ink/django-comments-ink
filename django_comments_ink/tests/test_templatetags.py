@@ -538,7 +538,9 @@ def test_paginate_queryset(an_article):
 @pytest.mark.django_db
 def test_paginate_queryset_with_pagination_disabled(an_article, monkeypatch):
     setup_paginator_example_1(an_article)
-    monkeypatch.setattr(comments_ink.settings, "COMMENTS_INK_ITEMS_PER_PAGE", 0)
+    monkeypatch.setattr(
+        comments_ink.settings, "COMMENTS_INK_COMMENTS_PER_PAGE", 0
+    )
     queryset = get_model().objects.all()
     d = comments_ink.paginate_queryset(queryset, {}, "")  # Use "" as cacke key.
     cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM

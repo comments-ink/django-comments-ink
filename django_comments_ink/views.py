@@ -9,6 +9,7 @@ from django.contrib.contenttypes.views import shortcut
 from django.contrib.sites.shortcuts import get_current_site
 from django.core import signing
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.core.paginator import Paginator
 from django.db.models import F
 from django.db.utils import NotSupportedError
 from django.http import (
@@ -1313,13 +1314,17 @@ def list_reacted(request, comment_id, reaction_value):
     if len(authors) <= max_users_in_tooltip:
         raise Http404(_("Not enough users"))
 
+    paginator = Paginator(authors, settings.COMMENTS_INK_USERS_REACTED_PER_PAGE)
+    page_number = request.GET.get("page", 1)
+    page_obj = paginator.get_page(page_number)
+
     return render(
         request,
         _list_reacted_tmpl,
         {
             "comment": comment,
             "reaction": get_comment_reactions_enum()(reaction.reaction),
-            "authors": authors,
+            "page_obj": page_obj,
         },
     )
 
@@ -1351,13 +1356,17 @@ def list_reacted_to_object(request, content_type_id, object_pk, reaction_value):
     if len(authors) <= max_users_in_tooltip:
         raise Http404(_("Not enough users"))
 
+    paginator = Paginator(authors, settings.COMMENTS_INK_USERS_REACTED_PER_PAGE)
+    page_number = request.GET.get("page", 1)
+    page_obj = paginator.get_page(page_number)
+
     return render(
         request,
         _list_reacted_to_object_tmpl,
         {
             "object": reaction.content_object,
             "reaction": get_object_reactions_enum()(reaction.reaction),
-            "authors": authors,
+            "page_obj": page_obj,
         },
     )
 

@@ -200,7 +200,7 @@ def create_scenario_1(an_article):
 @pytest.mark.django_db
 def test_get_comment_page_number_when_page_size_is_0(an_article, monkeypatch):
     article_ct = create_scenario_1(an_article)
-    monkeypatch.setattr(utils.settings, "COMMENTS_INK_ITEMS_PER_PAGE", 0)
+    monkeypatch.setattr(utils.settings, "COMMENTS_INK_COMMENTS_PER_PAGE", 0)
     for comment in InkComment.objects.all():
         page_number = utils.get_comment_page_number(
             None, article_ct, an_article.pk, comment.id
@@ -214,7 +214,7 @@ def test_get_comment_page_number(an_article):
     page_size = 25
     orphans = 10
     assert settings.COMMENTS_INK_MAX_LAST_PAGE_ORPHANS == orphans
-    assert settings.COMMENTS_INK_ITEMS_PER_PAGE == page_size
+    assert settings.COMMENTS_INK_COMMENTS_PER_PAGE == page_size
     queryset = InkComment.objects.all()
     paginator = CommentsPaginator(queryset, page_size, orphans)
 
@@ -254,7 +254,7 @@ def test_get_comment_page_number_raises_Exception(an_article, monkeypatch):
     page_size = 25
     orphans = 10
     assert settings.COMMENTS_INK_MAX_LAST_PAGE_ORPHANS == orphans
-    assert settings.COMMENTS_INK_ITEMS_PER_PAGE == page_size
+    assert settings.COMMENTS_INK_COMMENTS_PER_PAGE == page_size
     queryset = InkComment.objects.all()
     paginator = CommentsPaginator(queryset, page_size, orphans)
 

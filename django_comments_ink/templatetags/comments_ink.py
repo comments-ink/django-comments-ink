@@ -206,7 +206,7 @@ def paginate_queryset(queryset, context, ckey_prefix):
     """
     request = context.get("request", None)
     num_orphans = settings.COMMENTS_INK_MAX_LAST_PAGE_ORPHANS
-    page_size = settings.COMMENTS_INK_ITEMS_PER_PAGE
+    page_size = settings.COMMENTS_INK_COMMENTS_PER_PAGE
 
     cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
     page = (request and request.GET.get(cpage_qs_param, None)) or 1

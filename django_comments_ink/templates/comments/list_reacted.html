@@ -9,18 +9,14 @@
 <main>
   <article>
     <div class="container">
-      <h2 class="text-center">{% blocktrans with reaction_icon=reaction.icon %}Who reacted with <span class="emoji">&{{ reaction_icon }};</span> to this comment?{% endblocktrans %}</h2>
-      <h6 class="text-center pb24">
-        {% trans "Comment sent to:" %}<br/>
-        <a href="{{ comment.content_object.get_absolute_url }}">{{ comment.content_object }}</a>
-      </h6>
+      <h2 class="text-center">{% blocktrans with reaction_icon=reaction.icon %}List of users that reacted with <span class="emoji">&{{ reaction_icon }}; <br/>to the comment:</span>{% endblocktrans %}</h2>
     </div>
     <div class="central-column">
       <div class="{% dci_custom_selector %} pb32">
         <div id="c{{ comment.id }}" class="comment-box">
           <div class="comment">
             <div class="header">
-              <div>{% if comment.url and not comment.is_removed %}<a href="{{ comment.url }}" target="_new">{{ comment.name }}</a>{% else %}{{ comment.name }}{% endif %}&nbsp;&sdot;&nbsp;<span class="muted">{{ comment.submit_date }}</span>&nbsp;&nbsp;<a class="permalink" title="comment permalink" href="{% get_inkcomment_permalink comment page_number %}">¶</a></div>
+              <div>{% if comment.url and not comment.is_removed %}<a href="{{ comment.url }}" target="_new">{{ comment.name }}</a>{% else %}{{ comment.name }}{% endif %}&nbsp;&sdot;&nbsp;<span class="muted">{{ comment.submit_date }}</span></div>
             </div>
             <div class="body body-bordered">
               {{ comment.comment|linebreaks|escape }}
@@ -29,18 +25,35 @@
           </div>
         </div>
 
-        <section class="reaction-form">
-          {% if authors|length > 0 %}
-            <h5 class="text-center">{% blocktrans with reaction_icon=reaction.icon %}List of users that reacted with <span class="emoji">&{{ reaction_icon }};</span>{% endblocktrans %}</h5>
-            <ul>
-              {% for name in authors %}
-                <li>{{ name }}</li>
-              {% endfor %}
-            </ul>
-          {% else %}
-            <h5 class="text-center">{% blocktrans %}No user reacted yet with {{ reaction }}{% endblocktrans %}</h5>
-          {% endif %}
-        </section>
+        <div id="users" class="users-grid mt32 py16">
+          {% for author_name in page_obj %}
+            <div>{{ author_name }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="inline-centered pagination">
+          <span class="step-links">
+            {% if page_obj.has_previous %}
+              <a href="?page=1#users">&laquo; first</a>
+              <a href="?page={{ page_obj.previous_page_number }}#users">previous</a>
+            {% endif %}
+
+            <span class="current">
+              Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+            </span>
+
+            {% if page_obj.has_next %}
+              <a href="?page={{ page_obj.next_page_number }}#users">next</a>
+              <a href="?page={{ page_obj.paginator.num_pages }}#users">last &raquo;</a>
+            {% endif %}
+          </span>
+        </div>
+
+        <p class="text-center">
+          <a href="{% get_inkcomment_permalink comment page_number %}">
+            go back to comment's page
+          </a>
+        </p>
       </div>
     </div>
   </article>
