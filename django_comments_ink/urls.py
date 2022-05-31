@@ -8,6 +8,7 @@ from django_comments.views.moderation import (
     flag_done,
 )
 from django_comments_ink import views
+from django_comments_ink.conf import settings
 from rest_framework.urlpatterns import format_suffix_patterns
 
 urlpatterns = [
@@ -53,7 +54,7 @@ urlpatterns = [
     path(
         "api/",
         include("django_comments_ink.api.urls"),
-        {"override_drf_defaults": True},
+        {"override_drf_defaults": settings.COMMENTS_INK_OVERRIDE_DRF_DEFAULTS},
     ),
 ]
 

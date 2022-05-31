@@ -271,6 +271,13 @@ COMMENTS_INK_MAX_LAST_PAGE_ORPHANS = 4
 # Number of comments per page. When <=0 pagination is disabled.
 COMMENTS_INK_COMMENTS_PER_PAGE = 10
 
+# Do not override Django Rest Framework renderer_classes and pagination_class.
+COMMENTS_INK_OVERRIDE_DRF_DEFAULTS = False
+
+REST_FRAMEWORK = {
+    "DEFAULT_PAGINATION_CLASS": "django_comments_ink.paginator.DRFCommentsPaginator",
+}
+
 AVATAR_PROVIDERS = [
     "avatar.providers.PrimaryAvatarProvider",
     "avatar.providers.GravatarAvatarProvider",
@@ -282,7 +289,6 @@ AVATAR_GRAVATAR_DEFAULT = "identicon"
 # 'avatar.views.add', 'avatar.views.change', or 'avatar.views.delete'.
 AVATAR_ADD_TEMPLATE = "avatar/change.html"
 AVATAR_DELETE_TEMPLATE = "avatar/change.html"
-
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
