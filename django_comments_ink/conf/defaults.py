@@ -135,6 +135,16 @@ COMMENTS_INK_THEME_DIR = ""
 # Name of the entry in settings.CACHE to use for caching django-comments-ink.
 COMMENTS_INK_CACHE_NAME = "dci"
 
+# Override the default renderer_classes and pagination_class attributes.
+# If the value is True:
+#  * renderer_classes are:
+#    (renderers,JSONRenderer, renderers.BrowsableAPIRenderer)
+#  * pagination_class is None
+# If the value is False, uses the provided
+# renderer_classes and pagination_class attributes.
+COMMENTS_INK_OVERRIDE_DRF_DEFAULTS = True
+
+# Format patterns used with cached keys.
 COMMENTS_INK_CACHE_KEYS = {
     # The key 'comments_qs' holds the QuerySet by the given params.
     "comments_qs": "/comments_qs/{ctype_pk}/{object_pk}/{site_id}",

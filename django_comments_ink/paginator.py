@@ -59,10 +59,14 @@ Example 3:
 """
 import logging
 
+from django.apps import apps
 from django.core.paginator import Paginator
 from django.db.models.query import QuerySet
 from django.utils.functional import cached_property
+
 from django_comments_ink import caching
+from django_comments_ink.conf import settings
+
 
 logger = logging.getLogger(__name__)
 
@@ -219,3 +223,12 @@ class CommentsPaginator(Paginator):
         if self.count == 0 and not self.allow_empty_first_page:
             return 0
         return len(self.in_page)
+
+
+if apps.is_installed("rest_framework"):
+    from rest_framework.pagination import PageNumberPagination
+
+    class DRFCommentsPaginator(PageNumberPagination):
+        django_paginator_class = CommentsPaginator
+        page_size = settings.COMMENTS_INK_COMMENTS_PER_PAGE
+        page_query_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
