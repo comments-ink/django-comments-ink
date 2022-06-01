@@ -5,13 +5,14 @@ from django.shortcuts import get_object_or_404
 from django_comments.views.moderation import perform_flag
 
 from rest_framework import generics, mixins, permissions, renderers, status
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.schemas.openapi import AutoSchema
 
 from django_comments_ink import get_model as get_comment_model
 from django_comments_ink.api import serializers
 from django_comments_ink.conf import settings
-from django_comments_ink.models import CommentReaction
+from django_comments_ink.models import CommentReaction, ObjectReaction
 from django_comments_ink.utils import check_option, get_current_site_id
 
 
@@ -170,3 +171,60 @@ class PostCommentReaction(mixins.CreateModelMixin, generics.GenericAPIView):
             self.created = True
             creaction.counter += 1
             creaction.save()
+
+
+class AuthorListPagination(PageNumberPagination):
+    page_size = settings.COMMENTS_INK_USERS_REACTED_PER_PAGE
+
+
+class CommentReactionAuthorList(DefaultsMixin, generics.ListAPIView):
+    """
+    List all CommentReactionAuthor for a given comment_pk and reaction.
+    """
+
+    serializer_class = serializers.ReadCommentReactionAuthorSerializer
+    permission_classes = (permissions.AllowAny,)
+    pagination_class = AuthorListPagination
+
+    def get_queryset(self, **kwargs):
+        comment_pk_arg = self.kwargs.get("comment_pk", None)
+        reaction_value_arg = self.kwargs.get("reaction_value", None)
+        try:
+            comment = InkComment.objects.get(pk=comment_pk_arg)
+            comment_reaction = CommentReaction.objects.get(
+                reaction=reaction_value_arg,
+                comment=comment,
+            )
+        except (InkComment.DoesNotExist, CommentReaction.DoesNotExist):
+            return CommentReaction.objects.none()
+        else:
+            return comment_reaction.authors.all()
+
+
+class ObjectReactionAuthorList(DefaultsMixin, generics.ListAPIView):
+    """
+    List all ObjectReactionAuthor for a ContentType, object ID and reaction.
+    """
+
+    serializer_class = serializers.ReadObjectReactionAuthorSerializer
+    permission_classes = (permissions.AllowAny,)
+    pagination_class = AuthorListPagination
+
+    def get_queryset(self, **kwargs):
+        content_type_arg = self.kwargs.get("content_type", None)
+        object_pk_arg = self.kwargs.get("object_pk", None)
+        reaction_value_arg = self.kwargs.get("reaction_value", None)
+        app, model = content_type_arg.split("-")
+        site_id = get_current_site_id(self.request)
+        try:
+            content_type = ContentType.objects.get_by_natural_key(app, model)
+            object_reaction = ObjectReaction.objects.get(
+                reaction=reaction_value_arg,
+                content_type=content_type,
+                object_pk=object_pk_arg,
+                site_id=site_id,
+            )
+        except (ContentType.DoesNotExist, ObjectReaction.DoesNotExist):
+            return ObjectReaction.objects.none()
+        else:
+            return object_reaction.authors.all()
