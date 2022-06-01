@@ -17,7 +17,9 @@ from django_comments_ink import (
 from django_comments_ink.conf import settings
 from django_comments_ink.models import (
     CommentReaction,
+    CommentReactionAuthor,
     InkComment,
+    ObjectReactionAuthor,
     TmpInkComment,
     max_thread_level_for_content_type,
 )
@@ -226,6 +228,9 @@ class FlagSerializer(serializers.ModelSerializer):
 class ReadReactionsField(serializers.RelatedField):
     def to_representation(self, value):
         reaction_item = get_comment_reactions_enum()(value.reaction)
+        max_users_listed = getattr(
+            settings, "COMMENTS_INK_MAX_USERS_IN_TOOLTIP", 10
+        )
         return {
             "reaction": value.reaction,
             "label": reaction_item.label,
@@ -236,7 +241,7 @@ class ReadReactionsField(serializers.RelatedField):
                     "id": author.id,
                     "author": settings.COMMENTS_INK_API_USER_REPR(author),
                 }
-                for author in value.authors.all()
+                for author in value.authors.all()[:max_users_listed]
             ],
         }
 
@@ -318,3 +323,43 @@ class WriteCommentReactionSerializer(serializers.ModelSerializer):
             "reaction",
             "comment",
         )
+
+
+class ReadCommentReactionAuthorSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField()
+    author = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CommentReactionAuthor
+        fields = (
+            "id",
+            "author",
+        )
+
+    def __init__(self, *args, **kwargs):
+        super(ReadCommentReactionAuthorSerializer, self).__init__(
+            *args, **kwargs
+        )
+
+    def get_author(self, obj):
+        return settings.COMMENTS_INK_API_USER_REPR(obj)
+
+
+class ReadObjectReactionAuthorSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField()
+    author = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ObjectReactionAuthor
+        fields = (
+            "id",
+            "author",
+        )
+
+    def __init__(self, *args, **kwargs):
+        super(ReadObjectReactionAuthorSerializer, self).__init__(
+            *args, **kwargs
+        )
+
+    def get_author(self, obj):
+        return settings.COMMENTS_INK_API_USER_REPR(obj)
