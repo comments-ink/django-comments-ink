@@ -10,6 +10,7 @@
 {% block extra_css %}
 <link rel="stylesheet" type="text/css" href="{% static 'django_comments_ink/css/comments.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'django_comments_ink/css/reactions.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'modal.css' %}">
 {% endblock %}
 
 {% block nav-stories-class %}active{% endblock %}
@@ -59,7 +60,20 @@
     </div>
   </article>
 </main>
-{% endblock %}
+{% endblock content %}
+
+{% block extra_html %}
+{% render_comment_reply_template for object %}
+{% render_comment_reactions_panel_template %}
+<section class="modal" id="list-reacted" data-modal-target>
+  <div class="modal__overlay" data-modal-close tabindex="-1"></div>
+  <div class="modal__wrapper">
+    <button class="modal__close" data-modal-close aria-label="Close Modal">&times;</button>
+    <div class="modal__content">
+    </div>
+  </div>
+</section>
+{% endblock extra_html %}
 
 {% block extra_js %}
 <script>
@@ -67,8 +81,6 @@
       enable_comment_reactions: true
     }
 </script>
-<script src="{% static 'django_comments_ink/dist/dci-0.0.1.js' %}"></script>
-
-{% render_comment_reply_template for object %}
-{% render_comment_reactions_panel_template %}
+<script src="{% static 'django_comments_ink/dist/dci-0.0.2.js' %}"></script>
+<script src="{% static 'modal.js' %}"></script>
 {% endblock %}

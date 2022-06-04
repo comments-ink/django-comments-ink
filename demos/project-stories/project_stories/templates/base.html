@@ -76,6 +76,9 @@
       </div>
     </footer>
 
+    {% block extra_html %}
+    {% endblock %}
+
     <script src="{% url 'javascript-catalog' %}"></script>
     <script src="{% static 'dropdown.js' %}"></script>
     <script src="{% static 'init_language_dropdown.js' %}"></script>
