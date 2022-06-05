@@ -15,7 +15,7 @@
         {% if not comment.is_removed %}
           {% if comment_reactions_enabled %}
             <div class="reactions" id="cm-reactions-{{ comment.id }}">
-              {% include "comments/themes/avatar_in_header/comment_reactions.html" %}
+              {% include "comments/themes/feedback_in_header/comment_reactions.html" %}
             </div>
           {% endif %}
           {% if comment_reactions_enabled and is_input_allowed %}

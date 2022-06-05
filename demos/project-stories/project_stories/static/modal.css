@@ -1,0 +1,120 @@
+.modal {
+    display: none;
+}
+
+.modal__overlay {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 200;
+    opacity: 0;
+
+    transition: opacity 0.2s;
+    will-change: opacity;
+    background-color: #000;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.modal__header {
+    /* Optional */
+    padding: 1.2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #ddd;
+}
+
+.modal__close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-size: 2rem;
+    padding: 0px 12px 4px;
+    margin: -26px -22px 0 0;
+    border: none;
+    color: white;
+    background: #2196f3;
+    cursor: pointer;
+}
+
+.modal__close:hover, .modal__close:not(.disabled):hover {
+    margin-top: -26px;
+    border-bottom-width: none;
+}
+
+.modal__wrapper {
+    width: 100%;
+    z-index: 9999;
+    overflow: visible;
+    opacity: 0;
+    /* max-width set here below as in main.css ".container" width */
+    max-height: 82vh;
+
+    transition: transform 0.2s, opacity 0.2s;
+    will-change: transform;
+    background-color: #fff;
+
+    display: flex;
+    flex-direction: column;
+    -webkit-transform: translateY(5%);
+    transform: translateY(5%);
+
+    -webkit-overflow-scrolling: touch;
+    /* Enables momentum scrolling in iOS overflow elements. */
+    box-shadow: 0 2px 6px #777;
+    border-radius: 5px;
+    margin: 20px;
+}
+
+@media screen and (min-width: 840px) {
+    .modal__wrapper {
+        max-width: 732px;
+    }
+    .modal__wrapper .container {
+        width: calc(732px - 2.4rem);
+    }
+}
+
+@media screen and (max-width: 839px) {
+    .modal__wrapper {
+        max-width: 80vw;
+    }
+}
+
+.modal__content {
+    position: relative;
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 100%;
+    flex-grow: 1;
+    /* Optional */
+    padding: 1.5rem;
+}
+
+.modal.is-active {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    position: fixed;
+    top: 4vw;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 9999;
+}
+
+.modal.is-visible .modal__wrapper {
+    opacity: 1;
+    -webkit-transform: translateY(0);
+    transform: translateY(0);
+}
+
+.modal.is-visible .modal__overlay {
+    opacity: 0.5;
+}

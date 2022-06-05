@@ -1364,6 +1364,7 @@ def list_reacted_to_object(request, content_type_id, object_pk, reaction_value):
         request,
         _list_reacted_to_object_tmpl,
         {
+            "content_type": ctype,
             "object": reaction.content_object,
             "reaction": get_object_reactions_enum()(reaction.reaction),
             "page_obj": page_obj,
