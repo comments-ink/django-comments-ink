@@ -23,7 +23,7 @@
 
 .modal__header {
     /* Optional */
-    padding: 1.5rem;
+    padding: 1.2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -54,7 +54,7 @@
     overflow: visible;
     opacity: 0;
     /* max-width set here below as in main.css ".container" width */
-    max-height: 80vh;
+    max-height: 82vh;
 
     transition: transform 0.2s, opacity 0.2s;
     will-change: transform;
@@ -77,7 +77,7 @@
         max-width: 732px;
     }
     .modal__wrapper .container {
-        width: calc(732px - 3rem);
+        width: calc(732px - 2.4rem);
     }
 }
 
@@ -100,9 +100,9 @@
 .modal.is-active {
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     position: fixed;
-    top: 0;
+    top: 4vw;
     right: 0;
     left: 0;
     bottom: 0;

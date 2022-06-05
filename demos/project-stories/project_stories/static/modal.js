@@ -43,7 +43,10 @@ const init_modals = function() {
         );
     };
 
-    const addPaginationLinks = function() {
+    const addModalListeners = function() {
+        document.querySelectorAll(settings.selectorClose).forEach(
+            elem => elem.addEventListener('click', clickHandler, false)
+        );
         const pagLinks = document.querySelectorAll(settings.selectorReload);
         pagLinks.forEach(
             elem => elem.addEventListener('click', reloadContent, false)
@@ -61,10 +64,10 @@ const init_modals = function() {
         const response = await fetch(trigger.dataset.href, {method: 'GET'});
         if (response.status === 200) {
             const data = await response.text();
-            const body = target && target.querySelector(".modal2__content");
+            const body = target && target.querySelector(".modal__wrapper");
             if (body) {
                 body.innerHTML = data;
-                addPaginationLinks();
+                addModalListeners();
             }
         }
     };
@@ -103,10 +106,6 @@ const init_modals = function() {
     document.querySelectorAll(settings.selectorTrigger).forEach(
         elem => elem.addEventListener('click', clickHandler, false)
     );
-    document.querySelectorAll(settings.selectorClose).forEach(
-        elem => elem.addEventListener('click', clickHandler, false)
-    );
-
     document.addEventListener('keydown', keydownHandler, false);
 };
 

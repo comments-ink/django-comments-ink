@@ -1,35 +1,40 @@
 {% load i18n %}
 {% load comments_ink %}
 
-<div class="container">
-  <h4 class="text-center">{% blocktrans with reaction_icon=reaction.icon %}List of users that reacted with <span class="emoji">&{{ reaction_icon }};</span> to{% endblocktrans %}<br/><span id="users"></span><a href="{{ object.get_absolute_url }}">{{ object }}</a></h4>
+<button class="modal__close" data-modal-close aria-label="Close Modal">&times;</button>
+<div class="modal__header">
+  <div class="modal__title">
+    {% blocktrans with reaction_icon=reaction.icon %}List of users that reacted with <span class="emoji">&{{ reaction_icon }};</span> to<br/>{{ object }}{% endblocktrans %}
+  </div>
 </div>
-<div class="central-column">
-  <div class="{% dci_custom_selector %} mt32 xpb32">
-    <div class="users-grid">
-      {% for author_name in page_obj %}
-        <div>{{ author_name }}</div>
-      {% endfor %}
-    </div>
-
-    {% if page_obj.paginator.num_pages > 1 %}
-      <div class="inline-centered pagination">
-        <span class="step-links">
-          {% if page_obj.has_previous %}
-            <a data-modal-reload aria-controls="list-reacted" aria-expanded="true" data-href="{% url 'comments-ink-list-reacted-to-object' content_type.id object.id reaction.value %}?page=1#users" href="#">&laquo; first</a>
-            <a data-modal-reload aria-controls="list-reacted" aria-expanded="true" data-href="{% url 'comments-ink-list-reacted-to-object' content_type.id object.id reaction.value %}?page={{ page_obj.previous_page_number }}#users">previous</a>
-          {% endif %}
-
-          <span class="current">
-            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
-          </span>
-
-          {% if page_obj.has_next %}
-            <a data-modal-reload aria-controls="list-reacted" aria-expanded="true" data-href="{% url 'comments-ink-list-reacted-to-object' content_type.id object.id reaction.value %}?page={{ page_obj.next_page_number }}#users" href="#">next</a>
-            <a data-modal-reload aria-controls="list-reacted" aria-expanded="true" data-href="{% url 'comments-ink-list-reacted-to-object' content_type.id object.id reaction.value %}?page={{ page_obj.paginator.num_pages }}#users" href="#">last &raquo;</a>
-          {% endif %}
-        </span>
+<div class="modal__content">
+  <div class="central-column" id="users">
+    <div class="{% dci_custom_selector %}">
+      <div class="users-grid">
+        {% for author_name in page_obj %}
+          <div>{{ author_name }}</div>
+        {% endfor %}
       </div>
-    {% endif %}
+
+      {% if page_obj.paginator.num_pages > 1 %}
+        <div class="inline-centered pagination pagination-modal">
+          <span class="step-links">
+            {% if page_obj.has_previous %}
+              <a data-modal-reload aria-controls="list-reacted" aria-expanded="true" data-href="{% url 'comments-ink-list-reacted-to-object' content_type.id object.id reaction.value %}?page=1#users" href="#">&laquo; first</a>
+              <a data-modal-reload aria-controls="list-reacted" aria-expanded="true" data-href="{% url 'comments-ink-list-reacted-to-object' content_type.id object.id reaction.value %}?page={{ page_obj.previous_page_number }}#users">previous</a>
+            {% endif %}
+
+            <span class="current">
+              Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+            </span>
+
+            {% if page_obj.has_next %}
+              <a data-modal-reload aria-controls="list-reacted" aria-expanded="true" data-href="{% url 'comments-ink-list-reacted-to-object' content_type.id object.id reaction.value %}?page={{ page_obj.next_page_number }}#users" href="#">next</a>
+              <a data-modal-reload aria-controls="list-reacted" aria-expanded="true" data-href="{% url 'comments-ink-list-reacted-to-object' content_type.id object.id reaction.value %}?page={{ page_obj.paginator.num_pages }}#users" href="#">last &raquo;</a>
+            {% endif %}
+          </span>
+        </div>
+      {% endif %}
+    </div>
   </div>
 </div>
