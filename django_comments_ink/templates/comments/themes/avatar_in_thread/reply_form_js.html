@@ -5,7 +5,7 @@
 <section class="reply-form active" data-dci="reply-form-{{ form.reply_to.value }}">
   {% if display_preview %}
     <section class="comment-preview mb32" data-dci="preview">
-      <div class="comment-box-img l0-ini">
+      <div class="comment-box-img">
         {{ 0|indent_divs }}
         <div class="user-avatar">
           {% get_user_avatar_or_gravatar comment.user_email "36,identicon" %}
@@ -21,7 +21,6 @@
           <div class="feedback feedback-bordered"></div>
         </div>
       </div>
-      <div class="not-reply-box-img l0"></div>
     </section>
   {% endif %}
 

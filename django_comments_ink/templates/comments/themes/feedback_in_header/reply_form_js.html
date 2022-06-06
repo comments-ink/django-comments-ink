@@ -5,9 +5,9 @@
 <section class="reply-form active" data-dci="reply-form-{{ form.reply_to.value }}">
   {% if display_preview %}
     <section class="comment-preview mb32" data-dci="preview">
-      <div class="comment-box l0-ini">
+      <div class="comment-box">
         {{ 0|indent_divs }}
-        <div class="comment">
+        <div class="comment-preview">
           <div class="header">
             <div>{% if form.cleaned_data.url %}<a href="{{ form.cleaned_data.url }}" target="_new">{{ form.cleaned_data.name }}</a>{% else %}{{ form.cleaned_data.name }}{% endif %}</div>
             <div class="small text-info">{% translate "comment in preview" %}</div>
@@ -18,7 +18,6 @@
           <div class="feedback"></div>
         </div>
       </div>
-      <div class="not-reply-box l0"></div>
     </section>
   {% endif %}
 
