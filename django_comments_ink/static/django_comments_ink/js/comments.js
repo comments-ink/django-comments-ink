@@ -1,6 +1,6 @@
 import CommentForm from "./comment_form.js";
 import ReplyFormsHandler from "./reply_forms.js";
-
+import FoldingHandler from "./folding.js";
 
 function init_comments() {
     if (window.dci === null) {
@@ -16,6 +16,8 @@ function init_comments() {
 
     window.dci.comment_form = null;
     window.dci.reply_forms_handler = null;
+    window.dci_folding_handler = null;
+    window.dci_unfolding_handler = null;
 
     /* ----------------------------------------------
      * Initialize main comment form.
@@ -38,6 +40,12 @@ function init_comments() {
     ) {
         window.dci.reply_forms_handler = new ReplyFormsHandler(qs_rform_base, qs_rforms);
     }
+
+    /* ----------------------------------------------
+     * Initialize fold/unfold of comments with level > 0.
+     */
+    window.dci.folding_handler = new FoldingHandler("fold");
+    window.dci.unfolding_handler = new FoldingHandler("unfold");
 }
 
 export { init_comments };

@@ -35,11 +35,16 @@
           </div>
         {% endif %}
       {% endif %}
-      {% if comment.nested_count and not comment.is_removed %}
+      {% if comment.level == 0 and comment.nested_count and not comment.is_removed %}
         <div>
           <span id="comment-{{ comment.id}}-replies" data-dci="nreplies" data-comment="{{ comment.id }}" class="small">{% blocktrans count replies=comment.nested_count%}One reply{% plural %}{{ replies }} replies{% endblocktrans %}</span>
-          {% if cfold|has_comment:comment %}<a {% if comment.level == 0 %}href="?{% render_qs_params unfold comment %}#{{ anchor }}"{% else %}href="#" data-dci="unfold"{% endif %} class="rotate180">&mapstoup;</a>{% else %}<a {% if comment.level == 0 %}href="?{% render_qs_params fold comment %}#{{ anchor }}"{% else %}href="#" data-dci="fold"{% endif %} class="rotate180">&mapstodown;</a>{% endif %}
+          {% if cfold|has_comment:comment %}<a href="?{% render_qs_params unfold comment %}#{{ anchor }}" class="rotate180">&mapstoup;</a>{% else %}<a href="?{% render_qs_params fold comment %}#{{ anchor }}" class="rotate180">&mapstodown;</a>{% endif %}
         </div>
+      {% elif comment.level != 0 and comment.nested_count and not comment.is_removed %}
+          <div>
+            <span id="comment-{{ comment.id}}-replies" data-dci="nreplies" data-comment="{{ comment.id }}" class="small">{% blocktrans count replies=comment.nested_count%}One reply{% plural %}{{ replies }} replies{% endblocktrans %}</span>
+            <a href="#" id="fold-{{ comment.id}}" data-dci-action="fold" data-dci-replies="{{ comment.nested_count }}" class="rotate180 hide">&mapstodown;</a><a href="#" id="unfold-{{ comment.id}}" data-dci-action="unfold" data-dci-replies="{{ comment.nested_count }}" class="rotate180 hide">&mapstoup;</a>
+          </div>
       {% endif %}
     </div>
   </div>

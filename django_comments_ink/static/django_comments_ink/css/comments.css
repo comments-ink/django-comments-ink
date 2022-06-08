@@ -824,3 +824,5 @@
 .dci .py0 { padding-top: 0px; padding-bottom: 0px }
 .dci .py16 { padding-top: 16px; padding-bottom: 16px }
 .dci .pr16 { padding-left: 0.2rem; padding-right: 16px }
+
+.dci .hide { display: none }
