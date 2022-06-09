@@ -1,3 +1,0 @@
--r requirements.txt
-uvicorn>=0.16.0,<0.17
-psycopg2>=2.9,<3
