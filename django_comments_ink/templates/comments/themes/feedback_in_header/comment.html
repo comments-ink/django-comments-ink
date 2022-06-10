@@ -11,33 +11,35 @@
         {% if comment.url and not comment.is_removed %}<a href="{{ comment.url }}" target="_new">{{ comment.name }}</a>{% else %}{{ comment.name }}{% endif %}<br/>
         <span class="muted smaller">{{ comment.submit_date }}</span>&nbsp;&nbsp;<a class="permalink" title="comment permalink" href="{% get_inkcomment_permalink comment page_number %}">¶</a>
       </div>
-      <div id="cm-feedback-{{ comment.id }}" class="feedback">
-        {% if not comment.is_removed %}
-          {% if comment_reactions_enabled %}
-            <div class="reactions" id="cm-reactions-{{ comment.id }}">
-              {% include "comments/themes/feedback_in_header/comment_reactions.html" %}
-            </div>
-          {% endif %}
-          {% if comment_reactions_enabled and is_input_allowed %}
-            <div>
-              <a data-dci="reactions-panel" data-comment="{{ comment.id }}" class="small" data-user-auth="{{ user.is_authenticated }}" href="{% url 'comments-ink-react' comment.id %}?{{ comments_page_qs_param }}={{ page_obj.number }}" {% if not user.is_authenticated %}data-login-next="{% get_inkcomment_permalink comment page_number %}{% endif %}">{% trans "React" %}</a>
-            </div>
-          {% endif %}
-        {% endif %}
-
-        {% if comment.level == 0 and comment.nested_count and not comment.is_removed %}
-          <div>
-            <span id="comment-{{ comment.id}}-replies" data-dci="nreplies" data-comment="{{ comment.id }}" class="small">{% blocktrans count replies=comment.nested_count%}One reply{% plural %}{{ replies }} replies{% endblocktrans %}</span>
-            {% if cfold|has_comment:comment %}<a href="?{% render_qs_params unfold comment %}#{{ anchor }}" class="rotate180">&mapstoup;</a>{% else %}<a href="?{% render_qs_params fold comment %}#{{ anchor }}" class="rotate180">&mapstodown;</a>{% endif %}
-          </div>
-        {% elif comment.level != 0 and comment.nested_count and not comment.is_removed %}
-          <div>
-            <span id="comment-{{ comment.id}}-replies" data-dci="nreplies" data-comment="{{ comment.id }}" class="small">{% blocktrans count replies=comment.nested_count%}One reply{% plural %}{{ replies }} replies{% endblocktrans %}</span>
-            <a href="#" id="fold-{{ comment.id}}" data-dci-action="fold" data-dci-replies="{{ comment.nested_count }}" class="rotate180 hide">&mapstodown;</a><a href="#" id="unfold-{{ comment.id}}" data-dci-action="unfold" data-dci-replies="{{ comment.nested_count }}" class="rotate180 hide">&mapstoup;</a>
+      <div id="cm-feedback-{{ comment.id }}" class="feedback flex-col">
+        {% if not comment.is_removed and comment_reactions_enabled %}
+          <div class="flex-row-right">
+            {% include "comments/themes/feedback_in_header/comment_reactions.html" %}
+            {% if is_input_allowed %}
+              <div>
+                <a data-dci="reactions-panel" data-comment="{{ comment.id }}" class="smaller" data-user-auth="{{ user.is_authenticated }}" href="{% url 'comments-ink-react' comment.id %}?{{ comments_page_qs_param }}={{ page_obj.number }}" {% if not user.is_authenticated %}data-login-next="{% get_inkcomment_permalink comment page_number %}{% endif %}">{% trans "React" %}</a>
+              </div>
+            {% endif %}
           </div>
         {% endif %}
 
-        {% if not comment.is_removed and comment_flagging_enabled and is_input_allowed %}<a href="{% url 'comments-flag' comment.id %}" class="small">{% trans "Report" %}</a>{% endif %}
+        <div class="flex-row-right">
+          {% if comment.level == 0 and comment.nested_count and not comment.is_removed %}
+            <div class="sep">
+              <span id="comment-{{ comment.id}}-replies" data-dci="nreplies" data-comment="{{ comment.id }}" class="smaller">{% blocktrans count replies=comment.nested_count%}One reply{% plural %}{{ replies }} replies{% endblocktrans %}</span>
+              {% if cfold|has_comment:comment %}<a href="?{% render_qs_params unfold comment %}#{{ anchor }}" class="rotate180">&mapstoup;</a>{% else %}<a href="?{% render_qs_params fold comment %}#{{ anchor }}" class="rotate180">&mapstodown;</a>{% endif %}
+            </div>
+          {% elif comment.level != 0 and comment.nested_count and not comment.is_removed %}
+            <div class="sep">
+              <span id="comment-{{ comment.id}}-replies" data-dci="nreplies" data-comment="{{ comment.id }}" class="smaller">{% blocktrans count replies=comment.nested_count%}One reply{% plural %}{{ replies }} replies{% endblocktrans %}</span>
+              <a href="#" id="fold-{{ comment.id}}" data-dci-action="fold" data-dci-replies="{{ comment.nested_count }}" class="rotate180 hide">&mapstodown;</a><a href="#" id="unfold-{{ comment.id}}" data-dci-action="unfold" data-dci-replies="{{ comment.nested_count }}" class="rotate180 hide">&mapstoup;</a>
+            </div>
+          {% endif %}
+
+          {% if not comment.is_removed and comment_flagging_enabled and is_input_allowed %}
+            <div><a href="{% url 'comments-flag' comment.id %}" class="smaller">{% trans "Report" %}</a></div>
+          {% endif %}
+        </div>
       </div>
     </div>
     <div class="body">

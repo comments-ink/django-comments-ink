@@ -96,6 +96,10 @@ button.emoji:hover, button.emoji:focus {
     padding-right: 2px;
     cursor: pointer;
 }
+.reaction:last-child {
+    margin-right: -3px;
+    padding-right: 0;
+}
 
 .reaction .reaction_tooltip {
     visibility: hidden;
