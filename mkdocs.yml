@@ -1,0 +1,29 @@
+site_name: django-comments-ink
+site_description: A comments pluggable app for Django projects.
+
+theme:
+  name: 'material'
+  palette:
+    # Palette toggle for light mode
+    - scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+      primary: 'blue'
+
+    # Palette toggle for dark mode
+    - scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+      primary: 'blue'
+  font:
+    text: Oxygen
+    code: Oxygen Mono
+
+repo_name: django-comments-ink
+repo_url: https://github.com/comments-ink/django-comments-ink
+
+nav:
+  - Home: index.md
+  - About: about.md
