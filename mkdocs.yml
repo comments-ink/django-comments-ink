@@ -18,7 +18,7 @@ theme:
         name: Switch to light mode
       primary: 'blue'
   font:
-    text: Oxygen
+    text: Open Sans
     code: Oxygen Mono
 
 repo_name: django-comments-ink
@@ -27,3 +27,8 @@ repo_url: https://github.com/comments-ink/django-comments-ink
 nav:
   - Home: index.md
   - About: about.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
