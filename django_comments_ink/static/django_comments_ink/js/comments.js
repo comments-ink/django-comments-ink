@@ -16,8 +16,8 @@ function init_comments() {
 
     window.dci.comment_form = null;
     window.dci.reply_forms_handler = null;
-    window.dci_folding_handler = null;
-    window.dci_unfolding_handler = null;
+    window.dci.folding_handler = null;
+    window.dci.unfolding_handler = null;
 
     /* ----------------------------------------------
      * Initialize main comment form.
@@ -44,8 +44,12 @@ function init_comments() {
     /* ----------------------------------------------
      * Initialize fold/unfold of comments with level > 0.
      */
-    window.dci.folding_handler = new FoldingHandler("fold");
-    window.dci.unfolding_handler = new FoldingHandler("unfold");
+    if (window.dci.folding_handler == null &&
+        window.dci.unfolding_handler == null
+    ) {
+        window.dci.folding_handler = new FoldingHandler("fold");
+        window.dci.unfolding_handler = new FoldingHandler("unfold");
+    }
 }
 
 export { init_comments };

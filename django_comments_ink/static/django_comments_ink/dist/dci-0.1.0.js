@@ -159,8 +159,8 @@ function init_comments() {
 
     window.dci.comment_form = null;
     window.dci.reply_forms_handler = null;
-    window.dci_folding_handler = null;
-    window.dci_unfolding_handler = null;
+    window.dci.folding_handler = null;
+    window.dci.unfolding_handler = null;
 
     /* ----------------------------------------------
      * Initialize main comment form.
@@ -187,8 +187,12 @@ function init_comments() {
     /* ----------------------------------------------
      * Initialize fold/unfold of comments with level > 0.
      */
-    window.dci.folding_handler = new _folding_js__WEBPACK_IMPORTED_MODULE_2__["default"]("fold");
-    window.dci.unfolding_handler = new _folding_js__WEBPACK_IMPORTED_MODULE_2__["default"]("unfold");
+    if (window.dci.folding_handler == null &&
+        window.dci.unfolding_handler == null
+    ) {
+        window.dci.folding_handler = new _folding_js__WEBPACK_IMPORTED_MODULE_2__["default"]("fold");
+        window.dci.unfolding_handler = new _folding_js__WEBPACK_IMPORTED_MODULE_2__["default"]("unfold");
+    }
 }
 
 
@@ -322,10 +326,6 @@ __webpack_require__.r(__webpack_exports__);
 
 
 function init_reactions() {
-    if (window.dci === null) {
-        return;
-    }
-
     const rroot = document.querySelector("[data-dci=config]");
     if (rroot === null || window.dci === null) {
         return;
@@ -1039,14 +1039,12 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-window.dci.init_comments = _comments_js__WEBPACK_IMPORTED_MODULE_0__.init_comments;
-window.dci.init_reactions = _reactions_js__WEBPACK_IMPORTED_MODULE_1__.init_reactions;
+window.dci = {
+    init_comments: _comments_js__WEBPACK_IMPORTED_MODULE_0__.init_comments,
+    init_reactions: _reactions_js__WEBPACK_IMPORTED_MODULE_1__.init_reactions
+};
 
 window.addEventListener("DOMContentLoaded", (_) => {
-    if (window.dci === null) {
-        return;
-    }
-
     (0,_comments_js__WEBPACK_IMPORTED_MODULE_0__.init_comments)();
     (0,_reactions_js__WEBPACK_IMPORTED_MODULE_1__.init_reactions)();
 });
