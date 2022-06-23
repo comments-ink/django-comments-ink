@@ -1,10 +1,6 @@
 import ReactionsHandler from "./reactions_handler";
 
 function init_reactions() {
-    if (window.dci === null) {
-        return;
-    }
-
     const rroot = document.querySelector("[data-dci=config]");
     if (rroot === null || window.dci === null) {
         return;
