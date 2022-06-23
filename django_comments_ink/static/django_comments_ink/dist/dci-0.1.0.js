@@ -146,30 +146,32 @@ __webpack_require__.r(__webpack_exports__);
 
 
 function init_comments() {
-    if (window.dci === null) {
+    if (window.djCommentsInk === null) {
         return;
     }
 
-    if (window.dci.page_param === undefined) {
+    if (window.djCommentsInk.page_param === undefined) {
         const rroot = document.querySelector("[data-dci=config]");
         if (rroot) {
-            window.dci.page_param = rroot.getAttribute("data-page-qs-param");
+            window.djCommentsInk.page_param = rroot.getAttribute(
+                "data-page-qs-param"
+            );
         }
     }
 
-    window.dci.comment_form = null;
-    window.dci.reply_forms_handler = null;
-    window.dci.folding_handler = null;
-    window.dci.unfolding_handler = null;
+    window.djCommentsInk.comment_form = null;
+    window.djCommentsInk.reply_forms_handler = null;
+    window.djCommentsInk.folding_handler = null;
+    window.djCommentsInk.unfolding_handler = null;
 
     /* ----------------------------------------------
      * Initialize main comment form.
      */
     const qs_cform = "[data-dci=comment-form]";
-    if (window.dci.comment_form === null &&
+    if (window.djCommentsInk.comment_form === null &&
         document.querySelector(qs_cform)
     ) {
-        window.dci.comment_form = new _comment_form_js__WEBPACK_IMPORTED_MODULE_0__["default"](qs_cform);
+        window.djCommentsInk.comment_form = new _comment_form_js__WEBPACK_IMPORTED_MODULE_0__["default"](qs_cform);
     }
 
     /* ----------------------------------------------
@@ -177,21 +179,23 @@ function init_comments() {
      */
     const qs_rform_base = "[data-dci=reply-form-template]";
     const qs_rforms = "[data-dci=reply-form]";
-    if (window.dci.reply_forms_handler === null &&
+    if (window.djCommentsInk.reply_forms_handler === null &&
         document.querySelector(qs_rform_base) &&
         document.querySelectorAll(qs_rforms)
     ) {
-        window.dci.reply_forms_handler = new _reply_forms_js__WEBPACK_IMPORTED_MODULE_1__["default"](qs_rform_base, qs_rforms);
+        window.djCommentsInk.reply_forms_handler = new _reply_forms_js__WEBPACK_IMPORTED_MODULE_1__["default"](
+            qs_rform_base, qs_rforms
+        );
     }
 
     /* ----------------------------------------------
      * Initialize fold/unfold of comments with level > 0.
      */
-    if (window.dci.folding_handler == null &&
-        window.dci.unfolding_handler == null
+    if (window.djCommentsInk.folding_handler === null &&
+        window.djCommentsInk.unfolding_handler === null
     ) {
-        window.dci.folding_handler = new _folding_js__WEBPACK_IMPORTED_MODULE_2__["default"]("fold");
-        window.dci.unfolding_handler = new _folding_js__WEBPACK_IMPORTED_MODULE_2__["default"]("unfold");
+        window.djCommentsInk.folding_handler = new _folding_js__WEBPACK_IMPORTED_MODULE_2__["default"]("fold");
+        window.djCommentsInk.unfolding_handler = new _folding_js__WEBPACK_IMPORTED_MODULE_2__["default"]("unfold");
     }
 }
 
@@ -327,20 +331,20 @@ __webpack_require__.r(__webpack_exports__);
 
 function init_reactions() {
     const rroot = document.querySelector("[data-dci=config]");
-    if (rroot === null || window.dci === null) {
+    if (rroot === null || window.djCommentsInk === null) {
         return;
     }
 
-    window.dci.reactions_handler = null;
+    window.djCommentsInk.reactions_handler = null;
 
     /* ----------------------------------------------
      * Initialize reactions_handler, in charge
      * of all reactions popover components.
      */
-    if (window.dci.reactions_handler === null) {
-        window.dci.reactions_handler = new _reactions_handler__WEBPACK_IMPORTED_MODULE_0__["default"](rroot);
+    if (window.djCommentsInk.reactions_handler === null) {
+        window.djCommentsInk.reactions_handler = new _reactions_handler__WEBPACK_IMPORTED_MODULE_0__["default"](rroot);
         window.addEventListener("beforeunload", (_) => {
-            window.dci.reactions_handler.remove_event_listeners();
+            window.djCommentsInk.reactions_handler.remove_event_listeners();
         });
 
     }
@@ -744,7 +748,7 @@ class ReplyFormsHandler {
         this.replyFormBase = document.querySelector(qsReplyFormBase);
         this.replyMap = new Map();
 
-        const cpage_field = window.dci.page_param || "cpage";
+        const cpage_field = window.djCommentsInk.page_param || "cpage";
 
         for (const elem of document.querySelectorAll(qsReplyForms)) {
             // Extract the reply_to value from the current reply_form.
@@ -1039,7 +1043,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-window.dci = {
+window.djCommentsInk = {
     init_comments: _comments_js__WEBPACK_IMPORTED_MODULE_0__.init_comments,
     init_reactions: _reactions_js__WEBPACK_IMPORTED_MODULE_1__.init_reactions
 };

@@ -22,18 +22,21 @@ describe("scene 3 - reactions.test.js module", () => {
         dom = await JSDOM.fromFile(html_path, opts);
         await new Promise(resolve => {
             dom.window.addEventListener("DOMContentLoaded", () => {
-                // dom.window.dci.init_reactions();
+                // dom.window.djCommentsInk.init_reactions();
                 container = dom.window.document.body;
                 resolve();
             });
         });
     });
 
-    it("makes window.dci.comment_form attribute !== null", () => {
-        expect(dom.window.dci !== null && dom.window.dci !== undefined);
-        expect(dom.window.dci.guest === "0");
-        expect(dom.window.dci.login_url === null);
-        expect(dom.window.dci.react_url === "/comments/api/react/");
+    it("makes window.djCommentsInk.comment_form attribute !== null", () => {
+        expect(
+            dom.window.djCommentsInk !== null &&
+            dom.window.djCommentsInk !== undefined
+        );
+        expect(dom.window.djCommentsInk.guest === "0");
+        expect(dom.window.djCommentsInk.login_url === null);
+        expect(dom.window.djCommentsInk.react_url === "/comments/api/react/");
     });
 
     it("has a div with [data-dci=config] with more data attributes", () => {
@@ -71,7 +74,7 @@ describe("scene 3 - reactions.test.js module", () => {
 
         fireEvent.click(react_anchor_el);
         await waitFor(() => {
-            const hdler = dom.window.dci.reactions_handler;
+            const hdler = dom.window.djCommentsInk.reactions_handler;
             expect(hdler.active_visible_panel === '29');
             expect(hdler.reactions_panel.comment_id === '29');
             expect(hdler.reactions_panel.panel_el.style.opacity == '1')
@@ -79,7 +82,7 @@ describe("scene 3 - reactions.test.js module", () => {
 
         fireEvent.click(react_anchor_el);
         await waitFor(() => {
-            const hdler = dom.window.dci.reactions_handler;
+            const hdler = dom.window.djCommentsInk.reactions_handler;
             expect(hdler.active_visible_panel === '0');
             expect(hdler.reactions_panel.comment_id === '29');
             expect(hdler.reactions_panel.panel_el.style.opacity == '0');
@@ -102,7 +105,7 @@ describe("scene 3 - reactions.test.js module", () => {
         // Click on the 'react' link to open the reactions panel.
         fireEvent.click(react_anchor_el);
         await waitFor(() => {
-            const hdler = dom.window.dci.reactions_handler;
+            const hdler = dom.window.djCommentsInk.reactions_handler;
             expect(hdler.active_visible_panel === '29');
             expect(hdler.reactions_panel.comment_id === '29');
             expect(hdler.reactions_panel.panel_el.style.opacity == '1')
@@ -174,7 +177,7 @@ describe("scene 3 - reactions.test.js module", () => {
         // Click on the 'react' link to open the reactions panel.
         fireEvent.click(react_anchor_el);
         await waitFor(() => {
-            const hdler = dom.window.dci.reactions_handler;
+            const hdler = dom.window.djCommentsInk.reactions_handler;
             expect(hdler.active_visible_panel === '29');
             expect(hdler.reactions_panel.comment_id === '29');
             expect(hdler.reactions_panel.panel_el.style.opacity == '1')

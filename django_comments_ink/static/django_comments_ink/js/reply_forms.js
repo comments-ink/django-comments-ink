@@ -3,7 +3,7 @@ export default class ReplyFormsHandler {
         this.replyFormBase = document.querySelector(qsReplyFormBase);
         this.replyMap = new Map();
 
-        const cpage_field = window.dci.page_param || "cpage";
+        const cpage_field = window.djCommentsInk.page_param || "cpage";
 
         for (const elem of document.querySelectorAll(qsReplyForms)) {
             // Extract the reply_to value from the current reply_form.
