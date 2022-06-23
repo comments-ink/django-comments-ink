@@ -70,16 +70,19 @@ describe("scene 1 - comments.test.js module", () => {
         });
     });
 
-    it("asserts window.dci.comment_form attributes", () => {
-        expect(dom.window.dci !== null && dom.window.dci !== undefined);
-        expect(dom.window.dci.comment_form !== null);
-        expect(dom.window.dci.comment_form.formWrapper === qs_cform);
+    it("asserts window.djCommentsInk.comment_form attributes", () => {
+        expect(
+            dom.window.djCommentsInk !== null &&
+            dom.window.djCommentsInk !== undefined
+        );
+        expect(dom.window.djCommentsInk.comment_form !== null);
+        expect(dom.window.djCommentsInk.comment_form.formWrapper === qs_cform);
 
         const elem = container.querySelector(qs_cform);
-        expect(dom.window.dci.comment_form.formWrapperEl === elem);
+        expect(dom.window.djCommentsInk.comment_form.formWrapperEl === elem);
 
         const form = elem.querySelector("form");
-        expect(dom.window.dci.comment_form.formEl === form);
+        expect(dom.window.djCommentsInk.comment_form.formEl === form);
     });
 
     it("previewing empty form focuses on textarea comment", () => {

@@ -69,16 +69,16 @@ describe("scene 2 - reply_forms.test.js module", () => {
         })
     });
 
-    it("asserts window.dci.reply_forms_handle attributes", () => {
-        expect(dom.window.dci !== null && dom.window.dci !== undefined);
-        expect(dom.window.dci.reply_forms_handler !== null);
-        expect(dom.window.dci.reply_forms_handler.replyFormBase !== null);
-        expect(dom.window.dci.reply_forms_handler.replyMap !== null);
+    it("asserts window.djCommentsInk.reply_forms_handle attributes", () => {
+        const dci = dom.window.djCommentsInk; // alias it.
+        expect(dci!== null && dci !== undefined);
+        expect(dci.reply_forms_handler !== null);
+        expect(dci.reply_forms_handler.replyFormBase !== null);
+        expect(dci.reply_forms_handler.replyMap !== null);
 
         const elem = container.querySelector(qs_rform_base);
-        expect(dom.window.dci.reply_forms_handler.replyFormBase === elem);
-
-        expect(dom.window.dci.reply_forms_handler.replyMap.size === 1);
+        expect(dci.reply_forms_handler.replyFormBase === elem);
+        expect(dci.reply_forms_handler.replyMap.size === 1);
     });
 
     it("asserts reply form is not visible until reply field clicked", () => {

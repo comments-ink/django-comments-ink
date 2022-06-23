@@ -21,7 +21,7 @@ describe("scene 2 - comments.test.js module", () => {
         dom = await JSDOM.fromFile(html_path, opts);
         await new Promise(resolve => {
             dom.window.addEventListener("DOMContentLoaded", () => {
-                dom.window.dci.init_comments();
+                dom.window.djCommentsInk.init_comments();
                 container = dom.window.document.body;
                 qs_cform = "[data-dci=comment-form]";
                 resolve();
@@ -29,9 +29,12 @@ describe("scene 2 - comments.test.js module", () => {
         });
     });
 
-    it("makes window.dci.comment_form attribute !== null", () => {
-        expect(dom.window.dci !== null && dom.window.dci !== undefined);
-        expect(dom.window.dci.comment_form !== null);
+    it("makes window.djCommentsInk.comment_form attribute !== null", () => {
+        expect(
+            dom.window.djCommentsInk !== null &&
+            dom.window.djCommentsInk !== undefined
+        );
+        expect(dom.window.djCommentsInk.comment_form !== null);
     });
 
     it("has a div with [data-dci=comment-form]", () => {
@@ -49,8 +52,11 @@ describe("scene 2 - comments.test.js module", () => {
         expect(container.querySelector(qs_rform));
     });
 
-    it("creates window.dci.reply_forms_handler attribute !== null", () => {
-        expect(dom.window.dci !== null && dom.window.dci !== undefined);
-        expect(dom.window.dci.comment_form !== null);
+    it("creates djCommentsInk.reply_forms_handler attribute !== null", () => {
+        expect(
+            dom.window.djCommentsInk !== null &&
+            dom.window.djCommentsInk !== undefined
+        );
+        expect(dom.window.djCommentsInk.comment_form !== null);
     });
 });
