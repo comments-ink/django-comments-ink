@@ -25,7 +25,7 @@ repo_name: django-comments-ink
 repo_url: https://github.com/comments-ink/django-comments-ink
 
 nav:
-  - Home: index.md
+  - Introduction: index.md
   - About: about.md
 
 markdown_extensions:

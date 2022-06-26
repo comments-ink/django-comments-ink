@@ -4,7 +4,7 @@ django-comments-ink is a Django pluggable application that adds comments to your
 
 ## Features
 
-1. Comment can be nested.
+1. Comments can be nested.
 1. Customizable maximum thread level.
 1. Optional notifications on follow-up comments via email.
 1. Mute links to allow cancellation of follow-up notifications.
@@ -19,31 +19,48 @@ django-comments-ink is a Django pluggable application that adds comments to your
 
     $ pip install django-comments-ink
 
-It will install **Django**, **django-contrib-comments** and **django-rest-framework**.
+It will install Django, django-contrib-comments and django-rest-framework.
 
 ## Quick start
 
-To get started using django-comments-ink we will use the basic django blog example provided in the [tutorial.tar.gz](https://github.com/django-comments-ink/docs/assets/tutorial.tar.gz) tarball.
+To get started using django-comments-ink we will use the basic django blog example provided by the [dci-quick-start](https://github.com/comments-ink/dci-quick-start) project.
 
 !!! note "Use your own Django project"
 
     If you have your own Django project ready then ignore the steps that refer to the tutorial bundle and the creation of the virtual environment. Just follow the relevant information that refers only to django-comments-ink.
 
-### Start with the tutorial bundle
+### Start with the quick-start bundle
 
-Create a virtual environment, install django-comments-ink, download the [tutorial.tar.gz](https://github.com/django-comments-ink/docs/assets/tutorial.tar.gz) bundle, extract the content, and set up the project:
+Download the [quick-start project bundle](https://github.com/comments-ink/dci-quick-start/archive/refs/tags/v1.0.1.tar.gz), create a virtual environment, and set up the project:
 
+    $ wget the-project-link-from-above
+    $ tar -xvzf dci-quick-start-1.0.1.tar.gz
+    $ cd dci-quick-start-1.0.0
     $ python3 -m venv venv
     $ source venv/bin/activate
-    (venv)$ pip install django-comments-ink
-    (venv)$ wget the-tutorial-link-from-above
-    (venv)$ tar -xvzf tutorial.tar.gz
-    (venv)$ cd tutorial
+    (venv)$ pip install -r requirements.txt
+    (venv)$ cd quick_start
     (venv)$ python manage.py migrate
     (venv)$ python manage.py loaddata fixtures/*.json
     (venv)$ python manage.py runserver
 
-The loaded fixtures contain a user `admin` with password `admin`, the default site, and some blog posts.
+The loaded fixtures contain the default site, users and some blog posts.
+
+#### About the users
+
+The project allows you to login using any of the users provided with the `users.json` fixture. There are 110 users. Here are the login email and password of the first 10. The rest follow the same pattern; the password is the left side of the email address:
+
+ * `admin@example.com`, password `admin`
+ * `fulanito@example.com`, password `fulanito`
+ * `mengo@example.com`, password `mengo`
+ * `daniela.rushmore@example.com`, password `daniela.rushmore`
+ * `lena.rosenthal@example.com`, password `lena.rosenthal`
+ * `amalia.ocean@example.com`, password `amalia.ocean`
+ * `isabel.azul@example.com`, password `isabel.azul`
+ * `joe.bloggs@example.com`, password `joe.bloggs`
+ * `eva.rizzi@example.com`, password `eva.rizzi`
+ * `david.fields@example.com`, password `david.fields`
+
 
 ### Add required settings
 
@@ -63,12 +80,11 @@ Make the following changes to your `settings.py` module. Add the `SITE_ID` only 
     COMMENTS_APP = 'django_comments_ink'
 
     # --------------------------------------------------------------
-    # Customize the maximum thread level for comments to 2:
+    # Customize the maximum thread level for comments to 1:
     # Comment 1 (level 0)
     #  |-- Comment 1.1 (level 1)
-    #       |-- Comment 1.1.1 (level 2)
     #
-    COMMENTS_INK_MAX_THREAD_LEVEL = 2
+    COMMENTS_INK_MAX_THREAD_LEVEL = 1
 
     # --------------------------------------------------------------
     # Set confirmation email to True to require comment confirmation
@@ -90,13 +106,13 @@ Make the following changes to your `settings.py` module. Add the `SITE_ID` only 
     DEFAULT_FROM_EMAIL = "Helpdesk <helpdesk@yourdomain>"
 
 
-Visit your Django project's [admin site](http://localhost:8000/admin/sites/site/) and be sure that the domain field of the `Site` instance points to the correct domain (`localhost:8000` when running the default development server), as it will be used to create comment verification URLs, follow-up cancellations, etc.
+Visit your Django project's [admin site](http://localhost:8000/admin/sites/site/) and be sure that the domain field of the `Site` instance points to the correct domain (`localhost:8000` when running the default development server), as it will be used to create comment verification URLs, follow-up cancellations, etc. The admin user in the quick-start project is `admin@example.com`, password `admin`.
 
-And then run the `manage.py migrate` command to create the tables.
+Having `django_comments_ink` and `django_comments` in your `INSTALLED_APPS` settings, run the `manage.py migrate` command to create the tables.
 
 ### Include URLs
 
-Add django-comments-ink URLs to the project's `urls.py` module. Edit the file `tutorial/urls.py` and be sure it contains the following code:
+Add django-comments-ink URLs to the project's `urls.py` module. Edit the file `quick_start/urls.py` and be sure it contains the following code:
 
     urlpatterns = [
         ...
@@ -118,6 +134,7 @@ Edit the `template/blog/post_list.html` file, and modify the code to load the **
 
     {% extends "base.html" %}
 
+    {% load i18n %}
     {% load static %}
     {% load comments %}
 
@@ -127,27 +144,27 @@ Before the `content` block add the `extra_css` block (defined in `base.html`) so
     <link
       rel="stylesheet" type="text/css"
       href="{% static 'django_comments_ink/css/comments.css' %}"
-    ></link>
+    >
     {% endblock %}
 
 Within the `content` block, modify the template to look like in the following snippet:
 
     {% for object in object_list %}
       {% get_comment_count for object as comment_count %}
-      <h3><a href="{{ object.get_absolute_url }}">{{ object.title }}</a></h3>
-      <p class="date">
-        Published {{ object.publish }}
-        {% if comment_count %}
-          &nbsp;
-          <span class="emoji">&#128172;</span>
-          <span class="small">{{ comment_count }}</span>
-          &nbsp;
-        {% endif %}
-      </p>
-      {{ object.body|truncatewords:30|linebreaks }}
+      <div>
+        <h6 class="inline flex flex-align-center">
+          <a href="{{ object.get_absolute_url }}">{{ object.title }}</a>
+          - <span class="small">{{ object.publish|date:"d-F-Y" }}</span>
+          {% if comment_count %}
+            - <span class="emoji small">&#128172;</span>
+            <span class="small">{{ comment_count }}</span>
+          {% endif %}
+        </h6>
+        {{ object.body|truncatewords:30|linebreaks }}
+      </div>
     {% endfor %}
 
-Given that we have not posted any comment we should not see any change in the output yet.
+Given that we have not posted comments yet we should not see any change in the browser.
 
 #### 2. The detail template
 
@@ -166,41 +183,49 @@ Before the `content` block add the `extra_css` block so that we load the `commen
     <link
       rel="stylesheet" type="text/css"
       href="{% static 'django_comments_ink/css/comments.css' %}"
-    ></link>
+    >
     {% endblock %}
 
-At the end of the `content` block, right before the `endblock` tag, add the following content:
+At the end of the `content` block and before the closing tag of the `article` HTML element, add the following content:
 
     <div class="{% dci_custom_selector %}">
-    {% get_inkcomment_count for object as comment_count %}
-    {% if comment_count %}
+      {% get_inkcomment_count for object as comment_count %}
+      {% if comment_count %}
         <h6 class="text-center">
-        {% blocktrans count comment_count=comment_count %}
-        There is {{ comment_count }} comment
-        {% plural %}
-        There are {{ comment_count }} comments
-        {% endblocktrans %}
+          {% blocktrans count comment_count=comment_count %}
+          There is {{ comment_count }} comment
+          {% plural %}
+          There are {{ comment_count }} comments
+          {% endblocktrans %}
         </h6>
-    {% endif %}
+      {% endif %}
     </div>
 
     {% if comment_count %}
-    <div class="{% dci_custom_selector %} pb32">
+      <div class="{% dci_custom_selector %} pb32">
         {% render_inkcomment_list for object %}
-    </div>
+      </div>
     {% endif %}
 
     <div class="{% dci_custom_selector %}" data-dci="comment-form">
-    <section class="comment-form">
+      <section class="comment-form">
         <h5 class="text-center">{% translate "Post your comment" %}</h5>
         {% render_inkcomment_form for object %}
-    </section>
+      </section>
     </div>
 
-With those changes the Django project is ready to handle posting comments and listing them. It's the minimal installation. Try to send a comment and see the count in the list of posts. If you want to add reactions and add more dynamism, the minimal installation falls short.
+With those changes the Django project is ready to handle posting and listing comments. It's the minimal installation. Send a comment and see the count in the list of posts. Remember that emails are sent to the console.
 
-Include the JavaScript plugin in your template to make posting comments more dynamic. Add the following block to the `template/blog/post_detail.html` to handle sending the comments via the JavaScript plugin:
+Include the JavaScript plugin in your template to make posting comments more dynamic. The JavaScript plugin displays the comment reply form provided with the `comments/reply_template.html` file.
+
+Add the following two blocks to the `template/blog/post_detail.html` to handle sending the comments via the JavaScript plugin:
+
+    {% block extra_html %}
+    {% render_comment_reply_template for object %}
+    {% endblock %}
 
     {% block extra_js %}
-    <script src="{% static 'django_comments_ink/dist/dci-0.1.0.js' %}"></script>
+    <script src="{% static 'django_comments_ink/dist/dci-0.2.0.js' %}"></script>
     {% endblock %}
+
+Now sending comments are replies is enabled via the JavaScript plugin.
