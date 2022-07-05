@@ -1,4 +1,5 @@
 from django.apps import apps
+from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.shortcuts import get_current_site
 from django.utils import formats, timezone
 from django.utils.html import escape
@@ -92,26 +93,31 @@ class WriteCommentSerializer(serializers.Serializer):
         return value
 
     def validate(self, data):
-        ctype = data.get("content_type")
+        content_type = data.get("content_type")
         object_pk = data.get("object_pk")
         try:
-            model = apps.get_model(*ctype.split(".", 1))
+            model = apps.get_model(*content_type.split(".", 1))
             target = model._default_manager.get(pk=object_pk)
+            ctype = ContentType.objects.get_for_model(model)
             whocan = get_app_model_options(content_type=ctype)["who_can_post"]
         except (AttributeError, TypeError, LookupError):
             raise serializers.ValidationError(
-                "Invalid content_type value: %r" % escape(ctype)
+                "Invalid content_type value: %r" % escape(content_type)
             )
         except model.DoesNotExist:
             raise serializers.ValidationError(
                 "No object matching content-type %r and object PK %r."
-                % (escape(ctype), escape(object_pk))
+                % (escape(content_type), escape(object_pk))
             )
         except (ValueError, serializers.ValidationError) as e:
             raise serializers.ValidationError(
                 "Attempting to get content-type %r and object PK %r "
                 "raised %s"
-                % (escape(ctype), escape(object_pk), e.__class__.__name__)
+                % (
+                    escape(content_type),
+                    escape(object_pk),
+                    e.__class__.__name__,
+                )
             )
         else:
             if whocan == "users" and not self.request.user.is_authenticated:

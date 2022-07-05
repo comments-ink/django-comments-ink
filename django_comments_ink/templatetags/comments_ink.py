@@ -287,7 +287,9 @@ class BaseInkCommentNode(BaseCommentNode):
                 qs = cached
 
         if not qs:
-            qs = super().get_queryset(context)
+            mtl = utils.get_max_thread_level(ctype)
+            qs = super().get_queryset(context).filter(level__lte=mtl)
+
             if dci_cache != None and self.ckey_comments_qs != "":
                 logger.debug("Adding %s to the cache", self.ckey_comments_qs)
                 dci_cache.set(self.ckey_comments_qs, qs, timeout=None)
@@ -334,6 +336,8 @@ class RenderInkCommentListNode(InkCommentListNode):
             # {% render_inkcomment_list for var_not_in_context %}
             return ""
 
+        mtl = utils.get_max_thread_level(ctype)
+
         template_list = [
             pth.format(
                 theme_dir=theme_dir,
@@ -342,7 +346,6 @@ class RenderInkCommentListNode(InkCommentListNode):
             )
             for pth in _list_html_tmpl
         ]
-
         qs = self.get_queryset(context)
         qs = self.get_context_value_from_queryset(context, qs)
         context_dict = context.flatten()
@@ -352,10 +355,7 @@ class RenderInkCommentListNode(InkCommentListNode):
             paginate_queryset(qs, context, self.ckey_comments_paged)
         )
 
-        # Pass max_thread_level in the context.
-        app_model = "%s.%s" % (ctype.app_label, ctype.model)
-        MTL = settings.COMMENTS_INK_MAX_THREAD_LEVEL_BY_APP_MODEL
-        mtl = MTL.get(app_model, settings.COMMENTS_INK_MAX_THREAD_LEVEL)
+        # Pass max_users_in_tooltip from the settings.
         max_users_in_tooltip = settings.COMMENTS_INK_MAX_USERS_IN_TOOLTIP
         context_dict.update(
             {
@@ -373,7 +373,7 @@ class RenderInkCommentListNode(InkCommentListNode):
         #     'comment_reactions_enabled': <boolean>,
         #     'object_reactions_enabled': <boolean>
         # }
-        options = utils.get_app_model_options(content_type=app_model)
+        options = utils.get_app_model_options(content_type=ctype)
         check_input_allowed_str = options.pop("check_input_allowed")
         check_func = import_string(check_input_allowed_str)
         target_obj = ctype.get_object_for_this_type(pk=object_pk)
@@ -498,8 +498,8 @@ def render_inkcomment_form(parser, token):
 
     Syntax::
 
-        {% get_inkcomment_form for [object] as [varname] %}
-        {% get_inkcomment_form for [app].[model] [object_id] as [varname] %}
+        {% render_inkcomment_form for [object] as [varname] %}
+        {% render_inkcomment_form for [app].[model] [object_id] as [varname] %}
     """
     return RenderInkCommentFormNode.handle_token(parser, token)
 
@@ -591,11 +591,7 @@ class RenderQSParams(Node):
             if self.page_expr == None:
                 request = context.get("request", None)
                 page = utils.get_comment_page_number(
-                    request,
-                    cobj.content_type.id,
-                    cobj.object_pk,
-                    cobj.id,
-                    comments_folded=fold,
+                    request, cobj, comments_folded=fold
                 )
                 qs_params.append(f"{cpage_qs_param}={page}")
 
@@ -1081,13 +1077,12 @@ class BaseObjectReactionsNode(Node):
                 context, ignore_failures=True
             )
 
-        app_model = "%s.%s" % (self.ctype.app_label, self.ctype.model)
-        options = utils.get_app_model_options(content_type=app_model)
+        options = utils.get_app_model_options(content_type=self.ctype)
         if not options["object_reactions_enabled"]:
             raise Exception(
                 "Object reactions for '%s' is not enabled in the setting "
                 "COMMENTS_INK_APP_MODEL_OPTIONS in the settings module"
-                % app_model
+                % self.ctype
             )
 
         self.object = self.ctype.get_object_for_this_type(pk=self.object_pk)

@@ -72,6 +72,14 @@ def send_mail(
 
 
 # --------------------------------------------------------------------
+def get_max_thread_level(content_type):
+    """Get the max_thread_level for a given content_type."""
+    app_model = "%s.%s" % (content_type.app_label, content_type.model)
+    MTL = settings.COMMENTS_INK_MAX_THREAD_LEVEL_BY_APP_MODEL
+    return MTL.get(app_model, settings.COMMENTS_INK_MAX_THREAD_LEVEL)
+
+
+# --------------------------------------------------------------------
 def get_app_model_options(comment=None, content_type=None):
     """
     Get the app_model_option from COMMENTS_INK_APP_MODEL_OPTIONS.
@@ -101,7 +109,7 @@ def get_app_model_options(comment=None, content_type=None):
         content_type = ContentType.objects.get_for_model(comment.content_object)
         key = "%s.%s" % (content_type.app_label, content_type.model)
     elif content_type:
-        key = content_type
+        key = "%s.%s" % (content_type.app_label, content_type.model)
     else:
         return defaults_options["default"]
     try:
@@ -113,19 +121,25 @@ def get_app_model_options(comment=None, content_type=None):
 
 option_msgs = {
     "comment_flagging_enabled": {
-        "PROD": "This type of comments are not allowed to be flagged.",
+        "PROD": "This type of comment is not allowed to be flagged.",
         "DEBUG": "Comments posted to instances of '%s.%s' are not "
         "explicitly allowed to be flagged. Check the "
         "COMMENTS_INK_APP_MODEL_OPTIONS setting.",
     },
+    "comment_votes_enabled": {
+        "PROD": "This type of comment is not allowed to receive votes.",
+        "DEBUG": "Comments posted to instances of '%s.%s' are not "
+        "explicitly allowed to receive votes. Check the "
+        "COMMENTS_INK_APP_MODEL_OPTIONS setting.",
+    },
     "comment_reactions_enabled": {
-        "PROD": "This type of comment are not allowed to receive reactions.",
+        "PROD": "This type of comment is not allowed to receive reactions.",
         "DEBUG": "Comments posted to instances of '%s.%s' are not "
         "explicitly allowed to receive reactions. Check the "
         "COMMENTS_INK_APP_MODEL_OPTIONS setting.",
     },
     "object_reactions_enabled": {
-        "PROD": "This type of object are not allowed to receive reactions.",
+        "PROD": "This type of object is not allowed to receive reactions.",
         "DEBUG": "Instances of '%s.%s' are not explicitly allowed to receive "
         "reactions. Check the COMMENTS_INK_APP_MODEL_OPTIONS setting.",
     },
@@ -144,7 +158,7 @@ def check_option(option, comment=None, content_type=None):
                 ct = ContentType.objects.get_for_model(comment.content_object)
                 app_label, model = ct.app_label, ct.model
             if content_type:
-                app_label, model = content_type.rsplit(".", 1)
+                app_label, model = content_type.app_label, content_type.model
             message = option_msgs[option]["DEBUG"] % (app_label, model)
         raise PermissionDenied(detail=message, code=status.HTTP_403_FORBIDDEN)
 
@@ -201,11 +215,9 @@ def redirect_to(comment, request=None, page_number=None):
     return HttpResponseRedirect(url)
 
 
-def get_comment_page_number(
-    request, content_type_id, object_id, comment_id, comments_folded=None
-):
+def get_comment_page_number(request, comment, comments_folded=None):
     """
-    Returns the page number in which the `comment_id` is listed.
+    Returns the page number in which the `comment.pk` is listed.
     """
     num_orphans = settings.COMMENTS_INK_MAX_LAST_PAGE_ORPHANS
     page_size = settings.COMMENTS_INK_COMMENTS_PER_PAGE
@@ -217,8 +229,12 @@ def get_comment_page_number(
 
     site_id = get_current_site_id(request)
 
+    mtl = get_max_thread_level(comment.content_type)
     qs = get_model().objects.filter(
-        content_type_id=content_type_id, object_pk=object_id, site__pk=site_id
+        content_type_id=comment.content_type.pk,
+        object_pk=comment.object_pk,
+        site__pk=site_id,
+        level__lte=mtl,
     )
 
     # The is_public and is_removed fields are implementation details of the
@@ -238,13 +254,13 @@ def get_comment_page_number(
     if "user" in field_names:
         qs = qs.select_related("user")
 
-    comment_id = int(comment_id)
-
     if comments_folded:
         qs = qs.filter(~Q(level__gt=0, thread_id__in=comments_folded))
 
     ckey_prefix = settings.COMMENTS_INK_CACHE_KEYS["comments_paged"].format(
-        ctype_pk=content_type_id, object_pk=object_id, site_id=site_id
+        ctype_pk=comment.content_type.pk,
+        object_pk=comment.object_pk,
+        site_id=site_id,
     )
 
     paginator = CommentsPaginator(
@@ -257,9 +273,9 @@ def get_comment_page_number(
 
     for page_number in range(1, paginator.num_pages + 1):
         page = paginator.page(page_number)
-        if comment_id in [cm.id for cm in page.object_list]:
+        if comment.pk in [cm.id for cm in page.object_list]:
             return page_number
-    raise Exception("Comment %d not listed in any page." % comment_id)
+    raise Exception("Comment %d not listed in any page." % comment.pk)
 
 
 def does_theme_dir_exist(theme_dir):

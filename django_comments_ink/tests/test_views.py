@@ -224,7 +224,6 @@ class ConfirmCommentTestCase(TestCase):
         # Tests that the length of the confirm url's length isn't
         # dependent on the article length.
         l = len(reverse("comments-ink-confirm", kwargs={"key": self.key}))
-        # print("\nXXXXXXXXXXX:", l)
         self.assertLessEqual(l, 4096, "Urls can only be a max of 4096")
 
     def test_400_on_bad_signature(self):
@@ -1692,7 +1691,6 @@ def test_GET_react_without_reactions_enabled_raises(
     monkeypatch, rf, an_user, an_articles_comment
 ):
     def raise_PermissionDenied(*args, **kwargs):
-        print("in raise_PermissionDenied")
         raise PermissionDenied(detail="Mee", code=status.HTTP_403_FORBIDDEN)
 
     monkeypatch.setattr(views.utils, "check_option", raise_PermissionDenied)

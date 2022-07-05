@@ -61,8 +61,7 @@ def comments_api_props(obj, user, request=None):
         is_public=True,
     )
     ctype_slug = "%s-%s" % (ctype.app_label, ctype.model)
-    app_model = "%s.%s" % (ctype.app_label, ctype.model)
-    options = get_app_model_options(content_type=app_model)
+    options = get_app_model_options(content_type=ctype)
     check_input_allowed_str = options.pop("check_input_allowed")
     check_func = import_string(check_input_allowed_str)
     d = {

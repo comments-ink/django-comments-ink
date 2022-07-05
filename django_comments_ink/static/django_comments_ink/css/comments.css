@@ -547,6 +547,10 @@
     font-size: 0.8rem;
 }
 
+.dci .comment-box .body, .dci .comment-box-img .body {
+    font-size: 0.9rem;
+}
+
 .body-bordered {
     padding: 4px;
     border: 1px solid rgba(0, 0, 0, .1);
@@ -558,7 +562,11 @@
 }
 
 .dci .comment-box     .body > P,
-.dci .comment-box-img .body > P  { margin: .6rem; }
+.dci .comment-box-img .body > P  {
+    margin: .6rem;
+    line-height: 1.4;
+    font-size: 0.9rem;
+}
 
 .dci .comment-box     .body > P + P,
 .dci .comment-box-img .body > P + P { margin-top: 0; }

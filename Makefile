@@ -12,10 +12,10 @@ coverage:  ## Run tests with coverage.
 	@sh ./ccsvg.sh ||:
 
 syntax-check:  ## Check syntax code (isort and black).
-	black --check django_comments_ink demos
+	black --check django_comments_ink
 
 syntax-format:  ## Format syntax code (isort and black).
-	black django_comments_ink demos
+	black django_comments_ink
 
 tox:  ## Run tox.
 	python -m tox
