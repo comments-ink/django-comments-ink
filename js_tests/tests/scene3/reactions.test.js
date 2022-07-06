@@ -51,7 +51,7 @@ describe("scene 3 - reactions.test.js module", () => {
     });
 
     it("opens/closes reactions panel by clicking on 'react' link", async() => {
-        const anchor_qs = "A[data-dci=reactions-panel]";
+        const anchor_qs = '[data-dci="reactions-panel"]';
 
         const comment_el = container.querySelector("#comment-29");
         expect(comment_el).not.toBe(null);
