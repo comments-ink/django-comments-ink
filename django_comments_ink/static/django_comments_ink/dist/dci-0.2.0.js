@@ -382,7 +382,7 @@ class ReactionsHandler {
                 "Cannot initialize reactions panel => There are " +
                 "no elements with [data-dci=reactions-panel].");
         }
-        this.active_visible_panel = 0;
+        this.active_visible_panel = "0";
         this.panels_visibility = new Map(); // Keys are 'comment_id'.
         this.event_handlers = [];
         this.add_event_listeners();
@@ -434,9 +434,9 @@ class ReactionsHandler {
         const data_attr = event.target.getAttribute("data-dci");
         if (!data_attr || data_attr !== "reactions-panel") {
             this.reactions_panel.hide();
-            if (this.active_visible_panel) {
+            if (this.active_visible_panel !== "0") {
                 this.panels_visibility.set(this.active_visible_panel, false);
-                this.active_visible_panel = 0;
+                this.active_visible_panel = "0";
             }
         }
     }
@@ -444,9 +444,9 @@ class ReactionsHandler {
     on_document_key_up(event) {
         if (event.key === "Escape") {
             this.reactions_panel.hide();
-            if (this.active_visible_panel) {
+            if (this.active_visible_panel !== "0") {
                 this.panels_visibility.set(this.active_visible_panel, false);
-                this.active_visible_panel = 0;
+                this.active_visible_panel = "0";
             }
         }
     }
@@ -501,7 +501,7 @@ class ReactionsHandler {
                 this.active_visible_panel = comment_id;
                 this.reactions_panel.show(event.target, comment_id);
             } else {
-                this.active_visible_panel = 0;
+                this.active_visible_panel = "0";
                 this.reactions_panel.hide();
             }
             this.panels_visibility.set(comment_id, !is_visible);
