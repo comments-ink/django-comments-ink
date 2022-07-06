@@ -7,9 +7,7 @@ A Django pluggable application that adds comments to your project.
 
 The current master branch represents is a work-in-progress towards v3.0.0. It has not been released yet as a package in PyPI. The current stable version is based on the branch [v2](https://github.com/danirus/django-comments-ink/tree/v2) and is [available at PyPI](https://pypi.org/project/django-comments-ink/).
 
-Example of django-comments-ink with one thread level and the default theme:
-
-![Example image of using django-comments-ink](https://github.com/danirus/django-comments-ink/blob/main/docs/images/cover.png)
+<p align="center"><br/><img src="cover.png"><br/><br/></p>
 
 It extends [django-contrib-comments](https://pypi.python.org/pypi/django-contrib-comments) with the following features:
 
