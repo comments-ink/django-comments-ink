@@ -555,8 +555,7 @@ Comments provided by django-comments-ink have additional features that allow use
  * Comment votes.
  * Comment reactions.
 
-In addition django-comments-ink extends the capability to send reactions to other objects. Say, if a blog post can receive comments it could also receive reactions. This way users can send likes or dislikes to blog posts, or claps as in the popular publishing site [Medium](https://medium.com).
-
+In addition django-comments-ink extends the capability to send reactions to other objects. So that if, say, a blog post can receive comments it could also receive reactions. This way users can send likes or dislikes to blog posts, or claps as in the popular publishing site [Medium](https://medium.com).
 
 
 ### Removal suggestion
