@@ -143,7 +143,7 @@ describe("scene 3 - reactions.test.js module", () => {
             expect(like_reaction_el).not.toBe(null);
             expect(like_reaction_el.children[0].textContent).toBe('1');
             expect(like_reaction_el.children[1].textContent).toBe('👍');
-        });
+        }, {interval: 100, timeout: 2000});
 
         dom.window.fetch.mockClear();
     });
@@ -219,7 +219,7 @@ describe("scene 3 - reactions.test.js module", () => {
             expect(like_reaction_el).not.toBe(null);
             expect(like_reaction_el.children[0].textContent).toBe('1');
             expect(like_reaction_el.children[1].textContent).toBe('👍');
-        });
+        }, {interval: 100, timeout: 2000});
         dom.window.fetch.mockClear();
 
         // --------------------------------------
