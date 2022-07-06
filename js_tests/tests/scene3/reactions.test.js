@@ -115,21 +115,21 @@ describe("scene 3 - reactions.test.js module", () => {
         formData.append("reaction", "+");
         formData.append("csrfmiddlewaretoken", null);
 
-        expect(dom.window.fetch.mock.calls.length).toEqual(1);
-        expect(dom.window.fetch).toHaveBeenCalledWith(
-            "/comments/react/29/",
-            {
-                method: "POST",
-                cache: "no-cache",
-                credentials: "same-origin",
-                headers: {
-                    "X-Requested-With": "XMLHttpRequest",
-                },
-                body: formData
-            }
-        );
-
         await waitFor(() => {
+            expect(dom.window.fetch.mock.calls.length).toEqual(1);
+            expect(dom.window.fetch).toHaveBeenCalledWith(
+                "/comments/react/29/",
+                {
+                    method: "POST",
+                    cache: "no-cache",
+                    credentials: "same-origin",
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest",
+                    },
+                    body: formData
+                }
+            );
+
             const feedback_qs = '#cm-feedback-29';
             const reaction_qs = '[data-reaction="+"]';
 
@@ -191,21 +191,21 @@ describe("scene 3 - reactions.test.js module", () => {
         formData.append("reaction", "+");
         formData.append("csrfmiddlewaretoken", null);
 
-        expect(dom.window.fetch.mock.calls.length).toEqual(1);
-        expect(dom.window.fetch).toHaveBeenCalledWith(
-            "/comments/react/29/",
-            {
-                method: "POST",
-                cache: "no-cache",
-                credentials: "same-origin",
-                headers: {
-                    "X-Requested-With": "XMLHttpRequest",
-                },
-                body: formData
-            }
-        );
-
         await waitFor(() => {
+            expect(dom.window.fetch.mock.calls.length).toEqual(1);
+            expect(dom.window.fetch).toHaveBeenCalledWith(
+                "/comments/react/29/",
+                {
+                    method: "POST",
+                    cache: "no-cache",
+                    credentials: "same-origin",
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest",
+                    },
+                    body: formData
+                }
+            );
+
             const reactions_qs = '#cm-reactions-29';
             const like_qs = '[data-reaction="+"]';
 
@@ -241,21 +241,21 @@ describe("scene 3 - reactions.test.js module", () => {
         expect(dom.window.fetch.mock.calls.length).toEqual(0);
         fireEvent.click(like_btn_el);
 
-        expect(dom.window.fetch.mock.calls.length).toEqual(1);
-        expect(dom.window.fetch).toHaveBeenCalledWith(
-            "/comments/react/29/",
-            {
-                method: "POST",
-                cache: "no-cache",
-                credentials: "same-origin",
-                headers: {
-                    "X-Requested-With": "XMLHttpRequest",
-                },
-                body: formData
-            }
-        );
-
         await waitFor(() => {
+            expect(dom.window.fetch.mock.calls.length).toEqual(1);
+            expect(dom.window.fetch).toHaveBeenCalledWith(
+                "/comments/react/29/",
+                {
+                    method: "POST",
+                    cache: "no-cache",
+                    credentials: "same-origin",
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest",
+                    },
+                    body: formData
+                }
+            );
+
             const reactions_qs = '#cm-reactions-29';
             const like_qs = '[data-reaction="+"]';
 
