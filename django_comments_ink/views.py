@@ -668,8 +668,7 @@ def on_comment_will_be_posted(sender, comment, request, **kwargs):
         user_is_authenticated = False
 
     ct = comment.get("content_type")
-    ct_str = "%s.%s" % (ct.app_label, ct.model)
-    options = utils.get_app_model_options(content_type=ct_str)
+    options = utils.get_app_model_options(content_type=ct)
     if not user_is_authenticated and options["who_can_post"] == "users":
         # Reject comment.
         return False
@@ -782,9 +781,7 @@ def sent_js(request, comment, using=None):
                 )
                 for pth in _published_js_tmpl
             ]
-            page_number = utils.get_comment_page_number(
-                request, comment.content_type.id, comment.object_pk, comment.id
-            )
+            page_number = utils.get_comment_page_number(request, comment)
             comment_url = utils.get_comment_url(comment, None, page_number)
             return json_res(
                 request,
@@ -929,11 +926,7 @@ def reply(request, cid):
     except InkComment.DoesNotExist as exc:
         raise Http404(exc)
 
-    ct_str = "%s.%s" % (
-        comment.content_type.app_label,
-        comment.content_type.model,
-    )
-    options = utils.get_app_model_options(content_type=ct_str)
+    options = utils.get_app_model_options(content_type=comment.content_type)
 
     if not request.user.is_authenticated and options["who_can_post"] == "users":
         path = request.build_absolute_uri()
@@ -1214,8 +1207,7 @@ def react_to_object(request, content_type_id, object_pk, next=None):
             "does not exist" % (content_type_id, object_pk)
         )
 
-    ctype_str = ctype.app_label + "." + ctype.model
-    utils.check_option("object_reactions_enabled", content_type=ctype_str)
+    utils.check_option("object_reactions_enabled", content_type=ctype)
     cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
     cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
 
@@ -1382,9 +1374,8 @@ def get_inkcomment_url(request, content_type_id, object_id, comment_id):
 
     if not cpage:
         # Create a CommentsPaginator and get the page of the comment.
-        cpage = utils.get_comment_page_number(
-            request, content_type_id, object_id, comment_id
-        )
+        comment = InkComment.norel_objects.get(pk=comment_id)
+        cpage = utils.get_comment_page_number(request, comment)
 
     qs_params = []
 

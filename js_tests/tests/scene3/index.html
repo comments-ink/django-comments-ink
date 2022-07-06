@@ -43,6 +43,7 @@
               data-react-url="/comments/react/0/"
               data-guest-user="0"
               data-page-qs-param="cpage"
+              data-fold-qs-param="cfold"
             >
               <div id="comment-29" class="comment-box l0-ini">
                 <div class="comment">
@@ -53,11 +54,11 @@
                   <div class="body">
                     <p>Many people claim for their rights. The right to have a job, to have a house, the right to have access to health care and education for their children. Many of them however treat trans people as a a kind of sub-human being, and with that attitude they withhold trans peoples' rights to be human beings, and the right to have their own existence.</p>
                   </div>
-                  <div id="cm-feedback-29" class="footer">
+                  <div id="cm-feedback-29" class="feedback feedback-borderer">
                     <div class="reactions" id="cm-reactions-29">
                     </div>
-                    <div>
-                      <a data-dci="reactions-panel" data-comment="29" class="small" data-user-auth="False" href="/comments/react/29/?cpage=1" data-login-next="/comments/cr/15/3/29/#comment-29">React</a>
+                    <div class="inline-block sep">
+                      <a data-dci="reactions-panel" data-comment="29" class="small" data-user-auth="True" href="/comments/react/29/?cpage=1">React</a>
                     </div>
                   </div>
                 </div>
@@ -143,9 +144,6 @@
       </div>
     </footer>
 
-    <script>
-        self.dci = {}
-    </script>
     <script> // From https://unpkg.com/unfetch/polyfill.
       self.fetch||(self.fetch=function(e,n){return n=n||{},new Promise(function(t,s){var r=new XMLHttpRequest,o=[],u=[],i={},a=function(){return{ok:2==(r.status/100|0),statusText:r.statusText,status:r.status,url:r.responseURL,text:function(){return Promise.resolve(r.responseText)},json:function(){return Promise.resolve(r.responseText).then(JSON.parse)},blob:function(){return Promise.resolve(new Blob([r.response]))},clone:a,headers:{keys:function(){return o},entries:function(){return u},get:function(e){return i[e.toLowerCase()]},has:function(e){return e.toLowerCase()in i}}}};for(var c in r.open(n.method||"get",e,!0),r.onload=function(){r.getAllResponseHeaders().replace(/^(.*?):[^\S\n]*([\s\S]*?)$/gm,function(e,n,t){o.push(n=n.toLowerCase()),u.push([n,t]),i[n]=i[n]?i[n]+","+t:t}),t(a())},r.onerror=s,r.withCredentials="include"==n.credentials,n.headers)r.setRequestHeader(c,n.headers[c]);r.send(n.body||null)})});
     </script>

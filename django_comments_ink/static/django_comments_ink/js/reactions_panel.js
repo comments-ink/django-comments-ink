@@ -51,7 +51,7 @@ export default class ReactionsPanel {
     }
 
     add_event_listeners() {
-        const buttons = this.panel_el.querySelectorAll("BUTTON");
+        const buttons = this.panel_el.querySelectorAll("button");
         for (const btn of Array.from(buttons)) {
             btn.addEventListener("click", this.on_react_btn_click);
             btn.addEventListener("mouseover", this.on_react_btn_mouseover);

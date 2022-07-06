@@ -52,6 +52,8 @@ COMMENTS_INK_APP_MODEL_OPTIONS = {
         # Function to determine whether new comments,
         # reactions, etc. should be allowed for a given object.
         "check_input_allowed": "django_comments_ink.utils.check_input_allowed",
+        # Whether to allow users to vote for comments.
+        "comment_votes_enabled": False,
         # Whether to display a link to flag a comment as inappropriate.
         "comment_flagging_enabled": False,
         # Whether to allow users to submit reactions on comments.

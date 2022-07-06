@@ -9,8 +9,12 @@
       <p class="big">
         {% blocktrans %}A confirmation message has been sent to your email address. Please, click on the link in the message to confirm your comment.{% endblocktrans %}
       </p>
-      <p class="small">
-        Go back to: <a href="{{ target.get_absolute_url }}">{{ target }}</a>
+      <p>
+        {% with object_url=target.get_absolute_url %}
+          {% blocktrans %}
+            Go back to: <a href="{{ get_absolute_url }}">{{ target }}</a>
+          {% endblocktrans %}
+        {% endwith %}
       </p>
     </div>
   </div>

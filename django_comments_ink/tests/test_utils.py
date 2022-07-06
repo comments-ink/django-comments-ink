@@ -8,6 +8,7 @@ from django_comments_ink import get_model, utils
 from django_comments_ink.conf import settings
 from django_comments_ink.conf.defaults import COMMENTS_INK_APP_MODEL_OPTIONS
 from django_comments_ink.paginator import CommentsPaginator
+from django_comments_ink.tests import models
 
 InkComment = get_model()
 
@@ -60,6 +61,7 @@ only_default_options = {
     "default": {
         "who_can_post": "all",
         "check_input_allowed": "",
+        "comment_votes_enabled": True,
         "comment_flagging_enabled": True,
         "comment_reactions_enabled": True,
         "object_reactions_enabled": True,
@@ -81,12 +83,14 @@ default_and_article_options = {
     "default": {
         "who_can_post": "all",
         "check_input_allowed": "",
+        "comment_votes_enabled": True,
         "comment_flagging_enabled": True,
         "comment_reactions_enabled": True,
         "object_reactions_enabled": True,
     },
     "tests.article": {
         "comment_flagging_enabled": False,
+        "comment_votes_enabled": False,
         "comment_reactions_enabled": False,
         "object_reactions_enabled": False,
     },
@@ -100,7 +104,7 @@ def test_get_app_model_options_with_comment(an_articles_comment, monkeypatch):
         "COMMENTS_INK_APP_MODEL_OPTIONS",
         default_and_article_options,
     )
-    _options = utils.get_app_model_options(an_articles_comment)
+    _options = utils.get_app_model_options(comment=an_articles_comment)
     expected_options = default_and_article_options["default"]
     expected_options.update(default_and_article_options["tests.article"])
     assert _options == expected_options
@@ -113,20 +117,21 @@ def test_get_app_model_options_with_content_type(monkeypatch):
         "COMMENTS_INK_APP_MODEL_OPTIONS",
         default_and_article_options,
     )
-    _options = utils.get_app_model_options(content_type="tests.article")
+    ctype = ContentType.objects.get_for_model(models.Article)
+    _options = utils.get_app_model_options(content_type=ctype)
     expected_options = default_and_article_options["default"]
     expected_options.update(default_and_article_options["tests.article"])
     assert _options == expected_options
 
 
 @pytest.mark.django_db
-def test_get_app_model_options_with_non_existing_content_type(monkeypatch):
+def test_get_app_model_options_with_content_type_None(monkeypatch):
     monkeypatch.setattr(
         utils.settings,
         "COMMENTS_INK_APP_MODEL_OPTIONS",
         default_and_article_options,
     )
-    _options = utils.get_app_model_options(content_type="tralari.tralara")
+    _options = utils.get_app_model_options(content_type=None)
     expected_options = default_and_article_options["default"]
     assert _options == expected_options
 
@@ -202,9 +207,7 @@ def test_get_comment_page_number_when_page_size_is_0(an_article, monkeypatch):
     article_ct = create_scenario_1(an_article)
     monkeypatch.setattr(utils.settings, "COMMENTS_INK_COMMENTS_PER_PAGE", 0)
     for comment in InkComment.objects.all():
-        page_number = utils.get_comment_page_number(
-            None, article_ct, an_article.pk, comment.id
-        )
+        page_number = utils.get_comment_page_number(None, comment)
         assert page_number == 1
 
 
@@ -220,23 +223,17 @@ def test_get_comment_page_number(an_article):
 
     page = paginator.page(1)
     for comment in page.object_list:
-        page_number = utils.get_comment_page_number(
-            None, article_ct.pk, an_article.pk, comment.id
-        )
+        page_number = utils.get_comment_page_number(None, comment)
         assert page_number == 1
 
     page = paginator.page(2)
     for comment in page.object_list:
-        page_number = utils.get_comment_page_number(
-            None, article_ct.pk, an_article.pk, comment.id
-        )
+        page_number = utils.get_comment_page_number(None, comment)
         assert page_number == 2
 
     page = paginator.page(3)
     for comment in page.object_list:
-        page_number = utils.get_comment_page_number(
-            None, article_ct.pk, an_article.pk, comment.id
-        )
+        page_number = utils.get_comment_page_number(None, comment)
         assert page_number == 3
 
 
@@ -261,9 +258,7 @@ def test_get_comment_page_number_raises_Exception(an_article, monkeypatch):
     page = paginator.page(2)
     comment = page.object_list[0]
     with pytest.raises(Exception):
-        utils.get_comment_page_number(
-            None, article_ct.id, an_article.id, comment.id
-        )
+        utils.get_comment_page_number(None, comment)
 
 
 @pytest.mark.parametrize(
