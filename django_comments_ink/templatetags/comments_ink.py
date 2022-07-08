@@ -1078,12 +1078,9 @@ class BaseObjectReactionsNode(Node):
             )
 
         options = utils.get_app_model_options(content_type=self.ctype)
-        if not options["object_reactions_enabled"]:
-            raise Exception(
-                "Object reactions for '%s' is not enabled in the setting "
-                "COMMENTS_INK_APP_MODEL_OPTIONS in the settings module"
-                % self.ctype
-            )
+        self.object_reactions_enabled = options["object_reactions_enabled"]
+        if not self.object_reactions_enabled:
+            return  # It will then return an empty string.
 
         self.object = self.ctype.get_object_for_this_type(pk=self.object_pk)
         check_input_allowed_str = options.pop("check_input_allowed")
@@ -1144,6 +1141,9 @@ class BaseObjectReactionsNode(Node):
     def render(self, context):
         request = context.get("request", None)
         self.resolve_ctype_and_object_pk(context)
+
+        if self.object_reactions_enabled == False:
+            return ""
 
         cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
         page = (request and request.GET.get(cpage_qs_param, None)) or 1

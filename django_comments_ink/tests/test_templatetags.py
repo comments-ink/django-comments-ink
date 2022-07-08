@@ -1574,17 +1574,11 @@ def test_render_object_reactions_raises_TemplateSyntaxError(
 
 
 @pytest.mark.django_db
-def test_render_object_reactions_raises_Exception(an_article):
-    # tests.article does not have object_reactions_enabled.
+def test_render_object_reactions_returns_empty(an_article):
+    # Testing that tests.article does not have object_reactions_enabled.
     t = "{% load comments_ink %}{% render_object_reactions for object %}"
-    with pytest.raises(Exception):
-        Template(t).render(
-            Context(
-                {
-                    "object": an_article,
-                }
-            )
-        )
+    result = Template(t).render(Context({"object": an_article}))
+    assert result == ""
 
 
 @pytest.mark.django_db
