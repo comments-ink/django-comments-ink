@@ -583,11 +583,6 @@
     font-size: 0.8rem;
 }
 
-/* .dci .comment-box     .feedback > DIV,
-.dci .comment-box-img .feedback > DIV {
-    display: inline-block
-} */
-
 .dci .comment-box     .feedback DIV.sep::after,
 .dci .comment-box-img .feedback DIV.sep::after,
 .dci .comment-box     .feedback > DIV.reactions > DIV:last-child::after,
@@ -600,6 +595,7 @@
 .dci .comment-box     .feedback DIV.sep:last-child::after,
 .dci .comment-box-img .feedback DIV.sep:last-child::after {
     content: "";
+    padding: 0 1px;
 }
 
 .dci .comment-box     .feedback > DIV.reactions::after,
