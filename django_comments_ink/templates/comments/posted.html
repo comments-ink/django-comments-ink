@@ -12,7 +12,7 @@
       <p>
         {% with object_url=target.get_absolute_url %}
           {% blocktrans %}
-            Go back to: <a href="{{ get_absolute_url }}">{{ target }}</a>
+            Go back to: <a href="{{ object_url }}">{{ target }}</a>
           {% endblocktrans %}
         {% endwith %}
       </p>

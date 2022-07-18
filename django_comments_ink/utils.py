@@ -255,7 +255,7 @@ def get_comment_page_number(request, comment, comments_folded=None):
         qs = qs.select_related("user")
 
     if comments_folded:
-        qs = qs.filter(~Q(level__gt=0, thread_id__in=comments_folded))
+        qs = qs.filter(~Q(level__gt=0, thread__id__in=comments_folded))
 
     ckey_prefix = settings.COMMENTS_INK_CACHE_KEYS["comments_paged"].format(
         ctype_pk=comment.content_type.pk,

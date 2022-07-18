@@ -67,9 +67,9 @@ class HTTPMethodsNotAllowedTests(TestCase):
         response = send_reaction("put", data, auth_user=self.user)
         self.assertEqual(response.status_code, 405)
 
-    def test_send_update_method_raises_405_method_not_allowed(self):
+    def test_send_patch_method_raises_405_method_not_allowed(self):
         data = {"comment": self.comment.id, "reaction": self.renum.LIKE_IT}
-        response = send_reaction("put", data, auth_user=self.user)
+        response = send_reaction("patch", data, auth_user=self.user)
         self.assertEqual(response.status_code, 405)
 
 

@@ -20,13 +20,21 @@
       <div class="{% dci_custom_selector %} pb32">
         <div id="c{{ comment.id }}" class="comment-box l0-ini">
           <div class="comment">
-            <div class="header">
-              <div>{% if comment.url and not comment.is_removed %}<a href="{{ comment.url }}" target="_new">{{ comment.name }}</a>{% else %}{{ comment.name }}{% endif %}&nbsp;&sdot;&nbsp;<span class="muted">{{ comment.submit_date }}</span>&nbsp;&nbsp;<a class="permalink" title="comment permalink" href="{% get_inkcomment_permalink comment page_number %}">¶</a></div>
+            <div class="header flex-align-center">
+              <div class="flex-grow py0 pr16">
+                {% if comment.url and not comment.is_removed %}<a href="{{ comment.url }}" target="_new">{{ comment.name }}</a>{% else %}{{ comment.name }}{% endif %}&nbsp;&sdot;&nbsp;<span class="muted">{{ comment.submit_date }}</span>&nbsp;&nbsp;<a class="permalink" title="comment permalink" href="{% get_inkcomment_permalink comment page_number %}">¶</a>
+              </div>
+              <div id="cm-feedback-{{ comment.id }}" class="feedback flex-col">
+                {% if not comment.is_removed and comment_reactions_enabled %}
+                  <div class="flex-row-right">
+                    {% include "comments/themes/feedback_in_header/comment_reactions.html" %}
+                  </div>
+                {% endif %}
+              </div>
             </div>
             <div class="body">
               {{ comment.comment|linebreaks|escape }}
             </div>
-            <div class="feedback"></div>
           </div>
         </div>
 

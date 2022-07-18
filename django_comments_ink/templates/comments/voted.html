@@ -1,0 +1,46 @@
+{% extends "comments/base.html" %}
+
+{% load i18n %}
+{% load comments %}
+{% load comments_ink %}
+
+{% block title %}{% trans "Thank you for your vote" %}{% endblock %}
+
+{% block content %}
+<main>
+  <article>
+    <div class="container">
+      <h2 class="text-center">{% trans "Thanks for taking the time to participate." %}</h2>
+      <h6 class="text-center pb24">
+        {% trans "Your vote already changed the comment's counter." %}
+      </h6>
+    </div>
+
+    {% if comment %}
+      <div class="central-column">
+        <div class="{% dci_custom_selector %} pb32">
+          <div id="c{{ comment.id }}" class="comment-box">
+            <div class="comment">
+              <div class="header">
+                <div>
+                  {% if not comment.is_removed %}<div style="display:inline-block">&nbsp;<span style="font-size: 1.0rem; color: #666;">{{ comment.thread.score }}</span>&nbsp;</div>&nbsp;&sdot;&nbsp;{% endif %}{% if comment.url and not comment.is_removed %}<a href="{{ comment.url }}" target="_new">{{ comment.name }}</a>{% else %}{{ comment.name }}{% endif %}&nbsp;&sdot;&nbsp;<span class="muted">{{ comment.submit_date }}</span>&nbsp;&nbsp;<a class="permalink" title="comment permalink" href="{% get_inkcomment_permalink comment cpage cfold %}">¶</a>
+                </div>
+              </div>
+              <div class="body body-bordered">
+                {{ comment.comment|linebreaks|escape }}
+              </div>
+              <div class="feedback feedback-bordered">
+                {% include "comments/comment_reactions.html" %}
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <h6 class="text-center">
+          <a href="{% get_inkcomment_permalink comment cpage cfold %}">{% trans "Go back to the comment's page." %}</a>
+        </h6>
+      </div>
+    {% endif %}
+  </article>
+</main>
+{% endblock %}

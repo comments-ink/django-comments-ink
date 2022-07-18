@@ -2,7 +2,7 @@ from django.core.management.base import BaseCommand
 from django.db import connections
 from django.db.utils import ConnectionDoesNotExist, IntegrityError
 from django_comments.models import Comment
-from django_comments_ink.models import InkComment
+from django_comments_ink.models import CommentThread, InkComment
 
 __all__ = ["Command"]
 
@@ -15,6 +15,17 @@ class Command(BaseCommand):
 
     def populate_db(self, cursor):
         for comment in Comment.objects.all():
+            #
+            # Insert into django_comments_ink_thread.
+            sql = (
+                "INSERT INTO %(table)s ('id', 'score', 'rating') "
+                "VALUES (%(id)d, 0, 0)"
+            )
+            cursor.execute(
+                sql % {"table": CommentThread._meta.db_table, "id": comment.id}
+            )
+            #
+            # Insert into django_comments_ink_comment.
             sql = (
                 "INSERT INTO %(table)s "
                 "       ('comment_ptr_id', 'thread_id', 'parent_id',"

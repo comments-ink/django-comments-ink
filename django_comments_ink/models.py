@@ -67,8 +67,24 @@ class InkCommentManager(CommentManager):
         )
 
 
+class CommentThread(models.Model):
+    id = models.BigIntegerField(primary_key=True)
+    score = models.IntegerField(default=0, db_index=True)  # Sum of +/- votes.
+    rating = models.IntegerField(default=0, db_index=True)
+
+    def save(self, *args, **kwargs):
+        super(CommentThread, self).save(*args, **kwargs)
+        cm = InkComment.objects.get(pk=self.id)
+        caching.clear_cache(cm.content_type.id, cm.object_pk, cm.site.pk)
+
+
 class InkComment(Comment):
-    thread_id = models.IntegerField(default=0, db_index=True)
+    thread = models.ForeignKey(
+        CommentThread,
+        null=True,
+        related_name="threads",
+        on_delete=models.CASCADE,
+    )
     parent_id = models.IntegerField(default=0)
     level = models.SmallIntegerField(default=0)
     order = models.IntegerField(default=1, db_index=True)
@@ -91,8 +107,10 @@ class InkComment(Comment):
         super(Comment, self).save(*args, **kwargs)
         if is_new:
             if not self.parent_id:
+                comment_thread = CommentThread(id=self.id)
+                comment_thread.save()
                 self.parent_id = self.id
-                self.thread_id = self.id
+                self.thread = comment_thread
             else:
                 if max_thread_level_for_content_type(self.content_type):
                     with atomic():
@@ -109,11 +127,9 @@ class InkComment(Comment):
         if parent.level == max_thread_level_for_content_type(self.content_type):
             raise MaxThreadLevelExceededException(self)
 
-        self.thread_id = parent.thread_id
+        self.thread = parent.thread
         self.level = parent.level + 1
-        qc_eq_thread = InkComment.norel_objects.filter(
-            thread_id=parent.thread_id
-        )
+        qc_eq_thread = InkComment.norel_objects.filter(thread=parent.thread)
         qc_ge_level = qc_eq_thread.filter(
             level__lte=parent.level, order__gt=parent.order
         )
@@ -253,7 +269,7 @@ def publish_or_withhold_nested_comments(comment, shall_be_public=False):
     else:
         op = F("nested_count") - comment.nested_count
     get_model().norel_objects.filter(
-        thread_id=comment.thread_id,
+        thread=comment.thread,
         level__lt=comment.level,
         order__lt=comment.order,
     ).update(nested_count=op)
@@ -277,7 +293,7 @@ def on_comment_deleted(sender, instance, using, **kwargs):
 
     # Update the nested_count attribute up the tree.
     get_model().norel_objects.filter(
-        thread_id=instance.thread_id,
+        thread=instance.thread,
         level__lt=instance.level,
         order__lt=instance.order,
     ).update(nested_count=F("nested_count") - instance.nested_count - 1)
@@ -355,6 +371,46 @@ class TmpInkComment(dict):
         ct = state.pop("content_type")
         state["content_type_key"] = ct.natural_key()
         return (TmpInkComment, (), state)
+
+
+# -----------------------------------------------
+# Comment score, and comment score author models.
+
+VOTE_CHOICES = []
+
+
+class CommentVote(models.Model):
+    POSITIVE = "+"
+    NEGATIVE = "-"
+
+    vote = models.CharField(max_length=1, db_index=True)
+    comment = models.ForeignKey(
+        get_model(),
+        related_name="votes",
+        on_delete=models.CASCADE,
+    )
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="comments_votes",
+        on_delete=models.CASCADE,
+    )
+
+    class Meta:
+        verbose_name = _("comment votes")
+        verbose_name_plural = _("comments votes")
+
+    def delete_from_cache(self):
+        dci_cache = caching.get_cache()
+        key = settings.COMMENTS_INK_CACHE_KEYS["comment_votes"].format(
+            comment_id=self.comment.pk
+        )
+        if dci_cache != None and key != "" and dci_cache.get(key):
+            logger.debug("Delete cached list of comment votes in key %s" % key)
+            dci_cache.delete(key)
+
+    def save(self, *args, **kwargs):
+        self.delete_from_cache()
+        super(CommentVote, self).save(*args, **kwargs)
 
 
 # ----------------------------------------------------------------------
@@ -517,3 +573,44 @@ class ObjectReactionAuthor(models.Model):
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE
     )
+
+
+def get_object_reactions(content_type, object_pk, site_id):
+    """Returns list of dicts with object reactions and their counters."""
+    max_users_listed = getattr(
+        settings, "COMMENTS_INK_MAX_USERS_IN_TOOLTIP", 10
+    )
+    reactionsd = dict(
+        [
+            (
+                item.reaction,
+                {
+                    "counter": item.counter,
+                    "authors": [
+                        settings.COMMENTS_INK_API_USER_REPR(author)
+                        for author in item.authors.all()[:max_users_listed]
+                    ],
+                },
+            )
+            for item in ObjectReaction.objects.filter(
+                content_type=content_type,
+                object_pk=object_pk,
+                site__id=site_id,
+            )
+        ]
+    )
+
+    object_reactions = []
+    defs = {"counter": 0, "authors": []}
+    for item in get_object_reactions_enum():
+        object_reactions.append(
+            {
+                "value": item.value,
+                "label": item.label,
+                "icon": item.icon,
+                "counter": reactionsd.get(item.value, defs)["counter"],
+                "authors": reactionsd.get(item.value, defs)["authors"],
+            }
+        )
+
+    return object_reactions

@@ -3,7 +3,7 @@ Pagination for comments threads.
 
 Given the following comments structure the paginator will display comments
 in several pages containing different number of comments, so that comment
-threads (a thread of comments have all the same value for thread_id) are
+threads (a thread of comments have all the same value for thread.id) are
 fully displayed in one page. Even if the number of comments in the thread
 exceed the `per_page` value.
 

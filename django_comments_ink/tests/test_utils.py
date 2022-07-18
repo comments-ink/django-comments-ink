@@ -57,10 +57,18 @@ def test_get_app_model_options_without_args():
 
 
 # ----------------------------------------------
-only_default_options = {
+# Here below I monkeypatch 'utils.settings.COMMENTS_INK_APP_MODEL_OPTIONS'.
+# This monkeypatch stays put after the test, in other words, the tear down
+# of the monkeypatch does not work. The test in
+#   test_views.py::test_reply_as_visitor_when_only_users_can_post
+# fails if I don't provide a value for 'check_input_allowed' here below
+# in only_def_opts and in default_and_article_options. Why?!?
+
+# ----------------------------------------------
+only_def_opts = {
     "default": {
         "who_can_post": "all",
-        "check_input_allowed": "",
+        "check_input_allowed": "django_comments_ink.utils.check_input_allowed",
         "comment_votes_enabled": True,
         "comment_flagging_enabled": True,
         "comment_reactions_enabled": True,
@@ -72,17 +80,17 @@ only_default_options = {
 @pytest.mark.django_db
 def test_get_app_model_options_without_args_returns_defaults(monkeypatch):
     monkeypatch.setattr(
-        utils.settings, "COMMENTS_INK_APP_MODEL_OPTIONS", only_default_options
+        utils.settings, "COMMENTS_INK_APP_MODEL_OPTIONS", only_def_opts
     )
     app_model_options = utils.get_app_model_options()
-    assert app_model_options == only_default_options["default"]
+    assert app_model_options == only_def_opts["default"]
 
 
 # ----------------------------------------------
 default_and_article_options = {
     "default": {
         "who_can_post": "all",
-        "check_input_allowed": "",
+        "check_input_allowed": "django_comments_ink.utils.check_input_allowed",
         "comment_votes_enabled": True,
         "comment_flagging_enabled": True,
         "comment_reactions_enabled": True,
@@ -164,14 +172,14 @@ class FakeRequest:
 def test_redirect_to_with_request(an_articles_comment):
     request = FakeRequest(cpage=2)
     http_response = utils.redirect_to(an_articles_comment, request)
-    assert http_response.url == "/comments/cr/13/1/1/?cpage=2#comment-1"
+    assert http_response.url == "/comments/cr/15/1/1/?cpage=2#comment-1"
 
 
 # ----------------------------------------------
 @pytest.mark.django_db
 def test_redirect_to_with_page_number(an_articles_comment):
     http_response = utils.redirect_to(an_articles_comment, page_number=2)
-    assert http_response.url == "/comments/cr/13/1/1/?cpage=2#comment-1"
+    assert http_response.url == "/comments/cr/15/1/1/?cpage=2#comment-1"
 
 
 # ----------------------------------------------

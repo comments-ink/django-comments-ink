@@ -86,6 +86,16 @@ def a_comments_reaction(an_articles_comment, an_user):
 
 @pytest.mark.django_db
 @pytest.fixture
+def a_comments_reaction_2(an_user_2, a_comments_reaction):
+    """Send another comment reaction to a comment."""
+    a_comments_reaction.authors.add(an_user_2)
+    a_comments_reaction.counter += 1
+    a_comments_reaction.save()
+    return a_comments_reaction
+
+
+@pytest.mark.django_db
+@pytest.fixture
 def a_comments_flag(an_articles_comment, an_user):
     """Send a CommentFlag.SUGGEST_REMOVAL flag to a comment."""
     return CommentFlag.objects.create(
@@ -112,3 +122,13 @@ def an_object_reaction(a_diary_entry, an_user):
     objr.authors.add(an_user)
     objr.save()
     return objr
+
+
+@pytest.mark.django_db
+@pytest.fixture
+def an_object_reaction_2(an_user_2, an_object_reaction):
+    """Send another object reaction to a diary entry."""
+    an_object_reaction.authors.add(an_user_2)
+    an_object_reaction.counter += 1
+    an_object_reaction.save()
+    return an_object_reaction

@@ -37,8 +37,9 @@ from django_comments_ink import (
 from django_comments_ink.api import frontend
 from django_comments_ink.conf import settings
 from django_comments_ink.models import (
-    ObjectReaction,
+    get_object_reactions,
     max_thread_level_for_content_type,
+    ObjectReaction,
 )
 from django_comments_ink.paginator import CommentsPaginator
 
@@ -370,6 +371,7 @@ class RenderInkCommentListNode(InkCommentListNode):
         #     'who_can_post': 'all' | 'users',
         #     'check_input_allowed': 'string path to function',
         #     'comment_flagging_enabled': <boolean>,
+        #     'comment_votes_enabled': <boolean>,
         #     'comment_reactions_enabled': <boolean>,
         #     'object_reactions_enabled': <boolean>
         # }
@@ -769,6 +771,18 @@ def get_comments_api_props(parser, token):
 
 # ----------------------------------------------------------------------
 @register.simple_tag
+def comment_vote_form_target(comment):
+    """
+    Get the target URL for the comment vote form.
+
+    Example::
+
+        <form action="{% comment_vote_form_target comment %}" method="post">
+    """
+    return reverse("comments-ink-vote", args=(comment.id,))
+
+
+@register.simple_tag
 def comment_reaction_form_target(comment):
     """
     Get the target URL for the comment reaction form.
@@ -1098,46 +1112,6 @@ class BaseObjectReactionsNode(Node):
             for pth in self.tag_templates
         ]
 
-    def get_object_reactions(self):
-        """Returns list of dicts with object reactions and their counters."""
-        max_users_listed = getattr(
-            settings, "COMMENTS_INK_MAX_USERS_IN_TOOLTIP", 10
-        )
-        reactionsd = dict(
-            [
-                (
-                    item.reaction,
-                    {
-                        "counter": item.counter,
-                        "authors": [
-                            settings.COMMENTS_INK_API_USER_REPR(author)
-                            for author in item.authors.all()[:max_users_listed]
-                        ],
-                    },
-                )
-                for item in ObjectReaction.objects.filter(
-                    content_type=self.ctype,
-                    object_pk=self.object_pk,
-                    site__id=self.site_id,
-                )
-            ]
-        )
-
-        object_reactions = []
-        defs = {"counter": 0, "authors": []}
-        for item in get_object_reactions_enum():
-            object_reactions.append(
-                {
-                    "value": item.value,
-                    "label": item.label,
-                    "icon": item.icon,
-                    "counter": reactionsd.get(item.value, defs)["counter"],
-                    "authors": reactionsd.get(item.value, defs)["authors"],
-                }
-            )
-
-        return object_reactions
-
     def render(self, context):
         request = context.get("request", None)
         self.resolve_ctype_and_object_pk(context)
@@ -1159,10 +1133,14 @@ class BaseObjectReactionsNode(Node):
 
         max_users_in_tooltip = settings.COMMENTS_INK_MAX_USERS_IN_TOOLTIP
 
+        object_reactions = get_object_reactions(
+            self.ctype, self.object_pk, self.site_id
+        )
+
         context = {
             "content_type": self.ctype,
             "object": self.object,
-            "object_reactions": self.get_object_reactions(),
+            "object_reactions": object_reactions,
             "is_input_allowed": self.is_input_allowed,
             "max_users_in_tooltip": max_users_in_tooltip,
             "comments_page_qs_param": cpage_qs_param,

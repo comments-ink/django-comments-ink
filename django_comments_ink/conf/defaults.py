@@ -23,7 +23,7 @@ COMMENTS_INK_MAX_THREAD_LEVEL = 0
 COMMENTS_INK_MAX_THREAD_LEVEL_BY_APP_MODEL = {}
 
 # Default order to list comments in.
-COMMENTS_INK_LIST_ORDER = ("thread_id", "order")
+COMMENTS_INK_LIST_ORDER = ("thread__id", "order")
 
 # Form class to use.
 COMMENTS_INK_FORM_CLASS = "django_comments_ink.forms.InkCommentForm"
@@ -162,6 +162,9 @@ COMMENTS_INK_CACHE_KEYS = {
     # InkComment.get_reactions(), for the comment receiving the method.
     "comment_reactions": "/comment_reactions/cm/{comment_id}",
     # The key 'object_reactions' stores the json output produced by
-    # get_object_reactions(ctype_pk, object_pk, site_id).
+    # get_object_reactions(ctype.pk, object_pk, site_id).
     "object_reactions": "/object_reactions/{ctype_pk}/{object_pk}/{site_id}",
+    # The key 'comment_votes' stores the json output produced by
+    # InkComment.get_votes(), for the comment receiving the method.
+    "comment_votes": "/comment_votes/cm/{comment_id}",
 }

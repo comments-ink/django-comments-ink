@@ -10,8 +10,10 @@ from django.contrib.sites.models import Site
 from django.db.models.signals import pre_save
 from django.test import TestCase as DjangoTestCase
 from django.urls import reverse
+from rest_framework import status
+from rest_framework.exceptions import PermissionDenied
 from django_comments_ink import get_model
-from django_comments_ink.api.views import CommentCount, CommentList
+from django_comments_ink.api import views
 from django_comments_ink.conf import settings
 from django_comments_ink.models import (
     InkComment,
@@ -24,7 +26,13 @@ from django_comments_ink.tests.test_models import (
     thread_test_step_3,
 )
 from django_comments_ink.tests.utils import post_comment
-from rest_framework.test import APIRequestFactory, APITestCase
+from rest_framework.test import (
+    APIRequestFactory,
+    APITestCase,
+    force_authenticate,
+)
+
+from django_comments_ink.utils import get_current_site_id
 
 app_model_options_mock = {"tests.article": {"who_can_post": "users"}}
 
@@ -172,7 +180,7 @@ class CommentCountTestCase(APITestCase):
     def _send_request(self):
         kwargs = {"content_type": "tests-article", "object_pk": "1"}
         req = factory.get(reverse("comments-ink-api-count", kwargs=kwargs))
-        view = CommentCount.as_view()
+        view = views.CommentCount.as_view()
         return view(req, **kwargs)
 
     def test_get_count_shall_be_0(self):
@@ -308,7 +316,7 @@ class CommentListTestCase(APITestCase):
     def _send_request(self):
         kwargs = {"content_type": "tests-article", "object_pk": "1"}
         req = factory.get(reverse("comments-ink-api-list", kwargs=kwargs))
-        view = CommentList.as_view()
+        view = views.CommentList.as_view()
         return view(req, **kwargs)
 
     def test_get_list(self):
@@ -450,7 +458,7 @@ class CommentListTestCase(APITestCase):
 def test_CommentList_handles_no_ContentType():
     kwargs = {"content_type": "this-that", "object_pk": "1"}
     request = factory.get(reverse("comments-ink-api-list", kwargs=kwargs))
-    view = CommentList.as_view()
+    view = views.CommentList.as_view()
     response = view(request, **kwargs)
     assert response.status_code == 200
     assert response.rendered_content == b"[]"
@@ -464,7 +472,155 @@ def test_CommentCount_settings_has_no_SITE_ID(monkeypatch):
     monkeypatch.delattr(settings, name="SITE_ID")
     kwargs = {"content_type": "tests-article", "object_pk": "1"}
     request = factory.get(reverse("comments-ink-api-count", kwargs=kwargs))
-    view = CommentCount.as_view()
+    view = views.CommentCount.as_view()
     response = view(request, **kwargs)
     assert response.status_code == 200
     assert response.rendered_content == b'{"count":0}'
+
+
+# ---------------------------------------------------------------------
+@pytest.mark.django_db
+def test_PostCommentReaction_raises_403(an_articles_comment, an_user):
+    data = {"reaction": "+", "comment": an_articles_comment.pk}
+    request = factory.post(reverse("comments-ink-api-react"), data)
+    force_authenticate(request, user=an_user)
+    view = views.PostCommentReaction.as_view()
+    response = view(request)
+    assert response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_PostCommentReaction_does_work(
+    monkeypatch, an_articles_comment, an_user
+):
+    monkeypatch.setattr(views, "check_option", lambda *x, **y: True)
+    data = {"reaction": "+", "comment": an_articles_comment.pk}
+    request = factory.post(reverse("comments-ink-api-react"), data)
+    force_authenticate(request, user=an_user)
+    view = views.PostCommentReaction.as_view()
+    response = view(request)
+    assert response.status_code == 201
+
+
+# ---------------------------------------------------------------------
+@pytest.mark.django_db
+def test_PostObjectReaction_raises_403(monkeypatch, a_diary_entry, an_user):
+    def raise_PermissionDenied(*args, **kwargs):
+        raise PermissionDenied(detail=msg, code=status.HTTP_403_FORBIDDEN)
+
+    msg = "Instances of 'tests.diary' are not explicitly allowed to receive "
+    monkeypatch.setattr(views, "check_option", raise_PermissionDenied)
+    ctype = ContentType.objects.get_for_model(a_diary_entry)
+    data = {
+        "reaction": "+",
+        "content_type": ctype.pk,
+        "object_pk": a_diary_entry.pk,
+        "site": get_current_site_id(),
+    }
+    request = factory.post(reverse("comments-ink-api-react-to-object"), data)
+    force_authenticate(request, user=an_user)
+    view = views.PostObjectReaction.as_view()
+    response = view(request)
+    assert response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_PostObjectReaction_does_work(a_diary_entry, an_user):
+    ctype = ContentType.objects.get_for_model(a_diary_entry)
+    data = {
+        "reaction": "+",
+        "content_type": ctype.pk,
+        "object_pk": a_diary_entry.pk,
+        "site": get_current_site_id(),
+    }
+    request = factory.post(reverse("comments-ink-api-react-to-object"), data)
+    force_authenticate(request, user=an_user)
+    view = views.PostObjectReaction.as_view()
+    response = view(request)
+    assert response.status_code == 201
+
+
+@pytest.mark.django_db
+def test_PostObjectReaction_twice_removes_the_reaction(a_diary_entry, an_user):
+    ctype = ContentType.objects.get_for_model(a_diary_entry)
+    data = {
+        "reaction": "+",
+        "content_type": ctype.pk,
+        "object_pk": a_diary_entry.pk,
+        "site": get_current_site_id(),
+    }
+    request = factory.post(reverse("comments-ink-api-react-to-object"), data)
+    force_authenticate(request, user=an_user)
+    view = views.PostObjectReaction.as_view()
+    response = view(request)
+    assert response.status_code == 201
+    view = views.PostObjectReaction.as_view()
+    response = view(request)
+    assert response.status_code == 200
+
+
+@pytest.mark.django_db
+def test_PostObjectReaction_twice_does_not_remove_the_reaction(
+    a_diary_entry, an_user, an_user_2
+):
+    ctype = ContentType.objects.get_for_model(a_diary_entry)
+    data = {
+        "reaction": "+",
+        "content_type": ctype.pk,
+        "object_pk": a_diary_entry.pk,
+        "site": get_current_site_id(),
+    }
+    request = factory.post(reverse("comments-ink-api-react-to-object"), data)
+
+    # Create the reaction with an_user.
+    force_authenticate(request, user=an_user)
+    view = views.PostObjectReaction.as_view()
+    response = view(request)
+    assert response.status_code == 201
+
+    # Create the reaction with an_user_2.
+    force_authenticate(request, user=an_user_2)
+    view = views.PostObjectReaction.as_view()
+    response = view(request)
+    assert response.status_code == 201
+
+    # Remove an_user reaction.
+    force_authenticate(request, user=an_user)
+    view = views.PostObjectReaction.as_view()
+    response = view(request)
+    assert response.status_code == 200
+
+
+# ---------------------------------------------------------------------
+@pytest.mark.django_db
+def test_CommentReactionAuthorList(
+    monkeypatch, an_articles_comment, an_user, an_user_2
+):
+    data = {"reaction": "+", "comment": an_articles_comment.pk}
+    request = factory.post(reverse("comments-ink-api-react"), data)
+    monkeypatch.setattr(views, "check_option", lambda *x, **y: True)
+
+    # Send same reaction with an_user_2.
+    force_authenticate(request, user=an_user)
+    view = views.PostCommentReaction.as_view()
+    response = view(request)
+    assert response.status_code == 201
+
+    # Send same reaction with an_user_2.
+    force_authenticate(request, user=an_user_2)
+    view = views.PostCommentReaction.as_view()
+    response = view(request)
+    assert response.status_code == 201
+
+    kwargs = {"comment_pk": an_articles_comment.pk, "reaction_value": "+"}
+    request = factory.get(
+        reverse("comments-ink-comment-reaction-authors", kwargs=kwargs)
+    )
+    view = views.CommentReactionAuthorList.as_view()
+    response = view(request, **kwargs)
+    assert response.status_code == 200
+    data = json.loads(response.rendered_content)
+    assert "count" in data
+    assert data["count"] == 2  # Number of reactions.
+    results = [{"id": 1, "author": "joe"}, {"id": 2, "author": "alice"}]
+    assert data["results"] == results

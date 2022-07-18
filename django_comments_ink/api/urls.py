@@ -8,6 +8,7 @@ from .views import (
     CreateReportFlag,
     ObjectReactionAuthorList,
     PostCommentReaction,
+    PostObjectReaction,
 )
 
 urlpatterns = [
@@ -16,6 +17,11 @@ urlpatterns = [
         "react/",
         PostCommentReaction.as_view(),
         name="comments-ink-api-react",
+    ),
+    path(
+        "react-to-object/",
+        PostObjectReaction.as_view(),
+        name="comments-ink-api-react-to-object",
     ),
     path("flag/", CreateReportFlag.as_view(), name="comments-ink-api-flag"),
     re_path(
