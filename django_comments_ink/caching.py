@@ -22,6 +22,8 @@ def get_cache():
             settings.COMMENTS_INK_CACHE_NAME,
         )
         dci_cache = caches["default"]
+    except TypeError:
+        logger.info("COMMENTS_INK_CACHE_KEY=None => App cache is disabled.")
 
     return dci_cache
 
@@ -31,7 +33,7 @@ def clear_cache(content_type_id, object_pk, site_id):
     if dci_cache == None:
         logger.warning(
             "Cannot access the cache. Could not clear the cache "
-            "for content_type={%d}, object_pk={%d} and site_id={%d}. "
+            "for content_type={%d}, object_pk={%s} and site_id={%d}. "
             % (content_type_id, object_pk, site_id)
         )
         return False

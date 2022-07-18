@@ -181,9 +181,15 @@ class CommentsPaginator(Paginator):
         if ptotal:
             inpage.append(ptotal)
         self.set_subkey_cache(inpage_subkey, inpage)  # Store it in cache.
-        logger.debug(
-            "in_page computed (saved in cache) %s: %s", self.ckey_prefix, inpage
-        )
+        if self.dci_cache:
+            logger.debug(
+                "in_page computed (saved in cache) %s: %s",
+                self.ckey_prefix,
+                inpage,
+            )
+        else:
+            logger.debug("in_page computed: %s", inpage)
+        print("At the end of in_page")
         return inpage
 
     def page(self, number):

@@ -166,6 +166,15 @@ BUTTON.emoji {
     font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 
+.vote-score {
+    padding: 1px 8px;
+    font-size: 1.0rem;
+    font-weight: bold;
+    color: white;
+    background-color: #f66;
+    border-radius: 4px;
+}
+
 /* ----------------------------------------------------- */
 .users-grid {
     display: grid;
