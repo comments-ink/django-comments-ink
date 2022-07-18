@@ -26,7 +26,13 @@
             <div class="body body-bordered">
               {{ comment.comment|linebreaks|escape }}
             </div>
-            <div class="feedback feedback-bordered"></div>
+            <div class="feedback feedback-bordered">
+              {% if not comment.is_removed and comment_reactions_enabled %}
+                <div id="cm-reactions-{{ comment.id }}" class="reactions">
+                  {% include "comments/comment_reactions.html" %}
+                </div>
+              {% endif %}
+            </div>
           </div>
         </div>
 

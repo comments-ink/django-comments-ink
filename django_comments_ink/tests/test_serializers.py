@@ -19,6 +19,7 @@ from django_comments_ink.api.serializers import (
     ReadCommentSerializer,
     WriteCommentReactionSerializer,
     WriteCommentSerializer,
+    WriteObjectReactionSerializer,
 )
 from django_comments_ink.conf import settings
 from django_comments_ink.models import InkComment
@@ -31,6 +32,8 @@ from django_comments_ink.tests.models import (
 )
 from django_comments_ink.tests.utils import post_comment
 from rest_framework.test import APIClient
+
+from django_comments_ink.utils import get_current_site_id
 
 
 class FakeRequest:
@@ -454,17 +457,43 @@ def test_ReadCommentSerializer_get_flags(a_comments_flag):
 @pytest.mark.django_db
 def test_WriteCommentReactionSerializer(an_articles_comment):
     # 1st: Test a non-existing reaction is caught by the serializer.
-    reaction = "?"
     ser = WriteCommentReactionSerializer(
-        data={"reaction": reaction, "comment": an_articles_comment}
+        data={"reaction": "?", "comment": an_articles_comment}
     )
     assert ser.is_valid() == False
     assert "reaction" in ser.errors
     assert ser.errors["reaction"][0].code == "invalid_choice"
 
     # 2nd: Test an existing reaction makes the serializer valid.
-    reaction = "+"
     ser = WriteCommentReactionSerializer(
-        data={"reaction": reaction, "comment": an_articles_comment}
+        data={"reaction": "+", "comment": an_articles_comment}
+    )
+    assert ser.is_valid() == True
+
+
+@pytest.mark.django_db
+def test_WriteObjectReactionSerializer(an_article):
+    # 1st: Test a non-existing reaction is caught by the serializer.
+    ctype = ContentType.objects.get_for_model(an_article)
+    ser = WriteObjectReactionSerializer(
+        data={
+            "reaction": "?",
+            "content_type": ctype.pk,
+            "object_pk": an_article.pk,
+            "site": get_current_site_id(),
+        }
+    )
+    assert ser.is_valid() == False
+    assert "reaction" in ser.errors
+    assert ser.errors["reaction"][0].code == "invalid_choice"
+
+    # 2nd: Test an existing reaction makes the serializer valid.
+    ser = WriteObjectReactionSerializer(
+        data={
+            "reaction": "+",
+            "content_type": ctype.pk,
+            "object_pk": an_article.pk,
+            "site": get_current_site_id(),
+        }
     )
     assert ser.is_valid() == True

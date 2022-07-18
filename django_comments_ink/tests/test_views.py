@@ -23,6 +23,7 @@ from django_comments_ink import signals, signed, views
 from django_comments_ink.conf import settings
 from django_comments_ink.models import (
     CommentReaction,
+    CommentThread,
     InkComment,
     ObjectReaction,
 )
@@ -31,6 +32,10 @@ from rest_framework import status
 from rest_framework.exceptions import ErrorDetail, PermissionDenied
 
 request_factory = RequestFactory()
+
+
+def nope(target):
+    return False
 
 
 def post_article_comment(data, article, auth_user=None):
@@ -1687,6 +1692,32 @@ def test_redirect_to_sent__not_public_comment__uses_moderated_tmpl(
 
 # ---------------------------------------------------------------------
 @pytest.mark.django_db
+def test_GET_reply_without_input_allowed_raises(
+    monkeypatch, rf, an_user, an_articles_comment
+):
+    def get_options(*args, **kwargs):
+        return {
+            "check_input_allowed": "django_comments_ink.tests.test_views.nope",
+            "comment_flagging_enabled": False,
+            "comment_votes_enabled": False,
+            "comment_reactions_enabled": False,
+            "object_reactions_enabled": False,
+        }
+
+    monkeypatch.setattr(views.utils, "get_app_model_options", get_options)
+
+    request = rf.get(
+        reverse("comments-ink-reply", args=(an_articles_comment.pk,))
+    )
+    request.user = an_user
+    try:
+        views.reply(request, an_articles_comment.pk)
+    except Exception as exc:
+        assert type(exc) == Http404
+
+
+# ---------------------------------------------------------------------
+@pytest.mark.django_db
 def test_GET_react_without_reactions_enabled_raises(
     monkeypatch, rf, an_user, an_articles_comment
 ):
@@ -1864,8 +1895,9 @@ def test_GET_react_with_an_existing_comments_reaction(
     monkeypatch, rf, an_user, an_articles_comment, a_comments_reaction
 ):
     # fixture a_comments_reaction is needed in the signature of the test,
-    # so that it creates a_comments_reaction. When we then request GET the
-    # react view we will get that reaction with the 'active' css class.
+    # so that it is called and creates a_comments_reaction. When we then
+    # request GET the react view we will get that reaction with the 'active'
+    # css class.
 
     def fake_check_option(*args, **kwargs):
         return True
@@ -2175,7 +2207,6 @@ def test_POST_react_to_object_with_cpage(
 @pytest.mark.django_db
 def test_POST_react_to_a_diary_entry_with_anchor(rf, a_diary_entry, an_user):
     ctype = ContentType.objects.get_for_model(a_diary_entry)
-    site = Site.objects.get(pk=1)
     react_url = reverse(
         "comments-ink-react-to-object", args=(ctype.id, a_diary_entry.id)
     )
@@ -2208,3 +2239,271 @@ def test_POST_react_to_non_existing_content_type(rf, an_user):
     request._dont_enforce_csrf_checks = True
     with pytest.raises(Http404):
         views.react_to_object(request, 234, 1)
+
+
+# ---------------------------------------------------------------------
+@pytest.mark.django_db
+def test_list_reacted_raises_Http404(
+    rf, an_articles_comment, a_comments_reaction
+):
+    args = (an_articles_comment.pk, a_comments_reaction.reaction)
+    request = rf.get(reverse("comments-ink-list-reacted", args=args))
+    try:
+        views.list_reacted(
+            request, an_articles_comment.pk, a_comments_reaction.reaction
+        )
+    except Exception as exc:
+        assert type(exc) == Http404
+
+
+@pytest.mark.django_db
+def test_list_reacted_does_work(
+    monkeypatch, rf, an_articles_comment, a_comments_reaction_2
+):
+    monkeypatch.setattr(views.settings, "COMMENTS_INK_MAX_USERS_IN_TOOLTIP", 1)
+    monkeypatch.setattr(views, "render", lambda x, tmpl, ctx: (tmpl, ctx))
+    args = (an_articles_comment.pk, a_comments_reaction_2.reaction)
+    request = rf.get(reverse("comments-ink-list-reacted", args=args))
+    tmpl_list, context = views.list_reacted(
+        request, an_articles_comment.pk, a_comments_reaction_2.reaction
+    )
+    assert tmpl_list == [
+        "comments/tests/article/list_reacted.html",
+        "comments/tests/list_reacted.html",
+        "comments/list_reacted.html",
+    ]
+    assert "comment" in context
+    assert context["comment"] == an_articles_comment
+    assert "reaction" in context
+    assert context["reaction"] == "+"
+    assert "page_obj" in context
+
+
+# ---------------------------------------------------------------------
+@pytest.mark.django_db
+def test_list_reacted_to_object_raises_one_Http404(
+    rf, a_diary_entry, an_object_reaction
+):
+    args = (9999, a_diary_entry.pk, an_object_reaction.reaction)
+    request = rf.get(reverse("comments-ink-list-reacted-to-object", args=args))
+    try:
+        views.list_reacted_to_object(
+            request, 9999, a_diary_entry.pk, an_object_reaction.reaction
+        )
+    except Exception as exc:
+        assert type(exc) == Http404
+
+
+@pytest.mark.django_db
+def test_list_reacted_to_object_raises_another_Http404(
+    rf, a_diary_entry, an_object_reaction
+):
+    ctype = ContentType.objects.get_for_model(a_diary_entry)
+    args = (ctype.pk, a_diary_entry.pk, an_object_reaction.reaction)
+    request = rf.get(reverse("comments-ink-list-reacted-to-object", args=args))
+    try:
+        views.list_reacted_to_object(
+            request, ctype.pk, a_diary_entry.pk, an_object_reaction.reaction
+        )
+    except Exception as exc:
+        assert type(exc) == Http404
+
+
+@pytest.mark.django_db
+def test_list_reacted_to_object_does_work(
+    monkeypatch, rf, a_diary_entry, an_object_reaction_2
+):
+    ctype = ContentType.objects.get_for_model(a_diary_entry)
+    monkeypatch.setattr(views.settings, "COMMENTS_INK_MAX_USERS_IN_TOOLTIP", 1)
+    monkeypatch.setattr(views, "render", lambda x, tmpl, ctx: (tmpl, ctx))
+    args = (ctype.pk, a_diary_entry.pk, an_object_reaction_2.reaction)
+    request = rf.get(reverse("comments-ink-list-reacted-to-object", args=args))
+    tmpl_list, context = views.list_reacted_to_object(
+        request, ctype.pk, a_diary_entry.pk, an_object_reaction_2.reaction
+    )
+    assert tmpl_list == [
+        "comments/tests/diary/list_reacted_to_object.html",
+        "comments/tests/list_reacted_to_object.html",
+        "comments/list_reacted_to_object.html",
+    ]
+    assert "content_type" in context
+    assert context["content_type"] == ctype
+    assert "object" in context
+    assert context["object"] == a_diary_entry
+    assert "reaction" in context
+    assert context["reaction"] == "+"
+    assert "page_obj" in context
+
+
+# ---------------------------------------------------------------------
+@pytest.mark.django_db
+def test_GET_vote_without_comment_votes_enabled_raises(
+    monkeypatch, rf, an_user, an_articles_comment
+):
+    def raise_PermissionDenied(*args, **kwargs):
+        raise PermissionDenied(detail="Mee", code=status.HTTP_403_FORBIDDEN)
+
+    monkeypatch.setattr(views.utils, "check_option", raise_PermissionDenied)
+    request = rf.get(
+        reverse("comments-ink-vote", args=(an_articles_comment.pk,))
+    )
+    request.user = an_user
+    # request._dont_enforce_csrf_checks = True
+    try:
+        views.vote(request, an_articles_comment.pk)
+    except Exception as exc:
+        assert exc.detail == ErrorDetail(string="Mee", code=403)
+
+
+@pytest.mark.django_db
+def test_GET_vote_without_input_allowed_raises(
+    monkeypatch, rf, an_user, an_articles_comment
+):
+    def get_options(*args, **kwargs):
+        return {
+            "check_input_allowed": "django_comments_ink.tests.test_views.nope",
+            "comment_flagging_enabled": False,
+            "comment_votes_enabled": True,
+            "comment_reactions_enabled": False,
+            "object_reactions_enabled": False,
+        }
+
+    monkeypatch.setattr(views.utils, "check_option", lambda *args, **kwds: True)
+    monkeypatch.setattr(views.utils, "get_app_model_options", get_options)
+
+    request = rf.get(
+        reverse("comments-ink-vote", args=(an_articles_comment.pk,))
+    )
+    request.user = an_user
+    try:
+        views.vote(request, an_articles_comment.pk)
+    except Exception as exc:
+        assert type(exc) == Http404
+
+
+@pytest.mark.django_db
+def test_GET_vote_renders_vote_tmpl(
+    monkeypatch, rf, an_user, an_articles_comment
+):
+    def fake_check_option(*args, **kwargs):
+        return True
+
+    monkeypatch.setattr(views.utils, "check_option", fake_check_option)
+    monkeypatch.setattr(views, "render", lambda x, tmpl, ctx: (tmpl, ctx))
+    request = rf.get(
+        reverse("comments-ink-vote", args=(an_articles_comment.pk,))
+    )
+    request.user = an_user
+    template, context = views.vote(request, an_articles_comment.pk)
+    assert template == "comments/vote.html"
+    ctx_keys = [
+        "comment",
+        "user_vote",
+        "next",
+        "page_number",
+        "folded_comments",
+        "comments_page_qs_param",
+        "comments_fold_qs_param",
+    ]
+    for key in ctx_keys:
+        assert key in context
+
+
+@pytest.mark.django_db
+def test_POST_vote(monkeypatch, rf, an_user, an_articles_comment):
+    def fake_check_option(*args, **kwargs):
+        return True
+
+    monkeypatch.setattr(views.utils, "check_option", fake_check_option)
+    monkeypatch.setattr(views, "render", lambda x, tmpl, ctx: (tmpl, ctx))
+    request = rf.post(
+        reverse("comments-ink-vote", args=(an_articles_comment.pk,)),
+        data={"vote": "+"},
+        follow=True,
+    )
+    request.user = an_user
+    request._dont_enforce_csrf_checks = True
+    response = views.vote(request, an_articles_comment.pk)
+    assert response.status_code == 302
+    request = rf.get(response.url)
+    template, context = views.vote_done(request)
+    assert template == "comments/voted.html"
+    assert context["comment"] == an_articles_comment
+    assert context["cpage"] == 1
+    assert context["cfold"] == ""
+
+
+@pytest.mark.django_db
+def test_POST_vote_user_votes_the_same_twice(
+    monkeypatch, rf, an_user, an_articles_comment
+):
+    def fake_check_option(*args, **kwargs):
+        return True
+
+    def get_thread_score():
+        return CommentThread.objects.get(id=an_articles_comment.pk).score
+
+    def prepare_request(user):
+        request = rf.post(
+            reverse("comments-ink-vote", args=(an_articles_comment.pk,)),
+            data={"vote": "+"},
+            follow=True,
+        )
+        request.user = user
+        request._dont_enforce_csrf_checks = True
+        return request
+
+    monkeypatch.setattr(views.utils, "check_option", fake_check_option)
+
+    # 1: The an_user sends the "+" vote to this comment.
+    request = prepare_request(an_user)
+    response = views.vote(request, an_articles_comment.pk)
+    assert response.status_code == 302
+    request = rf.get(response.url)
+    response = views.vote_done(request)
+    assert response.status_code == 200
+    assert get_thread_score() == 1
+
+    # 2: The same an_user sends the "+" vote to this
+    #    comment, what shall withdraw the vote.
+    request = prepare_request(an_user)
+    response = views.vote(request, an_articles_comment.pk)
+    assert response.status_code == 302
+    request = rf.get(response.url)
+    response = views.vote_done(request)
+    assert response.status_code == 200
+    assert get_thread_score() == 0
+
+
+@pytest.mark.django_db
+def test_POST_vote_js(monkeypatch, rf, an_user, an_articles_comment):
+    def fake_check_option(*args, **kwargs):
+        return True
+
+    monkeypatch.setattr(views.utils, "check_option", fake_check_option)
+    monkeypatch.setattr(
+        views,
+        "json_res",
+        lambda req, tmpl_list, ctx, **kwargs: (
+            tmpl_list,
+            ctx,
+            kwargs["status"],
+        ),
+    )
+    request = rf.post(
+        reverse("comments-ink-vote", args=(an_articles_comment.pk,)),
+        data={"vote": "+"},
+        follow=True,
+    )
+    request.user = an_user
+    request._dont_enforce_csrf_checks = True
+    request.META["HTTP_X_REQUESTED_WITH"] = "XMLHttpRequest"
+    tmpl_list, context, status = views.vote(request, an_articles_comment.pk)
+    assert status == 201
+    assert tmpl_list == [
+        "comments/tests/article/comment_votes.html",
+        "comments/tests/comment_votes.html",
+        "comments/comment_votes.html",
+    ]
+    assert "comment" in context
+    assert context["comment"] == an_articles_comment

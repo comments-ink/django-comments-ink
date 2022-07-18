@@ -12,7 +12,11 @@ from rest_framework.schemas.openapi import AutoSchema
 from django_comments_ink import get_model as get_comment_model
 from django_comments_ink.api import serializers
 from django_comments_ink.conf import settings
-from django_comments_ink.models import CommentReaction, ObjectReaction
+from django_comments_ink.models import (
+    get_object_reactions,
+    CommentReaction,
+    ObjectReaction,
+)
 from django_comments_ink.utils import check_option, get_current_site_id
 
 
@@ -173,6 +177,49 @@ class PostCommentReaction(mixins.CreateModelMixin, generics.GenericAPIView):
             creaction.save()
 
 
+class PostObjectReaction(mixins.CreateModelMixin, generics.GenericAPIView):
+    """Create and delete object reactions."""
+
+    serializer_class = serializers.WriteObjectReactionSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request, *args, **kwargs):
+        content_type = get_object_or_404(
+            ContentType, pk=int(request.data["content_type"])
+        )
+        check_option("object_reactions_enabled", content_type=content_type)
+        self.create(request, *args, **kwargs)
+        # Create a new response object with the list of reactions the
+        # object has received. If other users sent reactions they all will
+        # be reflected, not only the reaction sent with this particular request.
+        object_pk = int(request.data["object_pk"])
+        site_id = int(request.data["site"])
+        obj_reactions = get_object_reactions(content_type, object_pk, site_id)
+        if self.created:
+            return Response(obj_reactions, status=status.HTTP_201_CREATED)
+        else:
+            return Response(obj_reactions, status=status.HTTP_200_OK)
+
+    def perform_create(self, serializer):
+        or_qs = ObjectReaction.objects.filter(**serializer.validated_data)
+        if or_qs.filter(authors=self.request.user).count() == 1:
+            self.created = False
+            if or_qs[0].counter == 1:
+                or_qs.delete()
+            else:
+                or_qs.update(counter=F("counter") - 1)
+                or_qs[0].authors.remove(self.request.user)
+        else:
+            oreaction, _ = ObjectReaction.objects.get_or_create(
+                **serializer.validated_data
+            )
+            oreaction.authors.add(self.request.user)
+            # self.created is True when the user reacting is added.
+            self.created = True
+            oreaction.counter += 1
+            oreaction.save()
+
+
 class AuthorListPagination(PageNumberPagination):
     page_size = settings.COMMENTS_INK_USERS_REACTED_PER_PAGE
 
@@ -186,7 +233,7 @@ class CommentReactionAuthorList(DefaultsMixin, generics.ListAPIView):
     permission_classes = (permissions.AllowAny,)
     pagination_class = AuthorListPagination
 
-    def get_queryset(self, **kwargs):
+    def get_queryset(self):
         comment_pk_arg = self.kwargs.get("comment_pk", None)
         reaction_value_arg = self.kwargs.get("reaction_value", None)
         try:

@@ -10,6 +10,7 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.core import signing
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import F
 from django.db.utils import NotSupportedError
 from django.http import (
@@ -22,6 +23,7 @@ from django.shortcuts import get_object_or_404, render, resolve_url
 from django.template import loader
 from django.urls import reverse
 from django.utils.html import escape
+from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
@@ -42,6 +44,7 @@ from django_comments_ink import signals, signed, utils
 from django_comments_ink.conf import settings
 from django_comments_ink.models import (
     CommentReaction,
+    CommentVote,
     MaxThreadLevelExceededException,
     ObjectReaction,
     TmpInkComment,
@@ -107,7 +110,6 @@ _preview_js_tmpl.extend(
 )
 
 
-# List of possible paths to the bad_form.html template file.
 if theme_dir_exists:
     _posted_tmpl = [f"comments/{theme_dir}/posted.html", "comments/posted.html"]
 else:
@@ -248,7 +250,7 @@ else:
     _react_tmpl = "comments/react.html"
 
 
-# List of possible paths to the reacted_js.html template file.
+# List of possible paths to the comment_reactions.html template file.
 _reacted_js_tmpl = []
 if theme_dir_exists:
     _reacted_js_tmpl.extend(
@@ -267,7 +269,7 @@ _reacted_js_tmpl.extend(
 )
 
 
-# List of possible paths to the reacted_to_comment.html template file.
+# List of possible paths to the reacted.html template file.
 if theme_dir_exists:
     _reacted_tmpl = [
         f"comments/{theme_dir}/reacted.html",
@@ -314,6 +316,45 @@ _list_reacted_to_object_tmpl.extend(
         "comments/list_reacted_to_object.html",
     ]
 )
+
+
+# List of possible paths to the vote.html template file.
+if theme_dir_exists:
+    _vote_tmpl = [
+        f"comments/{theme_dir}/vote.html",
+        "comments/vote.html",
+    ]
+else:
+    _vote_tmpl = "comments/vote.html"
+
+
+# List of possible paths to the comment_votes.html template file.
+_voted_js_tmpl = []
+if theme_dir_exists:
+    _voted_js_tmpl.extend(
+        [
+            "comments/{theme_dir}/{app_label}/{model}/comment_votes.html",
+            "comments/{theme_dir}/{app_label}/comment_votes.html",
+            "comments/{theme_dir}/comment_votes.html",
+        ]
+    )
+_voted_js_tmpl.extend(
+    [
+        "comments/{app_label}/{model}/comment_votes.html",
+        "comments/{app_label}/comment_votes.html",
+        "comments/comment_votes.html",
+    ]
+)
+
+
+# List of possible paths to the voted.html template file.
+if theme_dir_exists:
+    _voted_tmpl = [
+        f"comments/{theme_dir}/voted.html",
+        "comments/voted.html",
+    ]
+else:
+    _voted_tmpl = "comments/voted.html"
 
 
 # ---------------------------------------------------------------------
@@ -730,7 +771,6 @@ def sent(request, using=None):
             target = model._default_manager.using(using).get(pk=object_pk)
         except Exception:
             return CommentPostBadRequest("Comment doesn't exist")
-
         return render(request, _posted_tmpl, {"target": target})
     else:
         if comment.is_public:
@@ -927,6 +967,15 @@ def reply(request, cid):
         raise Http404(exc)
 
     options = utils.get_app_model_options(content_type=comment.content_type)
+    check_input_allowed_str = options.pop("check_input_allowed")
+    check_func = import_string(check_input_allowed_str)
+    target_obj = comment.content_type.get_object_for_this_type(
+        pk=comment.object_pk
+    )
+    is_input_allowed = check_func(target_obj)
+
+    if not is_input_allowed:
+        raise Http404("Input is not allowed")
 
     if not request.user.is_authenticated and options["who_can_post"] == "users":
         path = request.build_absolute_uri()
@@ -959,6 +1008,8 @@ def reply(request, cid):
             "next": next,
             "page_number": cpage,
             "folded_comments": cfold,
+            "comment_votes_enabled": options["comment_votes_enabled"],
+            "comment_reactions_enabled": options["comment_reactions_enabled"],
         },
     )
 
@@ -1310,9 +1361,18 @@ def list_reacted(request, comment_id, reaction_value):
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
 
+    template_list = [
+        pth.format(
+            theme_dir=theme_dir,
+            app_label=comment.content_object._meta.app_label,
+            model=comment.content_object._meta.model_name,
+        )
+        for pth in _list_reacted_tmpl
+    ]
+
     return render(
         request,
-        _list_reacted_tmpl,
+        template_list,
         {
             "comment": comment,
             "reaction": get_comment_reactions_enum()(reaction.reaction),
@@ -1352,14 +1412,183 @@ def list_reacted_to_object(request, content_type_id, object_pk, reaction_value):
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
 
+    template_list = [
+        pth.format(
+            theme_dir=theme_dir,
+            app_label=ctype.app_label,
+            model=ctype.model,
+        )
+        for pth in _list_reacted_to_object_tmpl
+    ]
+
     return render(
         request,
-        _list_reacted_to_object_tmpl,
+        template_list,
         {
             "content_type": ctype,
             "object": reaction.content_object,
             "reaction": get_object_reactions_enum()(reaction.reaction),
             "page_obj": page_obj,
+        },
+    )
+
+
+@csrf_protect
+@login_required
+def vote(request, comment_id, next=None):
+    """
+    A registered user votes to a comment. confirmation on GET, action on POST.
+    """
+    comment = get_object_or_404(
+        get_comment_model(),
+        pk=comment_id,
+        site__pk=utils.get_current_site_id(request),
+    )
+
+    utils.check_option("comment_votes_enabled", comment=comment)
+    options = utils.get_app_model_options(content_type=comment.content_type)
+    check_input_allowed_str = options.pop("check_input_allowed")
+    check_func = import_string(check_input_allowed_str)
+    target_obj = comment.content_type.get_object_for_this_type(
+        pk=comment.object_pk
+    )
+    is_input_allowed = check_func(target_obj)
+    if not is_input_allowed or comment.level > 0:
+        raise Http404("Input is not allowed")
+
+    cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
+    cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
+
+    if request.method == "POST":
+        cpage = request.POST.get(cpage_qs_param, 1)
+        cfold = request.POST.get(cfold_qs_param, "")
+
+        if request.POST["vote"] in [CommentVote.POSITIVE, CommentVote.NEGATIVE]:
+            created = perform_vote(request, comment)
+
+        # When the vote has been sent via JavaScript.
+        if request.META.get("HTTP_X_REQUESTED_WITH") == "XMLHttpRequest":
+            obj_meta = comment.content_object._meta
+            template_list = [
+                pth.format(
+                    theme_dir=theme_dir,
+                    app_label=obj_meta.app_label,
+                    model=obj_meta.model_name,
+                )
+                for pth in _voted_js_tmpl
+            ]
+            context = {"comment": comment}
+            status = 201 if created else 200
+            return json_res(request, template_list, context, status=status)
+
+        page = int(cpage) if cpage != "last" else "last"
+        fold = (len(cfold) and {int(cid) for cid in cfold.split(",")}) or {}
+
+        kwargs = {
+            "c": comment.pk,
+            cpage_qs_param: page,
+            cfold_qs_param: ",".join([str(cid) for cid in fold]),
+        }
+
+        return next_redirect(
+            request,
+            fallback=next or "comments-ink-vote-done",
+            **kwargs,
+        )
+
+    else:
+        cpage = request.GET.get(cpage_qs_param, 1)
+        cfold = request.GET.get(cfold_qs_param, "")
+        page = int(cpage) if cpage != "last" else "last"
+        fold = (len(cfold) and {int(cid) for cid in cfold.split(",")}) or {}
+        cv_qs = CommentVote.objects.filter(comment=comment, author=request.user)
+        user_vote = None if cv_qs.count() == 0 else cv_qs[0]
+
+        return render(
+            request,
+            _vote_tmpl,
+            {
+                "comment": comment,
+                "user_vote": user_vote,
+                "next": next,
+                "page_number": page,
+                "folded_comments": ",".join([str(cid) for cid in fold]),
+                "comments_page_qs_param": cpage_qs_param,
+                "comments_fold_qs_param": cfold_qs_param,
+            },
+        )
+
+
+INVERSE_VOTE = {
+    CommentVote.POSITIVE: CommentVote.NEGATIVE,
+    CommentVote.NEGATIVE: CommentVote.POSITIVE,
+}
+
+VOTE_VALUE = {CommentVote.POSITIVE: +1, CommentVote.NEGATIVE: -1}
+
+
+@transaction.atomic
+def perform_vote(request, comment):
+    """Save the user vote and send the signal comment_got_a_vote."""
+    delta = 0  # To sum to thread's score.
+    vote, created = CommentVote.objects.get_or_create(
+        vote=request.POST["vote"], comment=comment, author=request.user
+    )
+
+    if created:
+        delta = VOTE_VALUE[request.POST["vote"]]
+        counterpart_qs = CommentVote.objects.filter(
+            vote=INVERSE_VOTE[request.POST["vote"]],
+            comment=comment,
+            author=request.user,
+        )
+        if counterpart_qs.count():
+            delta += VOTE_VALUE[request.POST["vote"]]
+            counterpart_qs.delete()
+
+    else:
+        delta = -VOTE_VALUE[request.POST["vote"]]
+        vote.delete()
+
+    comment.thread.score = comment.thread.score + delta
+    comment.thread.save()
+
+    signals.comment_got_a_vote.send(
+        sender=comment.__class__,
+        comment=comment,
+        vote=request.POST["vote"],
+        created=created,
+        request=request,
+    )
+    return created
+
+
+def vote_done(request):
+    """Displays a "User voted to this comment" success page."""
+    comment_pk = request.GET.get("c", None)
+    cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
+    cpage = request.GET.get(cpage_qs_param, 1)
+    cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
+    cfold = request.GET.get(cfold_qs_param, "")
+    if comment_pk:
+        comment = get_object_or_404(
+            get_comment_model(),
+            pk=comment_pk,
+            site__pk=utils.get_current_site_id(request),
+        )
+    else:
+        raise Http404(_("Comment does not exist"))
+
+    page = int(cpage) if cpage != "last" else "last"
+    fold = (len(cfold) and {int(cid) for cid in cfold.split(",")}) or {}
+
+    return render(
+        request,
+        _voted_tmpl,
+        {
+            "comment": comment,
+            "cpage": page,
+            "cfold": ",".join([str(cid) for cid in fold]),
         },
     )
 

@@ -19,7 +19,10 @@ from django_comments_ink.conf import settings
 from django_comments_ink.models import (
     CommentReaction,
     CommentReactionAuthor,
+    CommentThread,
+    CommentVote,
     InkComment,
+    ObjectReaction,
     ObjectReactionAuthor,
     TmpInkComment,
     max_thread_level_for_content_type,
@@ -351,6 +354,17 @@ class ReadCommentReactionAuthorSerializer(serializers.ModelSerializer):
         return settings.COMMENTS_INK_API_USER_REPR(obj)
 
 
+class WriteObjectReactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ObjectReaction
+        fields = (
+            "reaction",
+            "content_type",
+            "object_pk",
+            "site",
+        )
+
+
 class ReadObjectReactionAuthorSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField()
     author = serializers.SerializerMethodField()
@@ -369,3 +383,12 @@ class ReadObjectReactionAuthorSerializer(serializers.ModelSerializer):
 
     def get_author(self, obj):
         return settings.COMMENTS_INK_API_USER_REPR(obj)
+
+
+class WriteCommentVoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommentVote
+        fields = (
+            "vote",
+            "comment",
+        )

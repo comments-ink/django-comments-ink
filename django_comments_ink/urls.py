@@ -27,6 +27,8 @@ urlpatterns = [
     re_path(r"^deleted/$", delete_done, name="comments-delete-done"),
     re_path(r"^approve/(\d+)/$", approve, name="comments-approve"),
     re_path(r"^approved/$", approve_done, name="comments-approve-done"),
+    re_path(r"^vote/(\d+)/$", views.vote, name="comments-ink-vote"),
+    re_path(r"^voted/$", views.vote_done, name="comments-ink-vote-done"),
     re_path(r"^react/(\d+)/$", views.react, name="comments-ink-react"),
     re_path(r"^reacted/$", views.react_done, name="comments-ink-react-done"),
     re_path(

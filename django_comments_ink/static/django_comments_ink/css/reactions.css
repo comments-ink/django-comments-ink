@@ -146,16 +146,16 @@ button.emoji:hover, button.emoji:focus {
     justify-content: center;
 }
 
-.reaction-form div {
+.reaction-form div, .vote-form div {
     display: flex;
     justify-content: center;
 }
 
-.reaction-form div button {
+.reaction-form div button, .vote-form div button {
     margin: 2px;
 }
 
-.reaction-form .emoji {
+.reaction-form .emoji, .vote-form .emoji {
     font-size: 1rem;
     font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }

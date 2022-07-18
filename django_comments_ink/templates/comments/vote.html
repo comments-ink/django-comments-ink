@@ -1,0 +1,66 @@
+{% extends "comments/base.html" %}
+
+{% load i18n %}
+{% load comments_ink %}
+
+{% block title %}{% trans "Vote comment" %}{% endblock %}
+
+{% block content %}
+<main>
+  <article>
+    <div class="container">
+      <h2 class="text-center">{% trans "Vote this comment" %}</h2>
+      <h6 class="text-center pb24">
+        {% trans "Comment sent to:" %}<br/>
+        <a href="{{ comment.content_object.get_absolute_url }}">{{ comment.content_object }}</a>
+      </h6>
+    </div>
+    <div class="central-column">
+      <div class="{% dci_custom_selector %} pb32">
+        <div id="c{{ comment.id }}" class="comment-box">
+          <div class="comment">
+            <div class="header">
+              <div>
+                {% if not comment.is_removed %}<div style="display:inline-block">&nbsp;<span style="font-size: 1.0rem; color: #666;">{{ comment.thread.score }}</span>&nbsp;</div>&nbsp;&sdot;&nbsp;{% endif %}{% if comment.url and not comment.is_removed %}<a href="{{ comment.url }}" target="_new">{{ comment.name }}</a>{% else %}{{ comment.name }}{% endif %}&nbsp;&sdot;&nbsp;<span class="muted">{{ comment.submit_date }}</span>&nbsp;&nbsp;<a class="permalink" title="comment permalink" href="{% get_inkcomment_permalink comment page_number folded_comments %}">¶</a>
+              </div>
+            </div>
+            <div class="body body-bordered">
+              {{ comment.comment|linebreaks|escape }}
+            </div>
+            <div class="feedback feedback-bordered">
+              {% include "comments/comment_reactions.html" %}
+            </div>
+          </div>
+        </div>
+
+        <section class="vote-form">
+          <h5 class="text-center">Your vote:</h5>
+          {% if user_vote %}
+            <p class="text-center">{% trans "The pressed button correspond to your current vote to this comment." %}</p>
+          {% endif %}
+          <form method="POST" autocomplete="off" action="{% comment_vote_form_target comment %}">
+            {% csrf_token %}
+            <input type="hidden" name="{{ comments_page_qs_param }}" value="{{ page_number }}" />
+            <input type="hidden" name="{{ comments_fold_qs_param }}" value="{{ folded_comments }}" />
+            <div class="text-center">
+              <button
+                type="submit" name="vote" value="+"
+                class="secondary {% if user_vote.vote == '+' %}active{% endif %}"
+              >+1</button>
+              <button
+                type="submit" name="vote" value="-"
+                class="secondary {% if user_vote.vote == '-' %}active{% endif %}"
+              >-1</button>
+            </div>
+            {% if user_vote %}
+              <h6 class="text-center">{% trans "Click on a button to select or deselect your vote." %}</h6>
+            {% else %}
+              <h6 class="text-center">{% trans "Click on a button to vote." %}</h6>
+            {% endif %}
+          </form>
+        </section>
+      </div>
+    </div>
+  </article>
+</main>
+{% endblock %}

@@ -665,15 +665,15 @@ def test_get_inkcomment_count_uses_cached_count(monkeypatch, an_article):
 
     result_1 = Template(t).render(Context({"object": an_article}))
     assert len(fake_cache.store) == 2
-    assert "/comments_qs/13/1/1" in fake_cache.store
-    assert "/comments_count/13/1/1" in fake_cache.store
-    assert fake_cache.found["/comments_count/13/1/1"] == False
+    assert "/comments_qs/15/1/1" in fake_cache.store
+    assert "/comments_count/15/1/1" in fake_cache.store
+    assert fake_cache.found["/comments_count/15/1/1"] == False
 
     result_2 = Template(t).render(Context({"object": an_article}))
     assert len(fake_cache.store) == 2
-    assert "/comments_qs/13/1/1" in fake_cache.store
-    assert "/comments_count/13/1/1" in fake_cache.store
-    assert fake_cache.found["/comments_count/13/1/1"] == True
+    assert "/comments_qs/15/1/1" in fake_cache.store
+    assert "/comments_count/15/1/1" in fake_cache.store
+    assert fake_cache.found["/comments_count/15/1/1"] == True
 
     assert result_1 == result_2 == "77"
 
@@ -709,15 +709,15 @@ def test_render_inkcomment_list_uses_cached_qs(monkeypatch, an_article):
     t = "{% load comments_ink %}" "{% render_inkcomment_list for object %}"
 
     assert len(fake_cache.store) == 0
-    assert not "/comments_qs/13/1/1" in fake_cache.store
+    assert not "/comments_qs/15/1/1" in fake_cache.store
 
     result_1 = Template(t).render(Context({"object": an_article}))
-    assert "/comments_qs/13/1/1" in fake_cache.store
-    assert fake_cache.found["/comments_qs/13/1/1"] == False
+    assert "/comments_qs/15/1/1" in fake_cache.store
+    assert fake_cache.found["/comments_qs/15/1/1"] == False
 
     result_2 = Template(t).render(Context({"object": an_article}))
-    assert "/comments_qs/13/1/1" in fake_cache.store
-    assert fake_cache.found["/comments_qs/13/1/1"] == True
+    assert "/comments_qs/15/1/1" in fake_cache.store
+    assert fake_cache.found["/comments_qs/15/1/1"] == True
 
     assert result_1 == result_2
 
@@ -1033,7 +1033,7 @@ def test_get_inkcomment_permalink_in_page_eq_1(an_articles_comment):
 def test_get_inkcomment_permalink_in_page_gt_1(an_articles_comment):
     t = "{% load comments_ink %}" "{% get_inkcomment_permalink comment 2 %}"
     output = Template(t).render(Context({"comment": an_articles_comment}))
-    assert output == "/comments/cr/13/1/1/?cpage=2#comment-1"
+    assert output == "/comments/cr/15/1/1/?cpage=2#comment-1"
 
 
 @pytest.mark.django_db
@@ -1042,7 +1042,7 @@ def test_get_inkcomment_permalink_in_var_page_gt_1(an_articles_comment):
     output = Template(t).render(
         Context({"comment": an_articles_comment, "cpage": 2})
     )
-    assert output == "/comments/cr/13/1/1/?cpage=2#comment-1"
+    assert output == "/comments/cr/15/1/1/?cpage=2#comment-1"
 
 
 @pytest.mark.django_db
@@ -1052,7 +1052,7 @@ def test_get_inkcomment_permalink_page_1_fold_1_and_97(an_articles_comment):
         "{% get_inkcomment_permalink comment 2 '1,97' %}"
     )
     output = Template(t).render(Context({"comment": an_articles_comment}))
-    assert output == "/comments/cr/13/1/1/?cpage=2&cfold=1,97#comment-1"
+    assert output == "/comments/cr/15/1/1/?cpage=2&cfold=1,97#comment-1"
 
 
 @pytest.mark.django_db
@@ -1064,7 +1064,7 @@ def test_get_inkcomment_permalink_var_page_var_fold(an_articles_comment):
     output = Template(t).render(
         Context({"comment": an_articles_comment, "cpage": 2, "cfold": "1,97"})
     )
-    assert output == "/comments/cr/13/1/1/?cpage=2&cfold=1,97#comment-1"
+    assert output == "/comments/cr/15/1/1/?cpage=2&cfold=1,97#comment-1"
 
 
 @pytest.mark.django_db
@@ -1084,7 +1084,7 @@ def test_get_inkcomment_permalink_in_page_gt_1_custom(an_articles_comment):
         '{% get_inkcomment_permalink comment 2 "1,97" "#c%(id)s" %}'
     )
     output = Template(t).render(Context({"comment": an_articles_comment}))
-    assert output == "/comments/cr/13/1/1/?cpage=2&cfold=1,97#c1"
+    assert output == "/comments/cr/15/1/1/?cpage=2&cfold=1,97#c1"
 
 
 @pytest.mark.django_db
@@ -1642,4 +1642,4 @@ def test_render_object_reactions_form_for_object_case_2(a_diary_entry, an_user):
 def test_object_reactions_form_target(a_diary_entry):
     t = "{% load comments_ink %}{% object_reactions_form_target object %}"
     result = Template(t).render(Context({"object": a_diary_entry}))
-    assert result == "/comments/react/14/1/"
+    assert result == "/comments/react/16/1/"

@@ -42,7 +42,7 @@ class Command(BaseCommand):
                 qs = (
                     InkComment.objects.using(using)
                     .filter(content_type=ctype, level__lte=mtl)
-                    .order_by("thread_id", "-order")
+                    .order_by("thread__id", "-order")
                 )
                 count = self.process_queryset(qs)
                 total += count
@@ -59,7 +59,7 @@ class Command(BaseCommand):
             qs = (
                 InkComment.objects.using(using)
                 .filter(~Q(content_type__in=ctype_list), level__lte=MTL)
-                .order_by("thread_id", "-order")
+                .order_by("thread__id", "-order")
             )
             count = self.process_queryset(qs)
             total += count
@@ -68,7 +68,7 @@ class Command(BaseCommand):
             qs = (
                 InkComment.objects.using(using)
                 .filter(level__lte=MTL)
-                .order_by("thread_id", "-order")
+                .order_by("thread__id", "-order")
             )
             total = self.process_queryset(qs)
             self.stdout.write(f"Updated {total} InkComments.")
@@ -81,9 +81,9 @@ class Command(BaseCommand):
 
         for comment in qs:
             # Clean up parents when there is a control break.
-            if comment.thread_id != active_thread_id:
+            if comment.thread.id != active_thread_id:
                 parents = {}
-                active_thread_id = comment.thread_id
+                active_thread_id = comment.thread.id
 
             nested_count = parents.get(comment.comment_ptr_id, 0)
             parents.setdefault(comment.parent_id, 0)
