@@ -7,12 +7,12 @@
   {{ comment.level|indent_divs }}
   <div class="comment">
     <div class="header flex-align-center">
-      {% if not comment.is_removed and comment_votes_enabled and is_input_allowed and comment.level == 0 %}
+      {% if not comment.is_removed and comment_votes_enabled and comment.level == 0 %}
         <div class="flex-align-center">
-          <div style="padding-left: 2px; padding-right: 16px; display: flex; flex-direction: column; line-height: 1.2" class="flex-align-center">
-            {% if is_input_allowed %}<a href="{% url 'comments-ink-vote' comment.id %}?{% render_qs_params page page_obj.number %}#{{ anchor }}" class="smaller">&bigtriangleup;</a>{% endif %}
+          <div class="vote-block flex-align-center">
+            {% if is_input_allowed %}<a href="{% url 'comments-ink-vote' comment.id %}?{% render_qs_params page page_obj.number %}#{{ anchor }}" class="vote-up smaller"></a>{% endif %}
             <span class="vote-score">{{ comment.thread.score }}{% if not is_input_allowed %}{% trans "points" %}{% endif %}</span>
-            {% if is_input_allowed %}<a href="{% url 'comments-ink-vote' comment.id %}?{% render_qs_params page page_obj.number %}#{{ anchor }}" class="smaller">&bigtriangledown;</a>{% endif %}
+            {% if is_input_allowed %}<a href="{% url 'comments-ink-vote' comment.id %}?{% render_qs_params page page_obj.number %}#{{ anchor }}" class="vote-down smaller"></a>{% endif %}
           </div>
         </div>
       {% endif %}

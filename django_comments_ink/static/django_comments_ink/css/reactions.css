@@ -166,6 +166,25 @@ BUTTON.emoji {
     font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 
+.vote-block {
+    display: flex;
+    padding-left: 2px;
+    padding-right: 16px;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+a.vote-up:after, a.vote-down:after {
+    content: "\0025b3";
+    display: inline-block;
+}
+a.vote-down:after {
+    transform: rotate(180deg);
+}
+a.vote-up:hover:after, a.vote-down:hover:after {
+    content: "\0025b2";
+}
+
 .vote-score {
     padding: 1px 8px;
     font-size: 1.0rem;
