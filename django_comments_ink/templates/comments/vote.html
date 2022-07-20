@@ -21,7 +21,20 @@
           <div class="comment">
             <div class="header">
               <div>
-                {% if not comment.is_removed %}<div style="display:inline-block">&nbsp;<span style="font-size: 1.0rem; color: #666;">{{ comment.thread.score }}</span>&nbsp;</div>&nbsp;&sdot;&nbsp;{% endif %}{% if comment.url and not comment.is_removed %}<a href="{{ comment.url }}" target="_new">{{ comment.name }}</a>{% else %}{{ comment.name }}{% endif %}&nbsp;&sdot;&nbsp;<span class="muted">{{ comment.submit_date }}</span>&nbsp;&nbsp;<a class="permalink" title="comment permalink" href="{% get_inkcomment_permalink comment page_number folded_comments %}">¶</a>
+                {% if not comment.is_removed %}
+                  <div class="inline-block">
+                    <span class="vote-score">{{ comment.thread.score }}</span>
+                  </div>
+                  &sdot;
+                {% endif %}
+                {% if comment.url and not comment.is_removed %}
+                  <a href="{{ comment.url }}" target="_new">{{ comment.name }}</a>
+                {% else %}
+                  {{ comment.name }}
+                {% endif %}
+                &sdot;
+                <span class="muted">{{ comment.submit_date }}</span>
+                <a class="permalink" title="comment permalink" href="{% get_inkcomment_permalink comment page_number folded_comments %}">¶</a>
               </div>
             </div>
             <div class="body body-bordered">
