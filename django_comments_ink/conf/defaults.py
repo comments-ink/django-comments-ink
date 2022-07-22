@@ -77,6 +77,10 @@ def username(u):
 
 COMMENTS_INK_API_USER_REPR = username
 
+# When listing reaction authors, the list of
+# authors is ordered using the following list.
+COMMENTS_INK_AUTHOR_LIST_ORDER = ("-id",)
+
 # Makes the "Notify me about followup comments" checkbox in the
 # comment form checked (True) or unchecked (False) by default.
 COMMENTS_INK_DEFAULT_FOLLOWUP = False

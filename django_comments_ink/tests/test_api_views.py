@@ -622,5 +622,8 @@ def test_CommentReactionAuthorList(
     data = json.loads(response.rendered_content)
     assert "count" in data
     assert data["count"] == 2  # Number of reactions.
-    results = [{"id": 1, "author": "joe"}, {"id": 2, "author": "alice"}]
+    results = [
+        {"id": 2, "author": "alice"},
+        {"id": 1, "author": "joe"},
+    ]
     assert data["results"] == results

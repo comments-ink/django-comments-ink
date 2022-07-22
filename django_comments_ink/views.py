@@ -1350,7 +1350,9 @@ def list_reacted(request, comment_id, reaction_value):
 
     authors = [
         settings.COMMENTS_INK_API_USER_REPR(author)
-        for author in reaction.authors.all()
+        for author in reaction.authors.order_by(
+            *settings.COMMENTS_INK_AUTHOR_LIST_ORDER
+        )
     ]
 
     max_users_in_tooltip = settings.COMMENTS_INK_MAX_USERS_IN_TOOLTIP
@@ -1401,7 +1403,9 @@ def list_reacted_to_object(request, content_type_id, object_pk, reaction_value):
 
     authors = [
         settings.COMMENTS_INK_API_USER_REPR(author)
-        for author in reaction.authors.all()
+        for author in reaction.authors.order_by(
+            *settings.COMMENTS_INK_AUTHOR_LIST_ORDER
+        )
     ]
 
     max_users_in_tooltip = settings.COMMENTS_INK_MAX_USERS_IN_TOOLTIP
