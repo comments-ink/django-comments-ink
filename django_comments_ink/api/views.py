@@ -245,7 +245,9 @@ class CommentReactionAuthorList(DefaultsMixin, generics.ListAPIView):
         except (InkComment.DoesNotExist, CommentReaction.DoesNotExist):
             return CommentReaction.objects.none()
         else:
-            return comment_reaction.authors.all()
+            return comment_reaction.authors.order_by(
+                *settings.COMMENTS_INK_AUTHOR_LIST_ORDER
+            )
 
 
 class ObjectReactionAuthorList(DefaultsMixin, generics.ListAPIView):
@@ -274,4 +276,6 @@ class ObjectReactionAuthorList(DefaultsMixin, generics.ListAPIView):
         except (ContentType.DoesNotExist, ObjectReaction.DoesNotExist):
             return ObjectReaction.objects.none()
         else:
-            return object_reaction.authors.all()
+            return object_reaction.authors.order_by(
+                *settings.COMMENTS_INK_AUTHOR_LIST_ORDER
+            )
