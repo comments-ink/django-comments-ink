@@ -145,6 +145,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+
 function init_comments() {
     if (window.djCommentsInk === null) {
         return;
@@ -161,7 +162,10 @@ function init_comments() {
 
     window.djCommentsInk.comment_form = null;
     window.djCommentsInk.reply_forms_handler = null;
+
+    // Handler of clicking events on a[data-dci-action=fold] elements.
     window.djCommentsInk.folding_handler = null;
+    // Handler of clicking events on a[data-dci-action=unfold] elements.
     window.djCommentsInk.unfolding_handler = null;
 
     /* ----------------------------------------------
@@ -327,26 +331,38 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "init_reactions": () => (/* binding */ init_reactions)
 /* harmony export */ });
 /* harmony import */ var _reactions_handler__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./reactions_handler */ "./django_comments_ink/static/django_comments_ink/js/reactions_handler.js");
+/* harmony import */ var _voting_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./voting.js */ "./django_comments_ink/static/django_comments_ink/js/voting.js");
+
+
 
 
 function init_reactions() {
-    const rroot = document.querySelector("[data-dci=config]");
-    if (rroot === null || window.djCommentsInk === null) {
+    const cfg = document.querySelector("[data-dci=config]");
+    if (cfg === null || window.djCommentsInk === null) {
         return;
     }
 
     window.djCommentsInk.reactions_handler = null;
+
+    // Handler for clicking events on vote up/down elements.
+    window.djCommentsInk.voting_handler = null;
 
     /* ----------------------------------------------
      * Initialize reactions_handler, in charge
      * of all reactions popover components.
      */
     if (window.djCommentsInk.reactions_handler === null) {
-        window.djCommentsInk.reactions_handler = new _reactions_handler__WEBPACK_IMPORTED_MODULE_0__["default"](rroot);
+        window.djCommentsInk.reactions_handler = new _reactions_handler__WEBPACK_IMPORTED_MODULE_0__["default"](cfg);
         window.addEventListener("beforeunload", (_) => {
             window.djCommentsInk.reactions_handler.remove_event_listeners();
         });
+    }
 
+    /* ----------------------------------------------
+     * Initialize voting up/down of comments with level == 0.
+     */
+    if (window.djCommentsInk.voting_handler === null) {
+        window.djCommentsInk.voting_handler = new _voting_js__WEBPACK_IMPORTED_MODULE_1__["default"](cfg);
     }
 }
 
@@ -366,18 +382,22 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (/* binding */ ReactionsHandler)
 /* harmony export */ });
 /* harmony import */ var _reactions_panel__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./reactions_panel */ "./django_comments_ink/static/django_comments_ink/js/reactions_panel.js");
+/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./utils */ "./django_comments_ink/static/django_comments_ink/js/utils.js");
+
+
 
 
 class ReactionsHandler {
     constructor(configEl) {
         this.cfg_el = configEl;
-        this.is_guest = this.cfg_el.getAttribute("data-guest-user") === "1";
-        this.login_url = this.init_login_url();
-        this.react_url = this.init_react_url();
+        this.is_guest = this.cfg_el.dataset.guestUser === "1";
+        this.is_input_allowed = this.cfg_el.dataset.inputAllowed === "1";
+        this.login_url = (0,_utils__WEBPACK_IMPORTED_MODULE_1__.get_login_url)(this.cfg_el, this.is_guest);
+        this.react_url = (0,_utils__WEBPACK_IMPORTED_MODULE_1__.get_react_url)(this.cfg_el, this.is_guest);
 
         // Initialize the buttons panels and their components.
         this.links = document.querySelectorAll("[data-dci=reactions-panel]");
-        if (this.links.length === 0) {
+        if (this.links.length === 0 && this.is_input_allowed) {
             throw new Error(
                 "Cannot initialize reactions panel => There are " +
                 "no elements with [data-dci=reactions-panel].");
@@ -402,32 +422,6 @@ class ReactionsHandler {
             react_url: this.react_url
         };
         this.reactions_panel = new _reactions_panel__WEBPACK_IMPORTED_MODULE_0__["default"](opts);
-    }
-
-    init_login_url() {
-        const url = this.cfg_el.getAttribute("data-login-url");
-        if (url === null || url.length === 0) {
-            if (this.is_guest) {
-                throw new Error("Cannot initialize reactions panel => The " +
-                    "[data-login-url] attribute does not exist or is empty.");
-            }
-        }
-        return url;
-    }
-
-    init_react_url() {
-        const url = this.cfg_el.getAttribute("data-react-url");
-        if (url === null || url.length === 0) {
-            if (!this.is_guest) {
-                throw new Error("Cannot initialize reactions panel => The " +
-                    "[data-react-url] attribute does not exist or is empty.");
-            } else {
-                console.info("Couldn't find the data-react-url attribute, " +
-                    "but the user is anonymous. She has to login first in " +
-                    "order to post comment reactions.");
-            }
-        }
-        return url;
     }
 
     on_document_click(event) {
@@ -522,24 +516,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ ReactionsPanel)
 /* harmony export */ });
+/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./utils */ "./django_comments_ink/static/django_comments_ink/js/utils.js");
+
+
 const enter_delay = 0;
 const exit_delay = 0;
-
-function get_cookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            // Does this cookie string begin with the name we want?
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
 
 class ReactionsPanel {
     constructor({panel_el, is_guest, login_url, react_url } = opts) {
@@ -589,7 +570,7 @@ class ReactionsPanel {
             const react_url = this.react_url.replace("0", this.comment_id);
             const formData = new FormData();
             formData.append("reaction", code);
-            formData.append("csrfmiddlewaretoken", get_cookie("csrftoken"));
+            formData.append("csrfmiddlewaretoken", (0,_utils__WEBPACK_IMPORTED_MODULE_0__.get_cookie)("csrftoken"));
 
             fetch(react_url, {
                 method: "POST",
@@ -967,6 +948,166 @@ class ReplyFormsHandler {
             alert(
                 "Something went wrong and your comment could not be " +
                 "processed. Please, reload the page and try again."
+            );
+        }
+    }
+}
+
+
+/***/ }),
+
+/***/ "./django_comments_ink/static/django_comments_ink/js/utils.js":
+/*!********************************************************************!*\
+  !*** ./django_comments_ink/static/django_comments_ink/js/utils.js ***!
+  \********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "get_cookie": () => (/* binding */ get_cookie),
+/* harmony export */   "get_login_url": () => (/* binding */ get_login_url),
+/* harmony export */   "get_react_url": () => (/* binding */ get_react_url),
+/* harmony export */   "get_vote_url": () => (/* binding */ get_vote_url)
+/* harmony export */ });
+function get_cookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function get_login_url(configEl, isGuest) {
+    const url = configEl.getAttribute("data-login-url");
+    if (url === null || url.length === 0) {
+        if (isGuest) {
+            throw new Error("Cannot initialize reactions panel => The " +
+                "[data-login-url] attribute does not exist or is empty.");
+        }
+    }
+    return url;
+}
+
+function get_react_url(configEl, isGuest) {
+    const url = configEl.getAttribute("data-react-url");
+    if (url === null || url.length === 0) {
+        if (!isGuest) {
+            throw new Error("Cannot initialize reactions panel => The " +
+                "[data-react-url] attribute does not exist or is empty.");
+        } else {
+            console.info("Couldn't find the data-react-url attribute, " +
+                "but the user is anonymous. She has to login first in " +
+                "order to post comment reactions.");
+        }
+    }
+    return url;
+}
+
+function get_vote_url(configEl, isGuest) {
+    const url = configEl.getAttribute("data-vote-url");
+    if (url === null || url.length === 0) {
+        if (!isGuest) {
+            throw new Error("Cannot initialize reactions panel => The " +
+                "[data-vote-url] attribute does not exist or is empty.");
+        } else {
+            console.info("Couldn't find the data-react-url attribute, " +
+                "but the user is anonymous. She has to login first in " +
+                "order to post comment reactions.");
+        }
+    }
+    return url;
+}
+
+
+/***/ }),
+
+/***/ "./django_comments_ink/static/django_comments_ink/js/voting.js":
+/*!*********************************************************************!*\
+  !*** ./django_comments_ink/static/django_comments_ink/js/voting.js ***!
+  \*********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ VotingHandler)
+/* harmony export */ });
+/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./utils */ "./django_comments_ink/static/django_comments_ink/js/utils.js");
+
+
+
+class VotingHandler {
+    constructor(configEl) {
+        this.cfg_el = configEl;
+
+        this.is_guest = this.cfg_el.getAttribute("data-guest-user") === "1";
+        this.login_url = (0,_utils__WEBPACK_IMPORTED_MODULE_0__.get_login_url)(this.cfg_el, this.is_guest);
+        this.vote_url = (0,_utils__WEBPACK_IMPORTED_MODULE_0__.get_vote_url)(this.cfg_el, this.is_guest);
+
+        this.qs_up = '[data-dci-action="vote-up"]';
+        this.qs_down = '[data-dci-action="vote-down"]';
+        const qs_vote_up = document.querySelectorAll(this.qs_up);
+        const qs_vote_down = document.querySelectorAll(this.qs_down);
+
+        this.on_click = this.on_click.bind(this);
+        qs_vote_up.forEach(el => el.addEventListener("click", this.on_click));
+        qs_vote_down.forEach(el => el.addEventListener("click", this.on_click));
+    }
+
+    on_click(event) {
+        event.preventDefault();
+        const target = event.target;
+        if (!this.is_guest) {
+            this.comment_id = target.dataset.comment;
+            const vote_url = this.vote_url.replace("0", this.comment_id);
+            const code = target.dataset.code;
+            const form_data = new FormData();
+            form_data.append("vote", code);
+            form_data.append("csrfmiddlewaretoken", (0,_utils__WEBPACK_IMPORTED_MODULE_0__.get_cookie)("csrftoken"));
+
+            fetch(vote_url, {
+                method: "POST",
+                cache: "no-cache",
+                credentials: "same-origin",
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                body: form_data
+            }).then(response => this.handle_vote_response(response));
+        }
+        else {
+            const next_url = target.dataset.loginNext;
+            window.location.href = `${this.login_url}?next=${next_url}`;
+        }
+    }
+
+    async handle_vote_response(response) {
+        const data = await response.json();
+        if (response.status === 200 || response.status === 201) {
+            const cm_votes_qs = `#cm-votes-${this.comment_id}`;
+            const cm_votes_el = document.querySelector(cm_votes_qs);
+            if (cm_votes_el) {
+                cm_votes_el.innerHTML = data.html;
+                const qs_vote_up = cm_votes_el.querySelector(this.qs_up);
+                if (qs_vote_up) {
+                    qs_vote_up.addEventListener("click", this.on_click);
+                }
+                const qs_vote_down = cm_votes_el.querySelector(this.qs_down);
+                if (qs_vote_down) {
+                    qs_vote_down.addEventListener("click", this.on_click);
+                }
+            }
+        } else if (response.status > 400) {
+            alert(
+                "Something went wrong and your comment vote could not " +
+                "be processed. Please, reload the page and try again."
             );
         }
     }

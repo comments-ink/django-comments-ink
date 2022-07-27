@@ -843,8 +843,10 @@
 .dci .px0 { padding-left: 0px; padding-right: 0px }
 .dci .px16 { padding-left: 16px; padding-right: 16px }
 .dci .py0 { padding-top: 0px; padding-bottom: 0px }
+.dci .pl2 { padding-left: 2px }
 .dci .py16 { padding-top: 16px; padding-bottom: 16px }
 .dci .pr16 { padding-left: 0.2rem; padding-right: 16px }
+.dci .pr24 { padding-right: 24px }
 .dci .pt4 { padding-top: 4px }
 
 .dci .hide { display: none }

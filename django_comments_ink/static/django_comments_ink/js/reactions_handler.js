@@ -1,15 +1,18 @@
 import ReactionsPanel from "./reactions_panel";
+import { get_login_url, get_react_url } from "./utils";
+
 
 export default class ReactionsHandler {
     constructor(configEl) {
         this.cfg_el = configEl;
-        this.is_guest = this.cfg_el.getAttribute("data-guest-user") === "1";
-        this.login_url = this.init_login_url();
-        this.react_url = this.init_react_url();
+        this.is_guest = this.cfg_el.dataset.guestUser === "1";
+        this.is_input_allowed = this.cfg_el.dataset.inputAllowed === "1";
+        this.login_url = get_login_url(this.cfg_el, this.is_guest);
+        this.react_url = get_react_url(this.cfg_el, this.is_guest);
 
         // Initialize the buttons panels and their components.
         this.links = document.querySelectorAll("[data-dci=reactions-panel]");
-        if (this.links.length === 0) {
+        if (this.links.length === 0 && this.is_input_allowed) {
             throw new Error(
                 "Cannot initialize reactions panel => There are " +
                 "no elements with [data-dci=reactions-panel].");
@@ -34,32 +37,6 @@ export default class ReactionsHandler {
             react_url: this.react_url
         };
         this.reactions_panel = new ReactionsPanel(opts);
-    }
-
-    init_login_url() {
-        const url = this.cfg_el.getAttribute("data-login-url");
-        if (url === null || url.length === 0) {
-            if (this.is_guest) {
-                throw new Error("Cannot initialize reactions panel => The " +
-                    "[data-login-url] attribute does not exist or is empty.");
-            }
-        }
-        return url;
-    }
-
-    init_react_url() {
-        const url = this.cfg_el.getAttribute("data-react-url");
-        if (url === null || url.length === 0) {
-            if (!this.is_guest) {
-                throw new Error("Cannot initialize reactions panel => The " +
-                    "[data-react-url] attribute does not exist or is empty.");
-            } else {
-                console.info("Couldn't find the data-react-url attribute, " +
-                    "but the user is anonymous. She has to login first in " +
-                    "order to post comment reactions.");
-            }
-        }
-        return url;
     }
 
     on_document_click(event) {

@@ -89,7 +89,7 @@ button.emoji:hover, button.emoji:focus {
     font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 
-.reaction {
+.reaction, .vote {
     position: relative;
     display: inline-block;
     padding-left: 2px;
@@ -101,7 +101,7 @@ button.emoji:hover, button.emoji:focus {
     padding-right: 0;
 }
 
-.reaction .reaction_tooltip {
+.reaction .tooltip, .vote .tooltip {
     visibility: hidden;
     width: 180px;
     background-color: #555;
@@ -122,7 +122,7 @@ button.emoji:hover, button.emoji:focus {
     transition: opacity 0.3s;
 }
 
-.reaction .reaction_tooltip::after {
+.reaction .tooltip::after, .vote .tooltip::after {
     /* Tooltip arrow. */
     content: "";
     position: absolute;
@@ -135,11 +135,19 @@ button.emoji:hover, button.emoji:focus {
 }
 
 /* Show the tooltip text when you mouse over the tooltip container */
-.reaction:hover .reaction_tooltip {
+.reaction:hover .tooltip, .vote:hover .tooltip {
     visibility: visible;
     opacity: 1;
 }
 
+.vote.fix-pos-mt {
+    /* This is to fix the margin top position of the vote down symbol,
+     * when displayed in flex-direction column (themes feedback-in-header,
+     * and avatar-in-header). Maybe there is a better solution, but I
+     * don't know.
+     */
+    margin-top: -1.2px;
+}
 /* ----------------------------------------------------- */
 .reactions-list {
     display: flex;
@@ -168,20 +176,20 @@ BUTTON.emoji {
 
 .vote-block {
     display: flex;
-    padding-left: 2px;
-    padding-right: 16px;
     flex-direction: column;
     line-height: 1.2;
 }
 
-a.vote-up:after, a.vote-down:after {
+.vote-up:after, .vote-down:after {
     content: "\0025b3";
     display: inline-block;
 }
-a.vote-down:after {
+.vote-down:after {
     transform: rotate(180deg);
 }
-a.vote-up:hover:after, a.vote-down:hover:after {
+
+a.vote-up:hover:after, a.vote-down:hover:after,
+.vote-up.active:after, .vote-down.active:after {
     content: "\0025b2";
 }
 
