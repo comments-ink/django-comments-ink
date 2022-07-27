@@ -2,6 +2,7 @@ import CommentForm from "./comment_form.js";
 import ReplyFormsHandler from "./reply_forms.js";
 import FoldingHandler from "./folding.js";
 
+
 function init_comments() {
     if (window.djCommentsInk === null) {
         return;
@@ -18,7 +19,10 @@ function init_comments() {
 
     window.djCommentsInk.comment_form = null;
     window.djCommentsInk.reply_forms_handler = null;
+
+    // Handler of clicking events on a[data-dci-action=fold] elements.
     window.djCommentsInk.folding_handler = null;
+    // Handler of clicking events on a[data-dci-action=unfold] elements.
     window.djCommentsInk.unfolding_handler = null;
 
     /* ----------------------------------------------

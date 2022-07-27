@@ -23,7 +23,7 @@ def get_cache():
         )
         dci_cache = caches["default"]
     except TypeError:
-        logger.info("COMMENTS_INK_CACHE_KEY=None => App cache is disabled.")
+        logger.debug("COMMENTS_INK_CACHE_KEY=None => App cache is disabled.")
 
     return dci_cache
 

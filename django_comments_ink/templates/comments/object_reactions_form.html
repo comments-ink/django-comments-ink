@@ -12,7 +12,7 @@
         <button type="submit" class="emoji" name="reaction" id="{{ reaction.value }}" value="{{ reaction.value }}">&{{ reaction.icon }};</button>&nbsp;
         <span class="reaction">
           {% if reaction.counter > max_users_in_tooltip %}<a href="{% url 'comments-ink-list-reacted-to-object' content_type.id object.id reaction.value %}">{{ reaction.counter }}</a>{% else %}<span>{{ reaction.counter }}</span>{% endif %}
-          <div class="reaction_tooltip small">{% if reaction.counter > 0 and reaction.counter > reaction.authors|length %}{% blocktrans with authors=reaction.authors|join:", " label=reaction.label %}{{ authors }} and more reacted with {{ label }}{% endblocktrans %}{% elif reaction.counter > 0 and reaction.counter == reaction.authors|length %}{% blocktrans with authors=reaction.authors|join:", " label=reaction.label %}{{ authors }} reacted with {{ label }}{% endblocktrans %}{% else %}{% blocktrans with label=reaction.label %}Nobody reacted yet with {{ label }}{% endblocktrans %}{% endif %}</div>
+          <div class="tooltip small">{% if reaction.counter > 0 and reaction.counter > reaction.authors|length %}{% blocktrans with authors=reaction.authors|join:", " label=reaction.label %}{{ authors }} and more reacted with {{ label }}{% endblocktrans %}{% elif reaction.counter > 0 and reaction.counter == reaction.authors|length %}{% blocktrans with authors=reaction.authors|join:", " label=reaction.label %}{{ authors }} reacted with {{ label }}{% endblocktrans %}{% else %}{% blocktrans with label=reaction.label %}Nobody reacted yet with {{ label }}{% endblocktrans %}{% endif %}</div>
         </span>
         {% if not forloop.last %}&nbsp;&nbsp;&nbsp;{% endif %}
       {% endfor %}
@@ -26,7 +26,7 @@
       </a>&nbsp;&nbsp;
       <span class="reaction">
         {% if reaction.counter > max_users_in_tooltip %}<a href="{% url 'comments-ink-list-reacted-to-object' content_type.id object.id reaction.value %}">{{ reaction.counter }}</a>{% else %}<span>{{ reaction.counter }}</span>{% endif %}
-        <div class="reaction_tooltip small">{% if reaction.counter > 0 and reaction.counter > reaction.authors|length %}{% blocktrans with authors=reaction.authors|join:", " label=reaction.label %}{{ authors }} and more reacted with {{ label }}{% endblocktrans %}{% elif reaction.counter > 0 and reaction.counter == reaction.authors|length %}{% blocktrans with authors=reaction.authors|join:", " label=reaction.label %}{{ authors }} reacted with {{ label }}{% endblocktrans %}{% else %}{% blocktrans with label=reaction.label %}Nobody reacted yet with {{ label }}{% endblocktrans %}{% endif %}</div>
+        <div class="tooltip small">{% if reaction.counter > 0 and reaction.counter > reaction.authors|length %}{% blocktrans with authors=reaction.authors|join:", " label=reaction.label %}{{ authors }} and more reacted with {{ label }}{% endblocktrans %}{% elif reaction.counter > 0 and reaction.counter == reaction.authors|length %}{% blocktrans with authors=reaction.authors|join:", " label=reaction.label %}{{ authors }} reacted with {{ label }}{% endblocktrans %}{% else %}{% blocktrans with label=reaction.label %}Nobody reacted yet with {{ label }}{% endblocktrans %}{% endif %}</div>
       </span>
       {% if not forloop.last %}&nbsp;&nbsp;&nbsp;{% endif %}
     {% endfor %}
@@ -38,7 +38,7 @@
         <span class="emoji">&{{ reaction.icon }};</span>&nbsp;&nbsp;
         <span class="reaction">
           {% if reaction.counter > max_users_in_tooltip %}<a href="{% url 'comments-ink-list-reacted-to-object' content_type.id object.id reaction.value %}">{{ reaction.counter }}</a>{% else %}<span>{{ reaction.counter }}</span>{% endif %}
-          <div class="reaction_tooltip small">{% if reaction.counter > 0 and reaction.counter > reaction.authors|length %}{% blocktrans with authors=reaction.authors|join:", " label=reaction.label %}{{ authors }} and more reacted with {{ label }}{% endblocktrans %}{% elif reaction.counter > 0 and reaction.counter == reaction.authors|length %}{% blocktrans with authors=reaction.authors|join:", " label=reaction.label %}{{ authors }} reacted with {{ label }}{% endblocktrans %}{% else %}{% blocktrans with label=reaction.label %}Nobody reacted yet with {{ label }}{% endblocktrans %}{% endif %}</div>
+          <div class="tooltip small">{% if reaction.counter > 0 and reaction.counter > reaction.authors|length %}{% blocktrans with authors=reaction.authors|join:", " label=reaction.label %}{{ authors }} and more reacted with {{ label }}{% endblocktrans %}{% elif reaction.counter > 0 and reaction.counter == reaction.authors|length %}{% blocktrans with authors=reaction.authors|join:", " label=reaction.label %}{{ authors }} reacted with {{ label }}{% endblocktrans %}{% else %}{% blocktrans with label=reaction.label %}Nobody reacted yet with {{ label }}{% endblocktrans %}{% endif %}</div>
         </span>
         {% if not forloop.last %}&nbsp;&nbsp;&nbsp;{% endif %}
       {% endif %}

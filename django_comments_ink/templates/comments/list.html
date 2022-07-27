@@ -5,17 +5,20 @@
 <div
   id="comments"
   class="comment-list"
-  {% if comment_reactions_enabled %}
-    data-dci="config"
-    {% if user.is_authenticated %}
-      data-react-url="{% url 'comments-ink-react' 0 %}"
-    {% else %}
-      data-login-url="{% url 'login' %}"
-    {% endif %}
-    data-guest-user="{% if user.is_authenticated %}0{% else %}1{% endif %}"
-    data-page-qs-param="{{ comments_page_qs_param }}"
-    data-fold-qs-param="{{ comments_fold_qs_param }}"
+  data-dci="config"
+  {% if user.is_authenticated and comment_reactions_enabled %}
+    data-react-url="{% url 'comments-ink-react' 0 %}"
   {% endif %}
+  {% if user.is_authenticated and comment_votes_enabled %}
+    data-vote-url="{% url 'comments-ink-vote' 0 %}"
+  {% endif %}
+  {% if not user.is_authenticated %}
+    data-login-url="{% url 'login' %}"
+  {% endif %}
+  data-guest-user="{% if user.is_authenticated %}0{% else %}1{% endif %}"
+  data-input-allowed="{% if is_input_allowed %}1{% else %}0{% endif %}"
+  data-page-qs-param="{{ comments_page_qs_param }}"
+  data-fold-qs-param="{{ comments_fold_qs_param }}"
 >
   {% if is_paginated %}
     {% include "comments/pagination.html" %}

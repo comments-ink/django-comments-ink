@@ -1481,7 +1481,7 @@ def vote(request, comment_id, next=None):
                 )
                 for pth in _voted_js_tmpl
             ]
-            context = {"comment": comment}
+            context = {"comment": comment, "is_input_allowed": is_input_allowed}
             status = 201 if created else 200
             return json_res(request, template_list, context, status=status)
 
@@ -1605,10 +1605,17 @@ def get_inkcomment_url(request, content_type_id, object_id, comment_id):
     cfold_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
     cfold = request and request.GET.get(cfold_param, None) or ""
 
+    try:
+        fold = (len(cfold) and {int(cid) for cid in cfold.split(",")}) or {}
+    except (TypeError, ValueError):
+        raise Http404(
+            _("A comment ID in the list of folded comments is not an integer.")
+        )
+
     if not cpage:
         # Create a CommentsPaginator and get the page of the comment.
         comment = InkComment.norel_objects.get(pk=comment_id)
-        cpage = utils.get_comment_page_number(request, comment)
+        cpage = utils.get_comment_page_number(request, comment, fold)
 
     qs_params = []
 

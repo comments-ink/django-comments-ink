@@ -22,7 +22,6 @@ from django.urls.exceptions import NoReverseMatch
 from django.utils.module_loading import import_string
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _
-from django.views.decorators.csrf import csrf_protect
 from django_comments.templatetags.comments import (
     BaseCommentNode,
     RenderCommentFormNode,
@@ -31,7 +30,6 @@ from django_comments_ink import (
     caching,
     get_comment_reactions_enum,
     get_model,
-    get_object_reactions_enum,
     utils,
 )
 from django_comments_ink.api import frontend
@@ -39,7 +37,6 @@ from django_comments_ink.conf import settings
 from django_comments_ink.models import (
     get_object_reactions,
     max_thread_level_for_content_type,
-    ObjectReaction,
 )
 from django_comments_ink.paginator import CommentsPaginator
 
@@ -977,14 +974,66 @@ def get_comment(comment_id: str):
     return get_model().objects.get(pk=int(comment_id))
 
 
-@register.simple_tag()
+@register.simple_tag
 def dci_custom_selector():
     return f"{settings.COMMENTS_INK_CSS_CUSTOM_SELECTOR}"
 
 
-@register.simple_tag()
+@register.simple_tag
 def get_dci_theme_dir():
     return theme_dir
+
+
+# ----------------------------------------------------------------------
+class GetUserVoteNode(Node):
+    def __init__(self, comment, varname):
+        self.comment = Variable(comment)
+        self.varname = varname
+
+    def render(self, context):
+        comment = self.comment.resolve(context)
+        request = context.get("request", None)
+
+        if not request.user.is_authenticated:
+            context[self.varname] = ""
+            return ""
+
+        qs = comment.votes.filter(author=request.user)
+        if qs.count() == 0:
+            context[self.varname] = ""
+        elif qs.count() == 1:
+            context[self.varname] = qs[0].vote
+        else:
+            logger.error(
+                "More than one CommentVote for comment ID %d and user %s."
+                % (comment.pk, request.user)
+            )
+            context[self.varname] = ""
+        return ""
+
+
+@register.tag
+def get_user_vote(parser, token):
+    """
+    Gets logged in user's vote for the given comment or an empty char if there
+    is no user logged in or the user did not vote for the given comment.
+
+    Syntax::
+
+        {% get_user_vote for [object] as [varname] %}
+
+    Example usage::
+
+        {% get_user_vote for comment as user_vote %}
+    """
+    tokens = token.contents.split()
+
+    if tokens[1] != "for" or tokens[3] != "as" or len(tokens) != 5:
+        raise TemplateSyntaxError(
+            "Templatetag %r syntax is {% get_user_vote for [comment] "
+            "as [varname] %}. Please, review your syntax." % tokens[0]
+        )
+    return GetUserVoteNode(tokens[2], tokens[4])
 
 
 # ----------------------------------------------------------------------

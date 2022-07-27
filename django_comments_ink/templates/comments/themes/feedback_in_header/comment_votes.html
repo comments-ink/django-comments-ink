@@ -1,0 +1,9 @@
+{% load i18n %}
+{% load comments_ink %}
+
+<div class="vote-block flex-align-center">
+  {% get_user_vote for comment as user_vote %}
+  <div class="vote">{% if is_input_allowed %}<a data-dci-action="vote-up" data-comment="{{ comment.id }}" data-code="+" href="{% url 'comments-ink-vote' comment.id %}{% if page_obj %}?{% render_qs_params page page_obj.number %}#{{ anchor }}{% endif %}" {% if not user.is_authenticated %}data-login-next="{% get_inkcomment_permalink comment page_number %}"{% endif %} class="smaller vote-up{% if user_vote == '+' %} active{% endif %}" title="{% if user_vote == '+' %}{% trans 'You voted up' %}{% else %}{% trans 'Vote up' %}{% endif %}"></a>{% if user_vote == '+' %}<div class="tooltip">{% trans "You voted up" %}</div>{% endif %}{% else %}<span class="vote-up{% if user_vote == '+' %} active{% endif %}"></span>{% if user_vote == '+' %}<div class="tooltip">{% trans "You voted up" %}</div>{% endif %}{% endif %}</div>
+  <span class="vote-score">{{ comment.thread.score }}</span>
+  <div class="vote fix-pos-mt">{% if is_input_allowed %}<a data-dci-action="vote-down" data-comment="{{ comment.id }}" data-code="-"  href="{% url 'comments-ink-vote' comment.id %}{% if page_obj %}?{% render_qs_params page page_obj.number %}#{{ anchor }}{% endif %}" {% if not user.is_authenticated %}data-login-next="{% get_inkcomment_permalink comment page_number %}"{% endif %} class="smaller vote-down{% if user_vote == '-' %} active{% endif %}" title="{% if user_vote == '-' %}{% trans 'You voted down' %}{% else %}{% trans 'Vote down' %}{% endif %}"></a>{% if user_vote == '-' %}<div class="tooltip">{% trans "You voted down" %}</div>{% endif %}{% else %}<span class="vote-down{% if user_vote == '-' %} active{% endif %}"></span>{% if user_vote == '-' %}<div class="tooltip">{% trans "You voted down" %}</div>{% endif %}{% endif %}</div>
+</div>
