@@ -1,7 +1,7 @@
 {
   "name": "django-comments-ink",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Test the frontend modules of django-comments-ink",
   "scripts": {
     "pretest": "eslint django_comments_ink/static/django_comments_ink",

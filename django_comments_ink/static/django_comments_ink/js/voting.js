@@ -5,7 +5,7 @@ export default class VotingHandler {
     constructor(configEl) {
         this.cfg_el = configEl;
 
-        this.is_guest = this.cfg_el.getAttribute("data-guest-user") === "1";
+        this.is_guest = this.cfg_el.dataset.guestUser === "1";
         this.login_url = get_login_url(this.cfg_el, this.is_guest);
         this.vote_url = get_vote_url(this.cfg_el, this.is_guest);
 
