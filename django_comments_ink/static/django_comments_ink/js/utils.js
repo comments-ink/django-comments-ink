@@ -18,8 +18,7 @@ export function get_login_url(configEl, isGuest) {
     const url = configEl.getAttribute("data-login-url");
     if (url === null || url.length === 0) {
         if (isGuest) {
-            throw new Error("Cannot initialize reactions panel => The " +
-                "[data-login-url] attribute does not exist or is empty.");
+            throw new Error("Cannot find the [data-login-url] attribute.");
         }
     }
     return url;
@@ -44,12 +43,12 @@ export function get_vote_url(configEl, isGuest) {
     const url = configEl.getAttribute("data-vote-url");
     if (url === null || url.length === 0) {
         if (!isGuest) {
-            throw new Error("Cannot initialize reactions panel => The " +
+            throw new Error("Cannot initialize comment voting => The " +
                 "[data-vote-url] attribute does not exist or is empty.");
         } else {
-            console.info("Couldn't find the data-react-url attribute, " +
+            console.info("Couldn't find the data-vote-url attribute, " +
                 "but the user is anonymous. She has to login first in " +
-                "order to post comment reactions.");
+                "order to vote for comments.");
         }
     }
     return url;

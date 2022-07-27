@@ -6,13 +6,10 @@
   id="comments"
   class="comment-list"
   data-dci="config"
-  {% if user.is_authenticated and comment_reactions_enabled %}
+  {% if user.is_authenticated %}
     data-react-url="{% url 'comments-ink-react' 0 %}"
-  {% endif %}
-  {% if user.is_authenticated and comment_votes_enabled %}
     data-vote-url="{% url 'comments-ink-vote' 0 %}"
-  {% endif %}
-  {% if not user.is_authenticated %}
+  {% else %}
     data-login-url="{% url 'login' %}"
   {% endif %}
   data-guest-user="{% if user.is_authenticated %}0{% else %}1{% endif %}"

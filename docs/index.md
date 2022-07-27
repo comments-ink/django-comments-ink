@@ -242,7 +242,7 @@ Add the following two blocks to the `template/blog/post_detail.html` to handle s
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'django_comments_ink/dist/dci-0.2.0.js' %}"></script>
+<script src="{% static 'django_comments_ink/dist/dci-0.3.0.js' %}"></script>
 {% endblock %}
 ```
 
