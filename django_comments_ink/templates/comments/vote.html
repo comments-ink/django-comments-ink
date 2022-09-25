@@ -34,7 +34,7 @@
                 {% endif %}
                 &sdot;
                 <span class="muted">{{ comment.submit_date }}</span>
-                <a class="permalink" title="comment permalink" href="{% get_inkcomment_permalink comment page_number folded_comments %}">¶</a>
+                <a class="permalink" title="comment permalink" href="{% get_inkcomment_permalink comment None comments_folded %}">¶</a>
               </div>
             </div>
             <div class="body body-bordered">
@@ -53,8 +53,8 @@
           {% endif %}
           <form method="POST" autocomplete="off" action="{% comment_vote_form_target comment %}">
             {% csrf_token %}
-            <input type="hidden" name="{{ comments_page_qs_param }}" value="{{ page_number }}" />
-            <input type="hidden" name="{{ comments_fold_qs_param }}" value="{{ folded_comments }}" />
+            <input type="hidden" name="{{ comments_page_qs_param }}" value="{{ comments_page }}" />
+            <input type="hidden" name="{{ comments_folded_qs_param }}" value="{{ comments_folded }}" />
             <div class="text-center">
               <button
                 type="submit" name="vote" value="+"

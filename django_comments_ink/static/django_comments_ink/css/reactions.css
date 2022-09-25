@@ -89,7 +89,7 @@ button.emoji:hover, button.emoji:focus {
     font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 
-.reaction, .vote {
+.flag, .reaction, .vote {
     position: relative;
     display: inline-block;
     padding-left: 2px;
@@ -101,7 +101,7 @@ button.emoji:hover, button.emoji:focus {
     padding-right: 0;
 }
 
-.reaction .tooltip, .vote .tooltip {
+.flag .tooltip, .reaction .tooltip, .vote .tooltip {
     visibility: hidden;
     width: 180px;
     background-color: #555;
@@ -122,7 +122,7 @@ button.emoji:hover, button.emoji:focus {
     transition: opacity 0.3s;
 }
 
-.reaction .tooltip::after, .vote .tooltip::after {
+.flag .tooltip::after, .reaction .tooltip::after, .vote .tooltip::after {
     /* Tooltip arrow. */
     content: "";
     position: absolute;
@@ -135,7 +135,7 @@ button.emoji:hover, button.emoji:focus {
 }
 
 /* Show the tooltip text when you mouse over the tooltip container */
-.reaction:hover .tooltip, .vote:hover .tooltip {
+.flag:hover .tooltip, .reaction:hover .tooltip, .vote:hover .tooltip {
     visibility: visible;
     opacity: 1;
 }

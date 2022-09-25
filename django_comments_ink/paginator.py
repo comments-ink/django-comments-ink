@@ -189,7 +189,6 @@ class CommentsPaginator(Paginator):
             )
         else:
             logger.debug("in_page computed: %s", inpage)
-        print("At the end of in_page")
         return inpage
 
     def page(self, number):

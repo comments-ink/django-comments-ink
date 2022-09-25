@@ -41,9 +41,7 @@ def test_comment_box_props_with_object_and_user(an_user, an_article):
     assert props["can_moderate"] == False
     assert props["react_url"] == reverse("comments-ink-api-react")
     assert props["delete_url"] == reverse("comments-delete", args=(0,))
-    assert props["reply_url"] == reverse(
-        "comments-ink-reply", kwargs={"cid": 0}
-    )
+    assert props["reply_url"] == reverse("comments-ink-reply", args=(0,))
     assert props["flag_url"] == reverse("comments-ink-api-flag")
     assert props["list_url"] == reverse(
         "comments-ink-api-list",

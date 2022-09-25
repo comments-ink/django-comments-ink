@@ -21,17 +21,13 @@
         <div id="c{{ comment.id }}" class="comment-box l0-ini">
           <div class="comment">
             <div class="header">
-              <div>{% if comment.url and not comment.is_removed %}<a href="{{ comment.url }}" target="_new">{{ comment.name }}</a>{% else %}{{ comment.name }}{% endif %}&nbsp;&sdot;&nbsp;<span class="muted">{{ comment.submit_date }}</span>&nbsp;&nbsp;<a class="permalink" title="comment permalink" href="{% get_inkcomment_permalink comment page_number %}">¶</a></div>
+              <div>{% if comment.url and not comment.is_removed %}<a href="{{ comment.url }}" target="_new">{{ comment.name }}</a>{% else %}{{ comment.name }}{% endif %}&nbsp;&sdot;&nbsp;<span class="muted">{{ comment.submit_date }}</span>&nbsp;&nbsp;<a class="permalink" title="comment permalink" href="{% get_inkcomment_permalink comment None comments_folded %}">¶</a></div>
             </div>
             <div class="body body-bordered">
               {{ comment.comment|linebreaks|escape }}
             </div>
             <div class="feedback feedback-bordered">
-              {% if not comment.is_removed and comment_reactions_enabled %}
-                <div id="cm-reactions-{{ comment.id }}" class="reactions">
-                  {% include "comments/comment_reactions.html" %}
-                </div>
-              {% endif %}
+              {% include "comments/comment_reactions.html" %}
             </div>
           </div>
         </div>

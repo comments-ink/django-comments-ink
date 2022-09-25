@@ -77,10 +77,6 @@ def username(u):
 
 COMMENTS_INK_API_USER_REPR = username
 
-# When listing reaction authors, the list of
-# authors is ordered using the following list.
-COMMENTS_INK_AUTHOR_LIST_ORDER = ("-id",)
-
 # Makes the "Notify me about followup comments" checkbox in the
 # comment form checked (True) or unchecked (False) by default.
 COMMENTS_INK_DEFAULT_FOLLOWUP = False
@@ -101,6 +97,10 @@ COMMENTS_INK_MAX_USERS_IN_TOOLTIP = 10
 
 # How many users are listed with the list_reacted and
 COMMENTS_INK_USERS_REACTED_PER_PAGE = 30
+
+# When listing reaction authors, the list of
+# authors is ordered using the following list.
+COMMENTS_INK_USERS_REACTED_LIST_ORDER = ("-id",)
 
 # Name of the query string parameter containing the page number.
 COMMENTS_INK_PAGE_QUERY_STRING_PARAM = "cpage"
@@ -171,4 +171,7 @@ COMMENTS_INK_CACHE_KEYS = {
     # The key 'comment_votes' stores the json output produced by
     # InkComment.get_votes(), for the comment receiving the method.
     "comment_votes": "/comment_votes/cm/{comment_id}",
+    # The key 'comment_flags' stores the json output produced by
+    # InkComment.get_flags(), for the comment receiving the method.
+    "comment_flags": "/comment_flag/cm/{comment_id}",
 }

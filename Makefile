@@ -1,8 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: coverage help tox syntax-check syntax-format pip-compile pip-install \
-	sdist-project-quotes collectstatic-project-quotes \
-	compose-project-quotes-build compose-project-quotes-up
+.PHONY: coverage help tox syntax-check syntax-format pip-compile pip-install
 
 coverage:  ## Run tests with coverage.
 	coverage erase
@@ -32,19 +30,6 @@ pip-compile:  ## Generate requirements.txt and requirements-dev.txt files.
 pip-install:  ## Install dependencies listed in requirements-dev.txt.
 	pip install -r requirements.txt
 	pip install -r requirements-dev.txt
-
-sdist-project-quotes:  # Create source tarballs for django-comments-ink and demos projects.
-	. venv/bin/activate && python setup.py sdist && deactivate
-	cd demos/project-quotes/ && . pqenv/bin/activate && python setup.py sdist && deactivate
-
-collectstatic-project-quotes:  # django's collectstatic for demos project.
-	cd demos/project-quotes/ && . pqenv/bin/activate && python project_quotes/manage.py collectstatic --noinput && deactivate
-
-compose-project-quotes-build: sdist-project-quotes
-	source .env && docker-compose -f demos/project-quotes/docker-compose.yml build web
-
-compose-project-quotes-up: sdist-project-quotes collectstatic-project-quotes
-	source .env && docker-compose -f demos/project-quotes/docker-compose.yml up -d
 
 help: ## Show help message
 	@IFS=$$'\n' ; \
