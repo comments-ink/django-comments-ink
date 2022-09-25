@@ -966,6 +966,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "get_cookie": () => (/* binding */ get_cookie),
 /* harmony export */   "get_login_url": () => (/* binding */ get_login_url),
+/* harmony export */   "get_obj_react_url": () => (/* binding */ get_obj_react_url),
 /* harmony export */   "get_react_url": () => (/* binding */ get_react_url),
 /* harmony export */   "get_vote_url": () => (/* binding */ get_vote_url)
 /* harmony export */ });
@@ -1005,6 +1006,21 @@ function get_react_url(configEl, isGuest) {
             console.info("Couldn't find the data-react-url attribute, " +
                 "but the user is anonymous. She has to login first in " +
                 "order to post comment reactions.");
+        }
+    }
+    return url;
+}
+
+function get_obj_react_url(configEl, isGuest) {
+    const url = configEl.getAttribute("data-obj-react-url");
+    if (url === null || url.length === 0) {
+        if (!isGuest) {
+            throw new Error("Cannot initialize reactions panel => The " +
+                "[data-obj-react-url] attribute does not exist or is empty.");
+        } else {
+            console.info("Couldn't find the data-obj-react-url attribute, " +
+                "but the user is anonymous. She has to login first in " +
+                "order to post object reactions.");
         }
     }
     return url;

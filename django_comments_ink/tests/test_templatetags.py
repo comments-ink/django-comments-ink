@@ -1256,27 +1256,6 @@ def test_render_only_users_can_post_template(an_article):
     assert output.find(f"only-users-can-post-{suffix}") > -1
 
 
-def test_using_a_theme_dir(monkeypatch):
-    monkeypatch.setattr(
-        comments_ink.settings, "COMMENTS_INK_THEME_DIR", "feedback_in_header"
-    )
-    importlib.reload(comments_ink)
-
-    templates = []
-    templates.extend(comments_ink._list_html_tmpl[:3])
-    templates.extend(comments_ink._form_html_tmpl[:3])
-    templates.extend(comments_ink._reply_template_html_tmpl[:3])
-    templates.extend(comments_ink._reactions_panel_template_tmpl[:1])
-    templates.extend(comments_ink._reactions_buttons_tmpl[:1])
-
-    for tmpl_path in templates:
-        assert tmpl_path.find("{theme_dir}") > -1
-
-    # Revert theme.
-    monkeypatch.setattr(comments_ink.settings, "COMMENTS_INK_THEME_DIR", "")
-    importlib.reload(comments_ink)
-
-
 # ---------------------------------------------------------------------
 
 re_field_1 = r'<input type="{type}" name="{name}" value="{value}" id="{id}">'
@@ -1465,25 +1444,6 @@ def test_render_comment_reply_template_for_app_model_pk():
     )
     output = Template(t).render(Context({}))
     assert output == ""
-
-
-# ---------------------------------------------------------------------
-def test_get_dci_theme_dir_is_empty():
-    t = "{% load comments_ink %}" "{% get_dci_theme_dir %}"
-    output = Template(t).render(Context({}))
-    assert output == ""
-
-
-def test_get_dci_theme_dir_is__feedback_in_header(monkeypatch):
-    monkeypatch.setattr(
-        comments_ink.settings, "COMMENTS_INK_THEME_DIR", "feedback_in_header"
-    )
-    importlib.reload(comments_ink)
-    t = "{% load comments_ink %}" "{% get_dci_theme_dir %}"
-    output = Template(t).render(Context({}))
-    assert output == "themes/feedback_in_header"
-    monkeypatch.setattr(comments_ink.settings, "COMMENTS_INK_THEME_DIR", "")
-    importlib.reload(comments_ink)
 
 
 # ---------------------------------------------------------------------

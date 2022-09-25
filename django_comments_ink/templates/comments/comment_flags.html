@@ -1,0 +1,11 @@
+{% load i18n %}
+{% load comments_ink %}
+
+{% with cflags=comment.get_flags %}
+{% if perms.comments.can_moderate and cflags.counter > 0 %}
+  <div class="flag small">{{ cflags.counter }} &#128681;<div class="tooltip">{% blocktrans count counter=cflags.counter %}A user has flagged this comment as inappropriate.{% plural %}{{ counter }} users have flagged this comment as inappropriate.{% endblocktrans %}</div></div>
+{% endif %}
+<div class="flag small">
+  {% if user in cflags.users %}<a href="{% url 'comments-flag' comment.id %}{% if page_obj %}?{% render_qs_params page page_obj.number %}{% endif %}#{{ anchor }}">&#127988;</a><div class="tooltip">{% trans "You have flagged this comment as inappropriate" %}</div>{% else %}<a href="{% url 'comments-flag' comment.id %}{% if page_obj %}?{% render_qs_params page page_obj.number %}{% endif %}#{{ anchor }}">&#127987;</a><div class="tooltip">{% trans "Flag this comment as inappropriate" %}</div>{% endif %}
+</div>
+{% endwith %}

@@ -5,15 +5,18 @@ import re
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
-import django_comments
 from django.contrib.auth.models import AnonymousUser, Permission, User
 from django.contrib.contenttypes.models import ContentType
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
+
+import django_comments
 from django_comments.models import Comment, CommentFlag
 from django_comments.views.moderation import delete
-from django_comments_ink import views
+
 from django_comments_ink.models import InkComment
+from django_comments_ink.views.flagging import FlagCommentView
+
 from django_comments_ink.tests.models import (
     Article,
     Diary,
@@ -40,7 +43,9 @@ else:
 class ModeratorApprovesComment(TestCase):
     def setUp(self):
         self.patcher_app1 = patch(send_mail)
-        self.patcher_app2 = patch("django_comments_ink.views.utils.send_mail")
+        self.patcher_app2 = patch(
+            "django_comments_ink.views.commenting.utils.send_mail"
+        )
         self.mailer_app1 = self.patcher_app1.start()
         self.mailer_app2 = self.patcher_app2.start()
         self.diary_entry = Diary.objects.create(
@@ -106,7 +111,9 @@ class ModeratorApprovesComment(TestCase):
 class ModeratorHoldsComment(TestCase):
     def setUp(self):
         self.patcher_app1 = patch(send_mail)
-        self.patcher_app2 = patch("django_comments_ink.views.utils.send_mail")
+        self.patcher_app2 = patch(
+            "django_comments_ink.views.commenting.utils.send_mail"
+        )
         self.mailer_app1 = self.patcher_app1.start()
         self.mailer_app2 = self.patcher_app2.start()
         self.diary_entry = Diary.objects.create(
@@ -220,7 +227,7 @@ class FlaggingRemovalSuggestion(TestCase):
         flag_url = reverse("comments-flag", args=[comment.id])
         request = request_factory.get(flag_url)
         request.user = AnonymousUser()
-        response = views.flag(request, comment.id)
+        response = FlagCommentView.as_view()(request, comment.id)
         dest_url = "/accounts/login/?next=/comments/flag/1/"
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, dest_url)
@@ -232,13 +239,14 @@ class FlaggingRemovalSuggestion(TestCase):
         flag_url = reverse("comments-flag", args=[comment.id])
         request = request_factory.get(flag_url)
         request.user = self.user
-        response = views.flag(request, comment.id)
+        response = FlagCommentView.as_view()(request, comment.id)
+        response.render()
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.content.find(b"Flag comment") > -1)
         request = request_factory.post(flag_url)
         request.user = self.user
         request._dont_enforce_csrf_checks = True
-        response = views.flag(request, comment.id)
+        response = FlagCommentView.as_view()(request, comment.id)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("comments-flag-done") + "?c=1")
         flags = CommentFlag.objects.filter(
@@ -252,7 +260,7 @@ class FlaggingRemovalSuggestion(TestCase):
         request = request_factory.post(flag_url)
         request.user = self.user
         request._dont_enforce_csrf_checks = True
-        views.flag(request, 1)
+        FlagCommentView.as_view()(request, 1)
         self.assertTrue(self.mailer.call_count == 1)
 
     def test_no_email_when_notify_removal_suggestion_is_None(self):
@@ -264,7 +272,7 @@ class FlaggingRemovalSuggestion(TestCase):
             request = request_factory.post(flag_url)
             request.user = self.user
             request._dont_enforce_csrf_checks = True
-            views.flag(request, 1)
+            FlagCommentView.as_view()(request, 1)
             self.assertTrue(self.mailer.call_count == 0)
 
     @patch.multiple(
@@ -281,7 +289,7 @@ class FlaggingRemovalSuggestion(TestCase):
         request = request_factory.post(flag_url)
         request.user = self.user
         request._dont_enforce_csrf_checks = True
-        views.flag(request, 2)
+        FlagCommentView.as_view()(request, 2)
         self.assertTrue(self.mailer.call_count == 0)
 
     def test_no_email_when_flag_is_other_than_suggest_removal(self):

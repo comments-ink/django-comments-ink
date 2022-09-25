@@ -78,7 +78,7 @@ def comments_api_props(obj, user, request=None):
         "can_moderate": False,
         "react_url": reverse("comments-ink-api-react"),
         "delete_url": reverse("comments-delete", args=(0,)),
-        "reply_url": reverse("comments-ink-reply", kwargs={"cid": 0}),
+        "reply_url": reverse("comments-ink-reply", args=(0,)),
         "flag_url": reverse("comments-ink-api-flag"),
         "list_url": reverse(
             "comments-ink-api-list",

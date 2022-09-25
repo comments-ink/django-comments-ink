@@ -146,11 +146,17 @@ option_msgs = {
 }
 
 
-def check_option(option, comment=None, content_type=None):
-    ret_option = get_app_model_options(
-        comment=comment, content_type=content_type
-    )[option]
-    if not ret_option:
+def check_option(option, comment=None, content_type=None, options=None):
+    retrieved_option = False
+
+    if options != None:
+        retrieved_option = options[option]
+    else:
+        retrieved_option = get_app_model_options(
+            comment=comment, content_type=content_type
+        )[option]
+
+    if retrieved_option == False:
         message = option_msgs[option]["PROD"]
         if settings.DEBUG:
             app_label, model = "", ""
@@ -196,11 +202,11 @@ def get_user_avatar(comment):
     return "//www.gravatar.com/avatar/%s?%s&d=identicon" % (path, param)
 
 
-def get_comment_url(comment, request=None, page_number=None):
+def get_comment_url(comment, request=None, comments_page=None):
     cm_abs_url = comment.get_absolute_url()
     cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
-    cpage = request.GET.get(cpage_qs_param, None) if request else page_number
-    if cpage:
+    cpage = request.GET.get(cpage_qs_param, None) if request else comments_page
+    if cpage and cpage not in [1, "1"]:
         hash_pos = cm_abs_url.find("#")
         cm_anchor = cm_abs_url[hash_pos:]
         cm_abs_url = cm_abs_url[:hash_pos]
@@ -210,8 +216,8 @@ def get_comment_url(comment, request=None, page_number=None):
         return cm_abs_url
 
 
-def redirect_to(comment, request=None, page_number=None):
-    url = get_comment_url(comment, request, page_number)
+def redirect_to(comment, request=None, comments_page=None):
+    url = get_comment_url(comment, request, comments_page)
     return HttpResponseRedirect(url)
 
 

@@ -22,6 +22,7 @@ from django_comments_ink import (
 from django_comments_ink.conf import settings
 from django_comments_ink.utils import get_current_site_id
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -75,7 +76,9 @@ class CommentThread(models.Model):
     def save(self, *args, **kwargs):
         super(CommentThread, self).save(*args, **kwargs)
         cm = InkComment.objects.get(pk=self.id)
-        caching.clear_cache(cm.content_type.id, cm.object_pk, cm.site.pk)
+        caching.clear_comment_cache(
+            cm.content_type.id, cm.object_pk, cm.site.pk
+        )
 
 
 class InkComment(Comment):
@@ -102,7 +105,9 @@ class InkComment(Comment):
         ) + (anchor_pattern % self.__dict__)
 
     def save(self, *args, **kwargs):
-        caching.clear_cache(self.content_type.id, self.object_pk, self.site.pk)
+        caching.clear_comment_cache(
+            self.content_type.id, self.object_pk, self.site.pk
+        )
         is_new = self.pk is None
         super(Comment, self).save(*args, **kwargs)
         if is_new:
@@ -156,7 +161,7 @@ class InkComment(Comment):
                 )
 
     def get_reply_url(self):
-        return reverse("comments-ink-reply", kwargs={"cid": self.pk})
+        return reverse("comments-ink-reply", args=(self.pk,))
 
     def allow_thread(self):
         if self.level < max_thread_level_for_content_type(self.content_type):
@@ -200,6 +205,28 @@ class InkComment(Comment):
             "counter": total_counter,
             "list": [v for k, v in reactions.items() if len(v)],
         }
+        if dci_cache != None and key != "":
+            dci_cache.set(key, result, timeout=None)
+            logger.debug("Caching reactions for comment %d" % self.pk)
+        return result
+
+    def get_flags(self):
+        dci_cache = caching.get_cache()
+        key = settings.COMMENTS_INK_CACHE_KEYS["comment_flags"].format(
+            comment_id=self.pk
+        )
+        if dci_cache != None and key != "":
+            result = dci_cache.get(key)
+            if result != None:
+                logger.debug("Fetching %s from the cache", key)
+                return result
+
+        flag_qs = self.flags.filter(flag=CommentFlag.SUGGEST_REMOVAL)
+        result = {
+            "users": [flag.user for flag in flag_qs],
+            "counter": flag_qs.count(),
+        }
+
         if dci_cache != None and key != "":
             dci_cache.set(key, result, timeout=None)
             logger.debug("Caching reactions for comment %d" % self.pk)
@@ -376,14 +403,16 @@ class TmpInkComment(dict):
 # -----------------------------------------------
 # Comment score, and comment score author models.
 
-VOTE_CHOICES = []
-
 
 class CommentVote(models.Model):
     POSITIVE = "+"
     NEGATIVE = "-"
 
-    vote = models.CharField(max_length=1, db_index=True)
+    CHOICES = [(POSITIVE, POSITIVE), (NEGATIVE, NEGATIVE)]
+    INVERSE = {POSITIVE: NEGATIVE, NEGATIVE: POSITIVE}
+    VALUE = {POSITIVE: +1, NEGATIVE: -1}
+
+    vote = models.CharField(max_length=1, db_index=True, choices=CHOICES)
     comment = models.ForeignKey(
         get_model(),
         related_name="votes",

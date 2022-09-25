@@ -44,7 +44,9 @@ factory = APIRequestFactory()
 
 class CommentCreateTestCase(DjangoTestCase):
     def setUp(self):
-        self.patcher = patch("django_comments_ink.views.utils.send_mail")
+        self.patcher = patch(
+            "django_comments_ink.views.commenting.utils.send_mail"
+        )
         self.mock_mailer = self.patcher.start()
         self.article = Article.objects.create(
             title="October", slug="october", body="What I did on October..."

@@ -28,7 +28,7 @@ def get_cache():
     return dci_cache
 
 
-def clear_cache(content_type_id, object_pk, site_id):
+def clear_comment_cache(content_type_id, object_pk, site_id):
     dci_cache = get_cache()
     if dci_cache == None:
         logger.warning(
@@ -55,3 +55,10 @@ def clear_cache(content_type_id, object_pk, site_id):
             dci_cache.delete(key)
 
     return True
+
+
+def clear_item(key, **kwargs):
+    item = settings.COMMENTS_INK_CACHE_KEYS[key].format(**kwargs)
+    if dci_cache.get(item):
+        logger.debug("Delete cached key %s" % item)
+        dci_cache.delete(item)

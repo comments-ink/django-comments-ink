@@ -5,21 +5,22 @@ from django.utils import formats, timezone
 from django.utils.html import escape
 from django.utils.translation import activate, get_language
 from django.utils.translation import gettext as _
+
 from django_comments import get_form
 from django_comments.forms import CommentSecurityForm
 from django_comments.models import CommentFlag
 from django_comments.signals import comment_was_posted, comment_will_be_posted
+from rest_framework import exceptions, serializers
+
 from django_comments_ink import (
     get_comment_reactions_enum,
     get_model,
     signed,
-    views,
 )
 from django_comments_ink.conf import settings
 from django_comments_ink.models import (
     CommentReaction,
     CommentReactionAuthor,
-    CommentThread,
     CommentVote,
     InkComment,
     ObjectReaction,
@@ -32,7 +33,13 @@ from django_comments_ink.signals import (
     should_request_be_authorized,
 )
 from django_comments_ink.utils import get_app_model_options
-from rest_framework import exceptions, serializers
+from django_comments_ink.views.commenting import (
+    get_comment_if_exists,
+    create_comment,
+    notify_comment_followers,
+    send_email_confirmation_request,
+)
+
 
 COMMENT_MAX_LENGTH = getattr(settings, "COMMENT_MAX_LENGTH", 3000)
 
@@ -181,13 +188,13 @@ class WriteCommentSerializer(serializers.Serializer):
                 resp["code"] = 403  # Rejected.
                 return resp
 
-        # Replicate logic from django_comments_ink.views.on_comment_was_posted.
+        # Replicate logic from on_comment_was_posted.
         if (
             not settings.COMMENTS_INK_CONFIRM_EMAIL
             or self.request.user.is_authenticated
         ):
-            if views._get_comment_if_exists(resp["comment"]) is None:
-                new_comment = views._create_comment(resp["comment"])
+            if get_comment_if_exists(resp["comment"]) is None:
+                new_comment = create_comment(resp["comment"])
                 resp["comment"].ink_comment = new_comment
                 confirmation_received.send(
                     sender=TmpInkComment,
@@ -201,7 +208,7 @@ class WriteCommentSerializer(serializers.Serializer):
                 )
                 if resp["comment"].is_public:
                     resp["code"] = 201
-                    views.notify_comment_followers(new_comment)
+                    notify_comment_followers(new_comment)
                 else:
                     resp["code"] = 202
         else:
@@ -210,7 +217,7 @@ class WriteCommentSerializer(serializers.Serializer):
                 compress=True,
                 extra_key=settings.COMMENTS_INK_SALT,
             )
-            views.send_email_confirmation_request(resp["comment"], key, site)
+            send_email_confirmation_request(resp["comment"], key, site)
             resp["code"] = 204  # Confirmation sent by mail.
 
         return resp

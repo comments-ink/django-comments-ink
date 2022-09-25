@@ -27,7 +27,7 @@ setup(
         "comment moderation. It supersedes django-comments-xtd."
     ),
     long_description=readme,
-    long_description_content_type="text/x-rst",
+    long_description_content_type="text/markdown",
     author="Daniela Rus Morales",
     author_email="danirus@eml.cc",
     maintainer="Daniela Rus Morales",

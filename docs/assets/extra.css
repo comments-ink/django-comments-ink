@@ -2,3 +2,7 @@ figure {
     border: 1px solid #eee;
     box-shadow: 0px 0px 8px #e0efff;
 }
+
+.md-typeset :is(.admonition,details) {
+    font-size: 0.75rem;
+}

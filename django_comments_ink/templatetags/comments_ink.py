@@ -39,138 +39,15 @@ from django_comments_ink.models import (
     max_thread_level_for_content_type,
 )
 from django_comments_ink.paginator import CommentsPaginator
+from django_comments_ink.views.templates import (
+    f_templates,
+    theme_dir,
+    themed_templates,
+)
 
 logger = logging.getLogger(__name__)
 
 register = Library()
-
-
-if len(settings.COMMENTS_INK_THEME_DIR) > 0:
-    theme_dir = "themes/%s" % settings.COMMENTS_INK_THEME_DIR
-    theme_dir_exists = utils.does_theme_dir_exist(f"comments/{theme_dir}")
-else:
-    theme_dir = ""
-    theme_dir_exists = False
-
-
-# List of possible paths to the list.html template file.
-_list_html_tmpl = []
-if theme_dir_exists:
-    _list_html_tmpl.extend(
-        [
-            "comments/{theme_dir}/{app_label}/{model}/list.html",
-            "comments/{theme_dir}/{app_label}/list.html",
-            "comments/{theme_dir}/list.html",
-        ]
-    )
-_list_html_tmpl.extend(
-    [
-        "comments/{app_label}/{model}/list.html",
-        "comments/{app_label}/list.html",
-        "comments/list.html",
-    ]
-)
-
-
-# List of possible paths to the form.html template file.
-_form_html_tmpl = []
-if theme_dir_exists:
-    _form_html_tmpl.extend(
-        [
-            "comments/{theme_dir}/{app_label}/{model}/form.html",
-            "comments/{theme_dir}/{app_label}/form.html",
-            "comments/{theme_dir}/form.html",
-        ]
-    )
-_form_html_tmpl.extend(
-    [
-        "comments/{app_label}/{model}/form.html",
-        "comments/{app_label}/form.html",
-        "comments/form.html",
-    ]
-)
-
-
-# List of possible paths to the reply_template.html template file.
-_reply_template_html_tmpl = []
-if theme_dir_exists:
-    _reply_template_html_tmpl.extend(
-        [
-            "comments/{theme_dir}/{app_label}/{model}/reply_template.html",
-            "comments/{theme_dir}/{app_label}/reply_template.html",
-            "comments/{theme_dir}/reply_template.html",
-        ]
-    )
-_reply_template_html_tmpl.extend(
-    [
-        "comments/{app_label}/{model}/reply_template.html",
-        "comments/{app_label}/reply_template.html",
-        "comments/reply_template.html",
-    ]
-)
-
-
-_reactions_panel_template_tmpl = []
-if theme_dir_exists:
-    _reactions_panel_template_tmpl.extend(
-        [
-            "comments/{theme_dir}/reactions_panel_template.html",
-            "comments/reactions_panel_template.html",
-        ]
-    )
-_reactions_panel_template_tmpl.append("comments/reactions_panel_template.html")
-
-
-_reactions_buttons_tmpl = []
-if theme_dir_exists:
-    _reactions_buttons_tmpl.extend(
-        [
-            "comments/{theme_dir}/reactions_buttons.html",
-            "comments/reactions_buttons.html",
-        ]
-    )
-_reactions_buttons_tmpl.append("comments/reactions_buttons.html")
-
-
-# List of possible paths to the object_reactions.html template file.
-_object_reactions_tmpl = []
-if theme_dir_exists:
-    _object_reactions_tmpl.extend(
-        [
-            "comments/{theme_dir}/{app_label}/{model}/object_reactions.html"
-            "comments/{theme_dir}/{app_label}/object_reactions_form.html",
-            "comments/{theme_dir}/object_reactions_form.html",
-        ]
-    )
-_object_reactions_tmpl.extend(
-    [
-        "comments/{app_label}/{model}/object_reactions.html",
-        "comments/{app_label}/object_reactions.html",
-        "comments/object_reactions.html",
-    ]
-)
-
-
-# List of possible paths to the object_reactions_form.html template file.
-_object_reactions_form_tmpl = []
-if theme_dir_exists:
-    _object_reactions_form_tmpl.extend(
-        [
-            (
-                "comments/{theme_dir}/{app_label}/{model}/"
-                "object_reactions_form.html"
-            ),
-            "comments/{theme_dir}/{app_label}/object_reactions_form.html",
-            "comments/{theme_dir}/object_reactions_form.html",
-        ]
-    )
-_object_reactions_form_tmpl.extend(
-    [
-        "comments/{app_label}/{model}/object_reactions_form.html",
-        "comments/{app_label}/object_reactions_form.html",
-        "comments/object_reactions_form.html",
-    ]
-)
 
 
 def filter_folded_comments(qs, context):
@@ -193,7 +70,7 @@ def folded_comments(context):
     fold = (cfold and {int(cid) for cid in cfold.split(",")}) or {}
 
     return {
-        "comments_fold_qs_param": cfold_qs_param,
+        "comments_folded_qs_param": cfold_qs_param,
         cfold_qs_param: ",".join([str(cid) for cid in fold]),
     }
 
@@ -335,15 +212,9 @@ class RenderInkCommentListNode(InkCommentListNode):
             return ""
 
         mtl = utils.get_max_thread_level(ctype)
-
-        template_list = [
-            pth.format(
-                theme_dir=theme_dir,
-                app_label=ctype.app_label,
-                model=ctype.model,
-            )
-            for pth in _list_html_tmpl
-        ]
+        template_list = f_templates(
+            "list", app_label=ctype.app_label, model=ctype.model
+        )
         qs = self.get_queryset(context)
         qs = self.get_context_value_from_queryset(context, qs)
         context_dict = context.flatten()
@@ -357,30 +228,17 @@ class RenderInkCommentListNode(InkCommentListNode):
         max_users_in_tooltip = settings.COMMENTS_INK_MAX_USERS_IN_TOOLTIP
         context_dict.update(
             {
-                "dcx_theme_dir": theme_dir,
                 "max_thread_level": mtl,
                 "reply_stack": [],  # List to control reply widget rendering.
                 "max_users_in_tooltip": max_users_in_tooltip,
             }
         )
 
-        # get_app_model_options returns a dict like: {
-        #     'who_can_post': 'all' | 'users',
-        #     'check_input_allowed': 'string path to function',
-        #     'comment_flagging_enabled': <boolean>,
-        #     'comment_votes_enabled': <boolean>,
-        #     'comment_reactions_enabled': <boolean>,
-        #     'object_reactions_enabled': <boolean>
-        # }
         options = utils.get_app_model_options(content_type=ctype)
         check_input_allowed_str = options.pop("check_input_allowed")
         check_func = import_string(check_input_allowed_str)
         target_obj = ctype.get_object_for_this_type(pk=object_pk)
 
-        # Call the function that checks whether comments input
-        # is still allowed on the given target_object. And add
-        # the resulting boolean to the template context.
-        #
         options["is_input_allowed"] = check_func(target_obj)
         context_dict.update(options)
 
@@ -474,14 +332,11 @@ class RenderInkCommentFormNode(RenderCommentFormNode):
     def render(self, context):
         try:
             ctype, _ = self.get_target_ctype_pk(context)
-            template_list = [
-                pth.format(
-                    theme_dir=theme_dir,
-                    app_label=ctype.app_label,
-                    model=ctype.model,
-                )
-                for pth in _form_html_tmpl
-            ]
+            template_list = f_templates(
+                "form",
+                app_label=ctype.app_label,
+                model=ctype.model,
+            )
             context_dict = context.flatten()
             context_dict["form"] = self.get_form(context)
             formstr = loader.render_to_string(template_list, context_dict)
@@ -493,7 +348,7 @@ class RenderInkCommentFormNode(RenderCommentFormNode):
 @register.tag
 def render_inkcomment_form(parser, token):
     """
-    Render "comments/<theme_dir>/form.html" or "comments/form.html".
+    Renders the comments form.
 
     Syntax::
 
@@ -508,20 +363,14 @@ class RenderCommentReplyTemplateNode(RenderCommentFormNode):
         cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
         try:
             ctype, _ = self.get_target_ctype_pk(context)
-            template_list = [
-                pth.format(
-                    theme_dir=theme_dir,
-                    app_label=ctype.app_label,
-                    model=ctype.model,
-                )
-                for pth in _reply_template_html_tmpl
-            ]
+            template_list = f_templates(
+                "reply_template", app_label=ctype.app_label, model=ctype.model
+            )
             context_dict = context.flatten()
             context_dict.update(
                 {
                     "form": self.get_form(context),
                     "comments_page_qs_param": cpage_qs_param,
-                    "dcx_theme_dir": theme_dir,
                 }
             )
             formstr = loader.render_to_string(template_list, context_dict)
@@ -801,9 +650,7 @@ class RenderCommentReactionsButtons(Node):
             "user_reactions": self.user_reactions.resolve(context),
             "break_every": settings.COMMENTS_INK_REACTIONS_ROW_LENGTH,
         }
-        template_list = [
-            pth.format(theme_dir=theme_dir) for pth in _reactions_buttons_tmpl
-        ]
+        template_list = f_templates("reactions_buttons")
         htmlstr = loader.render_to_string(template_list, context)
         return htmlstr
 
@@ -979,11 +826,6 @@ def dci_custom_selector():
     return f"{settings.COMMENTS_INK_CSS_CUSTOM_SELECTOR}"
 
 
-@register.simple_tag
-def get_dci_theme_dir():
-    return theme_dir
-
-
 # ----------------------------------------------------------------------
 class GetUserVoteNode(Node):
     def __init__(self, comment, varname):
@@ -1052,10 +894,7 @@ class RenderCommentReactionsPanelTemplate(Node):
             "enums_details": enums_details,
             "break_every": settings.COMMENTS_INK_REACTIONS_ROW_LENGTH,
         }
-        template_list = [
-            pth.format(theme_dir=theme_dir)
-            for pth in _reactions_panel_template_tmpl
-        ]
+        template_list = f_templates("reactions_panel")
         htmlstr = loader.render_to_string(template_list, context)
         return htmlstr
 
@@ -1194,7 +1033,7 @@ class BaseObjectReactionsNode(Node):
             "max_users_in_tooltip": max_users_in_tooltip,
             "comments_page_qs_param": cpage_qs_param,
             cpage_qs_param: page,
-            "comments_fold_qs_param": cfold_qs_param,
+            "comments_folded_qs_param": cfold_qs_param,
             cfold_qs_param: ",".join([str(cid) for cid in fold]),
             "login_url": login_url,
         }
@@ -1205,28 +1044,19 @@ class BaseObjectReactionsNode(Node):
 class RenderObjectReactions(BaseObjectReactionsNode):
     """Template tag to render reactions posted to a given object."""
 
-    tag_templates = _object_reactions_tmpl
+    tag_templates = themed_templates("object_reactions")
 
 
 class RenderObjectReactionsForm(BaseObjectReactionsNode):
     """Template tag to render the object reactions form."""
 
-    tag_templates = _object_reactions_form_tmpl
+    tag_templates = themed_templates("object_reactions_form")
 
 
 @register.tag
 def render_object_reactions(parser, token):
     """
-    Render the object reactions list through the ``object_reactions.html``
-    template. The template is looked for in the following directories:
-     * comments/<app_label>/<model>/
-     * comments/<app_label>/
-     * comments/
-    If the setting `COMMENTS_INK_THEME_DIR` is provided in the settings module
-    the previous list contains is preceded by the following list:
-     * comments/<theme_dir>/<app_label>/<model>/
-     * comments/<theme_dir>/<app_label>/
-     * comments/<theme_dir>/
+    Render the object reactions list using any of the "object_reactions" templates. See `django_comments_ink.views.templates` module.
 
     Syntax::
 
@@ -1244,16 +1074,7 @@ def render_object_reactions(parser, token):
 @register.tag
 def render_object_reactions_form(parser, token):
     """
-    Render object reactions using the ``object_reactions_form.html`` template.
-    The template is looked for in the following directories:
-     * comments/<app_label>/<model>/
-     * comments/<app_label>/
-     * comments/
-    If the setting `COMMENTS_INK_THEME_DIR` is provided in the settings module
-    the previous list contains is preceded by the following list:
-     * comments/<theme_dir>/<app_label>/<model>/
-     * comments/<theme_dir>/<app_label>/
-     * comments/<theme_dir>/
+    Render the object reactions form using any of the "object_reactions_form" templates. See `django_comments_ink.views.templates` module.
 
     Syntax::
 

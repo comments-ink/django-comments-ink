@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import importlib
 import json
 import random
 import re
@@ -8,9 +7,10 @@ import string
 from datetime import datetime
 from typing import List
 from unittest.mock import Mock, patch
+from urllib.parse import urlencode
 
-import django_comments
 import pytest
+
 from django.contrib.auth.models import AnonymousUser, User
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
@@ -18,8 +18,13 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.http import Http404, JsonResponse
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
+
+import django_comments
 from django_comments.views.comments import CommentPostBadRequest
-from django_comments_ink import signals, signed, views
+from rest_framework import status
+from rest_framework.exceptions import ErrorDetail, PermissionDenied
+
+from django_comments_ink import signals, signed
 from django_comments_ink.conf import settings
 from django_comments_ink.models import (
     CommentReaction,
@@ -27,11 +32,45 @@ from django_comments_ink.models import (
     InkComment,
     ObjectReaction,
 )
+from django_comments_ink.views import base, commenting, reacting, templates
+from django_comments_ink.views.base import CommentUrlView
+from django_comments_ink.views.commenting import (
+    confirm,
+    PostCommentView,
+    ReplyCommentView,
+)
+from django_comments_ink.views.muting import MuteCommentView
+from django_comments_ink.views.reacting import (
+    ReactedToCommentUserListView,
+    ReactedToObjectUserListView,
+    ReactToCommentDoneView,
+    ReactToCommentView,
+    ReactToObjectView,
+)
+from django_comments_ink.views.templates import themed_templates
+from django_comments_ink.views.voting import (
+    VoteCommentDoneView,
+    VoteCommentView,
+)
+
 from django_comments_ink.tests.models import Article, Diary
-from rest_framework import status
-from rest_framework.exceptions import ErrorDetail, PermissionDenied
+
 
 request_factory = RequestFactory()
+
+keys_in_SingleCommentView_context = [
+    "comment",
+    "who_can_post",
+    "comment_votes_enabled",
+    "comment_flagging_enabled",
+    "comment_reactions_enabled",
+    "object_reactions_enabled",
+    "is_input_allowed",
+    "comments_page_qs_param",
+    "comments_page",
+    "comments_folded_qs_param",
+    "comments_folded",
+]
 
 
 def nope(target):
@@ -57,7 +96,7 @@ def post_article_comment(data, article, auth_user=None):
     else:
         request.user = AnonymousUser()
     request._dont_enforce_csrf_checks = True
-    return views.post(request)
+    return PostCommentView.as_view()(request)
 
 
 def post_diary_comment(data, diary_entry, auth_user=None):
@@ -78,8 +117,7 @@ def post_diary_comment(data, diary_entry, auth_user=None):
     else:
         request.user = AnonymousUser()
     request._dont_enforce_csrf_checks = True
-    return views.post(request)
-    # return comments.post_comment(request)
+    return PostCommentView.as_view()(request)
 
 
 def confirm_comment_url(key, follow=True):
@@ -87,7 +125,7 @@ def confirm_comment_url(key, follow=True):
         reverse("comments-ink-confirm", kwargs={"key": key}), follow=follow
     )
     request.user = AnonymousUser()
-    return views.confirm(request, key)
+    return confirm(request, key)
 
 
 app_model_options_mock = {"tests.article": {"who_can_post": "users"}}
@@ -95,7 +133,9 @@ app_model_options_mock = {"tests.article": {"who_can_post": "users"}}
 
 class OnCommentWasPostedTestCase(TestCase):
     def setUp(self):
-        self.patcher = patch("django_comments_ink.views.utils.send_mail")
+        self.patcher = patch(
+            "django_comments_ink.views.commenting.utils.send_mail"
+        )
         self.mock_mailer = self.patcher.start()
         self.article = Article.objects.create(
             title="October", slug="october", body="What I did on October..."
@@ -194,7 +234,7 @@ class OnCommentWasPostedTestCase(TestCase):
 
 class ConfirmCommentTestCase(TestCase):
     def setUp(self):
-        patcher = patch("django_comments_ink.views.utils.send_mail")
+        patcher = patch("django_comments_ink.views.commenting.utils.send_mail")
         self.mock_mailer = patcher.start()
         # Create random string so that it's harder for zlib to compress
         content = "".join(random.choice(string.printable) for _ in range(6096))
@@ -306,6 +346,17 @@ class ConfirmCommentTestCase(TestCase):
         ).group("key")
         confirm_comment_url(self.key)
         self.assertEqual(self.mock_mailer.call_count, 3)
+        self.assertTrue(
+            # We can find the 'comment' in the text_message.
+            self.mock_mailer.call_args[0][1].index(data["comment"])
+            > -1
+        )
+        articles_title = f"Post: {self.article.title}"
+        self.assertTrue(
+            # We can find article's title (comment.content_object.title).
+            self.mock_mailer.call_args[0][1].index(articles_title)
+            > -1
+        )
         self.assertTrue(self.mock_mailer.call_args[0][3] == ["bob@example.com"])
         self.assertTrue(
             self.mock_mailer.call_args[0][1].find(
@@ -456,9 +507,7 @@ class ConfirmCommentTestCase(TestCase):
 
 class ReplyNoCommentTestCase(TestCase):
     def test_reply_non_existing_comment_raises_404(self):
-        response = self.client.get(
-            reverse("comments-ink-reply", kwargs={"cid": 1})
-        )
+        response = self.client.get(reverse("comments-ink-reply", args=(1,)))
         self.assertContains(response, "404", status_code=404)
 
 
@@ -505,18 +554,14 @@ class ReplyCommentTestCase(TestCase):
         )
 
     def test_reply_view(self):
-        response = self.client.get(
-            reverse("comments-ink-reply", kwargs={"cid": 3})
-        )
+        response = self.client.get(reverse("comments-ink-reply", args=(3,)))
         self.assertEqual(response.status_code, 200)
 
     @patch.multiple(
         "django_comments_ink.conf.settings", COMMENTS_INK_MAX_THREAD_LEVEL=2
     )
     def test_not_allow_threaded_reply_raises_403(self):
-        response = self.client.get(
-            reverse("comments-ink-reply", kwargs={"cid": 3})
-        )
+        response = self.client.get(reverse("comments-ink-reply", args=(3,)))
         self.assertEqual(response.status_code, 403)
 
     @patch.multiple(
@@ -524,9 +569,7 @@ class ReplyCommentTestCase(TestCase):
         COMMENTS_INK_APP_MODEL_OPTIONS=app_model_options_mock,
     )
     def test_reply_as_visitor_when_only_users_can_post(self):
-        response = self.client.get(
-            reverse("comments-ink-reply", kwargs={"cid": 1})
-        )
+        response = self.client.get(reverse("comments-ink-reply", args=(1,)))
         self.assertEqual(response.status_code, 302)  # Redirect to login.
         self.assertTrue(response.url.startswith(settings.LOGIN_URL))
 
@@ -537,7 +580,7 @@ class MuteFollowUpTestCase(TestCase):
         # follow-up notifications. First comment doesn't have to send any
         #  notification.
         # Second comment has to send one notification (to Bob).
-        patcher = patch("django_comments_ink.views.utils.send_mail")
+        patcher = patch("django_comments_ink.views.commenting.utils.send_mail")
         self.mock_mailer = patcher.start()
         self.article = Article.objects.create(
             title="September", slug="september", body="John's September"
@@ -607,7 +650,8 @@ class MuteFollowUpTestCase(TestCase):
             reverse("comments-ink-mute", kwargs={"key": key}), follow=True
         )
         request.user = AnonymousUser()
-        response = views.mute(request, key)
+        response = MuteCommentView.as_view()(request, key)
+        response.render()
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.content.find(b"Comment thread muted") > -1)
         return response
@@ -639,9 +683,9 @@ class MuteFollowUpTestCase(TestCase):
                 self.mock_mailer.call_args[0][1],
             ).group("key")
         )
-        confirm_comment_url(alicekey)  # confirm Alice's comment
+        confirm_comment_url(alicekey)  # confirm Alice's comment.
         # Alice confirmed her comment, but this time Bob won't receive any
-        # notification, neither do Alice being the sender
+        # notification, neither do Alice being the sender.
         self.assertTrue(self.mock_mailer.call_count == 4)
 
     def test_mute_followup_notifications_with_wrong_key(self):
@@ -653,7 +697,7 @@ class MuteFollowUpTestCase(TestCase):
             reverse("comments-ink-mute", kwargs={"key": key}), follow=True
         )
         request.user = AnonymousUser()
-        response = views.mute(request, key)
+        response = MuteCommentView.as_view()(request, key)
         self.assertEqual(response.status_code, 400)
         self.assertTrue(response.content.find(b"Bad Request") > -1)
 
@@ -667,14 +711,14 @@ class MuteFollowUpTestCase(TestCase):
         )
         request.user = AnonymousUser()
         with self.assertRaises(Http404):
-            views.mute(request, self.bobs_mutekey)
+            MuteCommentView.as_view()(request, self.bobs_mutekey)
 
 
 class HTMLDisabledMailTestCase(TestCase):
     def setUp(self):
         # Create an article and send a comment. Test method will chech headers
         # to see wheter messages has multiparts or not.
-        patcher = patch("django_comments_ink.views.utils.send_mail")
+        patcher = patch("django_comments_ink.views.commenting.utils.send_mail")
         self.mock_mailer = patcher.start()
         self.article = Article.objects.create(
             title="September", slug="september", body="John's September"
@@ -724,18 +768,20 @@ class HTMLDisabledMailTestCase(TestCase):
 
 def test_template_path_includes_theme(monkeypatch):
     monkeypatch.setattr(
-        views.settings, "COMMENTS_INK_THEME_DIR", "avatar_in_header"
+        templates.settings, "COMMENTS_INK_THEME_DIR", "avatar_in_header"
     )
-    importlib.reload(views)
-    assert views.theme_dir == "themes/avatar_in_header"
-    assert views.theme_dir_exists == True
-    monkeypatch.setattr(views.settings, "COMMENTS_INK_THEME_DIR", "")
-    importlib.reload(views)
+    monkeypatch.setattr(templates, "theme_dir", None)
+    templates.check_theme()
+    assert templates.theme_dir == "themes/avatar_in_header"
+    assert templates.theme_dir_exists == True
 
 
 def test_template_path_does_not_include_theme(monkeypatch):
-    assert views.theme_dir == ""
-    assert views.theme_dir_exists == False
+    monkeypatch.setattr(templates.settings, "COMMENTS_INK_THEME_DIR", "")
+    monkeypatch.setattr(templates, "theme_dir", None)
+    templates.check_theme()
+    assert templates.theme_dir == ""
+    assert templates.theme_dir_exists == False
 
 
 # ---------------------------------------------------------------------
@@ -747,37 +793,40 @@ def test_post_view_requires_method_to_be_POST(rf):
     # GET should not work.
     request = rf.get(reverse("comments-ink-post"))
     request._dont_enforce_csrf_checks = True
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert response.status_code == 405
 
     # PUT should not work.
     request = rf.put(reverse("comments-ink-post"))
     request._dont_enforce_csrf_checks = True
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert response.status_code == 405
 
     # PATCH should not work.
     request = rf.patch(reverse("comments-ink-post"))
     request._dont_enforce_csrf_checks = True
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert response.status_code == 405
 
 
-def mocked_post_js(*args, **kwargs):
-    return JsonResponse({"post_js_called": True}, status=200)
-
-
 def test_XMLHttpRequest_post_view_handles_to_post_js(rf, monkeypatch):
+    monkeypatch.setattr(
+        PostCommentView,
+        "json_response",
+        lambda self, tmpl_list, ctx, status: JsonResponse(
+            {"post_js_called": True}, status=200
+        ),
+    )
     request = rf.post(
         reverse(
             "comments-ink-post",
         ),
         data={},
     )
+    request.user = AnonymousUser()
     request._dont_enforce_csrf_checks = True
     request.META["HTTP_X_REQUESTED_WITH"] = "XMLHttpRequest"
-    monkeypatch.setattr(views, "post_js", mocked_post_js)
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert response.status_code == 200
     assert json.loads(response.content) == {"post_js_called": True}
 
@@ -808,7 +857,10 @@ def prepare_comment_form_data(an_article):
 def prepare_request_to_post_form(
     monkeypatch, rf, an_article, user=None, remove_fields=[], add_fields=[]
 ):
-    monkeypatch.setattr(views, "CommentPostBadRequest", MockedPostBadRequest)
+    monkeypatch.setattr(
+        "django_comments_ink.views.commenting.CommentPostBadRequest",
+        MockedPostBadRequest,
+    )
     data = prepare_comment_form_data(an_article)
 
     # Remove fields listed in remove_fields.
@@ -848,7 +900,7 @@ def test_post_comment_form_without_content_type(
         user=an_user,
         remove_fields=["content_type"],
     )
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert response.status_code == 400
     assert response.why == "Missing content_type or object_pk field."
 
@@ -860,7 +912,7 @@ def test_post_comment_form_without_object_pk(
     request = prepare_request_to_post_form(
         monkeypatch, rf, an_article, user=an_user, remove_fields=["object_pk"]
     )
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert response.status_code == 400
     assert response.why == "Missing content_type or object_pk field."
 
@@ -930,11 +982,14 @@ def mock_get_model(etr):
 def test_post_comment_form_raises_an_error(
     monkeypatch, rf, an_article, an_user, exc, message
 ):
-    monkeypatch.setattr(views.apps, "get_model", mock_get_model(exc))
+    monkeypatch.setattr(
+        "django_comments_ink.views.commenting.apps.get_model",
+        mock_get_model(exc),
+    )
     request = prepare_request_to_post_form(
         monkeypatch, rf, an_article, user=an_user
     )
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert response.status_code == 400
     assert response.why.startswith(message)
 
@@ -960,12 +1015,13 @@ def test_post_comment_form_with_security_errors(
     monkeypatch, rf, an_article, an_user
 ):
     monkeypatch.setattr(
-        views, "get_form", lambda: get_form_mocked(has_errors=True)
+        "django_comments_ink.views.commenting.get_form",
+        lambda: get_form_mocked(has_errors=True),
     )
     request = prepare_request_to_post_form(
         monkeypatch, rf, an_article, user=an_user
     )
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert response.status_code == 400
     assert response.why.startswith("The comment form failed security ")
 
@@ -981,7 +1037,11 @@ def test_post_comment_form_with_security_errors(
 def test_post_comment_form_in_preview_without_theme_dir(
     monkeypatch, rf, an_article, an_user
 ):
-    monkeypatch.setattr(views, "render", lambda x, tmpl_list, y: tmpl_list)
+    monkeypatch.setattr(
+        PostCommentView,
+        "render_to_response",
+        lambda self, ctx: self.get_template_names(),
+    )
     request = prepare_request_to_post_form(
         monkeypatch,
         rf,
@@ -991,7 +1051,7 @@ def test_post_comment_form_in_preview_without_theme_dir(
             {"name": "preview", "value": 1},
         ],
     )
-    template_list = views.post(request)
+    template_list = PostCommentView.as_view()(request)
     assert template_list == [
         "comments/tests/article/preview.html",
         "comments/tests/preview.html",
@@ -1004,11 +1064,21 @@ def test_post_comment_form_in_preview_with_theme_dir(
     monkeypatch, rf, an_article, an_user
 ):
     monkeypatch.setattr(
-        views.settings, "COMMENTS_INK_THEME_DIR", "feedback_in_header"
+        "django_comments_ink.views.commenting.theme_dir",
+        "themes/feedback_in_header",
     )
-    importlib.reload(views)
+    monkeypatch.setattr(
+        "django_comments_ink.views.templates.theme_dir_exists", True
+    )
+    monkeypatch.setattr(
+        PostCommentView, "template_list", themed_templates("preview")
+    )
 
-    monkeypatch.setattr(views, "render", lambda x, tmpl_list, y: tmpl_list)
+    monkeypatch.setattr(
+        PostCommentView,
+        "render_to_response",
+        lambda self, ctx: self.get_template_names(),
+    )
     request = prepare_request_to_post_form(
         monkeypatch,
         rf,
@@ -1018,7 +1088,7 @@ def test_post_comment_form_in_preview_with_theme_dir(
             {"name": "preview", "value": 1},
         ],
     )
-    template_list = views.post(request)
+    template_list = PostCommentView.as_view()(request)
     assert template_list == [
         "comments/themes/feedback_in_header/tests/article/preview.html",
         "comments/themes/feedback_in_header/tests/preview.html",
@@ -1027,16 +1097,17 @@ def test_post_comment_form_in_preview_with_theme_dir(
         "comments/tests/preview.html",
         "comments/preview.html",
     ]
-    # Revert theme.
-    monkeypatch.setattr(views.settings, "COMMENTS_INK_THEME_DIR", "")
-    importlib.reload(views)
 
 
 @pytest.mark.django_db
 def test_post_comment_form_with_an_empty_comment_field(
     monkeypatch, rf, an_article, an_user
 ):
-    monkeypatch.setattr(views, "render", lambda x, tmpl_list, y: tmpl_list)
+    monkeypatch.setattr(
+        PostCommentView,
+        "render_to_response",
+        lambda self, ctx: self.get_template_names(),
+    )
     request = prepare_request_to_post_form(
         monkeypatch,
         rf,
@@ -1047,7 +1118,7 @@ def test_post_comment_form_with_an_empty_comment_field(
             {"name": "comment", "value": ""},
         ],
     )
-    template_list = views.post(request)
+    template_list = PostCommentView.as_view()(request)
     assert template_list == [
         "comments/tests/article/preview.html",
         "comments/tests/preview.html",
@@ -1075,11 +1146,11 @@ def test_post_comment_form__comment_will_be_posted__returns_400(
             (Receiver(), False),
         ]
 
-    monkeypatch.setattr(views.comment_will_be_posted, "send", mock_send)
+    monkeypatch.setattr(commenting.comment_will_be_posted, "send", mock_send)
     request = prepare_request_to_post_form(
         monkeypatch, rf, an_article, user=an_user
     )
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert response.status_code == 400
     assert response.why.startswith("comment_will_be_posted receiver")
 
@@ -1093,11 +1164,11 @@ def test_post_comment_form__comment_will_be_posted__returns_302(
             (None, True),
         ]
 
-    monkeypatch.setattr(views.comment_will_be_posted, "send", mock_send)
+    monkeypatch.setattr(commenting.comment_will_be_posted, "send", mock_send)
     request = prepare_request_to_post_form(
         monkeypatch, rf, an_article, user=an_user
     )
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert response.status_code == 302
     assert response.url == "/comments/sent/?c=1"
 
@@ -1113,11 +1184,11 @@ def test_post_comment_form__comment_was_posted__signal_sent(
     monkeypatch, rf, an_article, an_user
 ):
     mock_send = Mock()
-    monkeypatch.setattr(views.comment_was_posted, "send", mock_send)
+    monkeypatch.setattr(commenting.comment_was_posted, "send", mock_send)
     request = prepare_request_to_post_form(
         monkeypatch, rf, an_article, user=an_user
     )
-    views.post(request)
+    PostCommentView.as_view()(request)
     assert mock_send.called
 
 
@@ -1133,7 +1204,7 @@ def test_post_comment_form_has_cpage_qs_param(
         user=an_user,
         add_fields=[{"name": "cpage", "value": 2}],
     )
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert response.status_code == 302
     assert response.url == "/comments/sent/?c=1&cpage=2"
 
@@ -1176,7 +1247,7 @@ def test_post_js_comment_form_missing_name_and_email(rf, an_article, an_user):
     request = prepare_js_request_to_post_form(
         rf, an_article, user=an_user, remove_fields=["name", "email"]
     )
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert response.status_code == 201
     result = json.loads(response.content)
     assert result["html"].find("Your comment has been already published.") > -1
@@ -1199,7 +1270,7 @@ def test_post_js_comment_form_missing_content_type_or_object_pk(
     request = prepare_js_request_to_post_form(
         rf, an_article, user=an_user, remove_fields=[remove_field]
     )
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert response.status_code == 400
     result = json.loads(response.content)
     assert result["html"].find("Missing content_type or object_pk field.") > -1
@@ -1263,9 +1334,9 @@ def test_post_js_comment_form_missing_content_type_or_object_pk(
 def test_post_js_comment_form_returns_400(
     monkeypatch, rf, an_article, an_user, exc, message
 ):
-    monkeypatch.setattr(views.apps, "get_model", mock_get_model(exc))
+    monkeypatch.setattr(commenting.apps, "get_model", mock_get_model(exc))
     request = prepare_js_request_to_post_form(rf, an_article, user=an_user)
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert response.status_code == 400
     result = json.loads(response.content)
     assert result["html"].find(message) > -1
@@ -1276,10 +1347,10 @@ def test_post_js_comment_form_with_security_errors(
     monkeypatch, rf, an_article, an_user
 ):
     monkeypatch.setattr(
-        views, "get_form", lambda: get_form_mocked(has_errors=True)
+        commenting, "get_form", lambda: get_form_mocked(has_errors=True)
     )
     request = prepare_js_request_to_post_form(rf, an_article, user=an_user)
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert response.status_code == 400
     result = json.loads(response.content)
     assert result["html"].find("The comment form failed security") > -1
@@ -1300,7 +1371,9 @@ def test_post_js_comment_form_in_preview__no_reply_to__without_theme_dir(
     monkeypatch, rf, an_article, an_user
 ):
     monkeypatch.setattr(
-        views, "json_res", lambda req, tmpl_list, ctx, **kwargs: tmpl_list
+        PostCommentView,
+        "json_response",
+        lambda self, tmpl_list, ctx, status: tmpl_list,
     )
     request = prepare_js_request_to_post_form(
         rf,
@@ -1312,7 +1385,7 @@ def test_post_js_comment_form_in_preview__no_reply_to__without_theme_dir(
             {"name": "reply_to", "value": 0},  # Will use 'form_js.html'.
         ],
     )
-    template_list = views.post(request)
+    template_list = PostCommentView.as_view()(request)
     assert template_list == [
         "comments/tests/article/form_js.html",
         "comments/tests/form_js.html",
@@ -1325,7 +1398,9 @@ def test_post_js_comment_form_in_preview__with_reply_to__without_theme_dir(
     monkeypatch, rf, an_article, an_user
 ):
     monkeypatch.setattr(
-        views, "json_res", lambda req, tmpl_list, ctx, **kwargs: tmpl_list
+        PostCommentView,
+        "json_response",
+        lambda self, tmpl_list, ctx, status: tmpl_list,
     )
     request = prepare_js_request_to_post_form(
         rf,
@@ -1337,7 +1412,7 @@ def test_post_js_comment_form_in_preview__with_reply_to__without_theme_dir(
             {"name": "reply_to", "value": 1},  # Will use 'reply_form_js.html'.
         ],
     )
-    template_list = views.post(request)
+    template_list = PostCommentView.as_view()(request)
     assert template_list == [
         "comments/tests/article/reply_form_js.html",
         "comments/tests/reply_form_js.html",
@@ -1350,13 +1425,22 @@ def test_post_js_comment_form_in_preview__no_reply_to__with_theme_dir(
     monkeypatch, rf, an_article, an_user
 ):
     monkeypatch.setattr(
-        views.settings, "COMMENTS_INK_THEME_DIR", "feedback_in_header"
+        "django_comments_ink.views.commenting.theme_dir",
+        "themes/feedback_in_header",
     )
-    importlib.reload(views)
+    monkeypatch.setattr(
+        "django_comments_ink.views.templates.theme_dir_exists", True
+    )
+    monkeypatch.setattr(
+        PostCommentView, "template_form_js", themed_templates("form_js")
+    )
 
     monkeypatch.setattr(
-        views, "json_res", lambda req, tmpl_list, ctx, **kwargs: tmpl_list
+        PostCommentView,
+        "json_response",
+        lambda self, tmpl_list, ctx, status: tmpl_list,
     )
+
     request = prepare_js_request_to_post_form(
         rf,
         an_article,
@@ -1367,7 +1451,7 @@ def test_post_js_comment_form_in_preview__no_reply_to__with_theme_dir(
             {"name": "reply_to", "value": 0},  # Will use 'form_js.html'.
         ],
     )
-    template_list = views.post(request)
+    template_list = PostCommentView.as_view()(request)
     assert template_list == [
         "comments/themes/feedback_in_header/tests/article/form_js.html",
         "comments/themes/feedback_in_header/tests/form_js.html",
@@ -1377,22 +1461,28 @@ def test_post_js_comment_form_in_preview__no_reply_to__with_theme_dir(
         "comments/form_js.html",
     ]
 
-    # Revert theme.
-    monkeypatch.setattr(views.settings, "COMMENTS_INK_THEME_DIR", "")
-    importlib.reload(views)
-
 
 @pytest.mark.django_db
 def test_post_js_comment_form_in_preview__with_reply_to__with_theme_dir(
     monkeypatch, rf, an_article, an_user
 ):
     monkeypatch.setattr(
-        views.settings, "COMMENTS_INK_THEME_DIR", "feedback_in_header"
+        "django_comments_ink.views.commenting.theme_dir",
+        "themes/feedback_in_header",
     )
-    importlib.reload(views)
+    monkeypatch.setattr(
+        "django_comments_ink.views.templates.theme_dir_exists", True
+    )
+    monkeypatch.setattr(
+        PostCommentView,
+        "template_reply_form_js",
+        themed_templates("reply_form_js"),
+    )
 
     monkeypatch.setattr(
-        views, "json_res", lambda req, tmpl_list, ctx, **kwargs: tmpl_list
+        PostCommentView,
+        "json_response",
+        lambda self, tmpl_list, ctx, status: tmpl_list,
     )
     request = prepare_js_request_to_post_form(
         rf,
@@ -1404,7 +1494,7 @@ def test_post_js_comment_form_in_preview__with_reply_to__with_theme_dir(
             {"name": "reply_to", "value": 1},  # Will use 'reply_form_js.html'.
         ],
     )
-    template_list = views.post(request)
+    template_list = PostCommentView.as_view()(request)
     assert template_list == [
         "comments/themes/feedback_in_header/tests/article/reply_form_js.html",
         "comments/themes/feedback_in_header/tests/reply_form_js.html",
@@ -1413,10 +1503,6 @@ def test_post_js_comment_form_in_preview__with_reply_to__with_theme_dir(
         "comments/tests/reply_form_js.html",
         "comments/reply_form_js.html",
     ]
-
-    # Revert theme.
-    monkeypatch.setattr(views.settings, "COMMENTS_INK_THEME_DIR", "")
-    importlib.reload(views)
 
 
 @pytest.mark.django_db
@@ -1432,7 +1518,7 @@ def test_post_js_comment_form_with_an_empty_comment_field(
             {"name": "comment", "value": ""},
         ],
     )
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert response.status_code == 200
     result = json.loads(response.content)
     assert result["field_focus"] == "comment"
@@ -1458,9 +1544,9 @@ def test_post_js_comment_form__comment_will_be_posted__returns_400(
             (Receiver(), False),
         ]
 
-    monkeypatch.setattr(views.comment_will_be_posted, "send", mock_send)
+    monkeypatch.setattr(commenting.comment_will_be_posted, "send", mock_send)
     request = prepare_js_request_to_post_form(rf, an_article, user=an_user)
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert response.status_code == 400
     result = json.loads(response.content)
     assert result["html"].find("comment_will_be_posted receiver") > -1
@@ -1475,9 +1561,9 @@ def test_post_js_comment_form__comment_will_be_posted__returns_201(
             (None, True),
         ]
 
-    monkeypatch.setattr(views.comment_will_be_posted, "send", mock_send)
+    monkeypatch.setattr(commenting.comment_will_be_posted, "send", mock_send)
     request = prepare_js_request_to_post_form(rf, an_article, user=an_user)
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert response.status_code == 201
     result = json.loads(response.content)
     assert result["html"].find("Your comment has been already published.") > -1
@@ -1488,14 +1574,14 @@ def test_post_js_comment_form__comment_will_be_posted__returns_201(
 @pytest.mark.django_db
 def test_sent_js_returns_posted_js_tmpl(monkeypatch, rf, an_article):
     send_mail_mock = Mock()
-    monkeypatch.setattr(views.utils, "send_mail", send_mail_mock)
+    monkeypatch.setattr(commenting.utils, "send_mail", send_mail_mock)
     monkeypatch.setattr(
-        views,
-        "json_res",
-        lambda req, tmpl_list, ctx, status: (tmpl_list, status),
+        PostCommentView,
+        "json_response",
+        lambda self, tmpl_list, ctx, status: (tmpl_list, status),
     )
     request = prepare_js_request_to_post_form(rf, an_article)
-    template_list, status = views.post(request)
+    template_list, status = PostCommentView.as_view()(request)
     assert send_mail_mock.called
     assert status == 202
     assert template_list == [
@@ -1511,10 +1597,10 @@ def test_sent_js_failing_to_decode_key_returns_400(monkeypatch, rf, an_article):
         raise Exception("Something went wrong!")
 
     send_mail_mock = Mock()
-    monkeypatch.setattr(views.signing, "loads", _raise_exception)
-    monkeypatch.setattr(views.utils, "send_mail", send_mail_mock)
+    monkeypatch.setattr(commenting.signing, "loads", _raise_exception)
+    monkeypatch.setattr(commenting.utils, "send_mail", send_mail_mock)
     request = prepare_js_request_to_post_form(rf, an_article)
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert send_mail_mock.called
     result = json.loads(response.content)
     assert response.status_code == 400
@@ -1533,16 +1619,16 @@ def test_sent_js__returns_moderated_js_tmpl(
             (None, True),
         ]
 
-    monkeypatch.setattr(views.comment_will_be_posted, "send", mock_send)
+    monkeypatch.setattr(commenting.comment_will_be_posted, "send", mock_send)
 
     monkeypatch.setattr(
-        views,
-        "json_res",
-        lambda req, tmpl_list, ctx, status: (tmpl_list, status),
+        PostCommentView,
+        "json_response",
+        lambda self, tmpl_list, ctx, status: (tmpl_list, status),
     )
 
     request = prepare_js_request_to_post_form(rf, an_article, user=an_user)
-    template_list, status = views.post(request)
+    template_list, status = PostCommentView.as_view()(request)
     assert status == 201
     assert template_list == [
         "comments/tests/article/moderated_js.html",
@@ -1560,9 +1646,11 @@ def test_sent_js__returns_moderated_js_tmpl(
 
 @pytest.mark.django_db
 def test_sent_receives_non_existing_comment_pk(monkeypatch, rf):
-    monkeypatch.setattr(views, "CommentPostBadRequest", MockedPostBadRequest)
+    monkeypatch.setattr(
+        commenting, "CommentPostBadRequest", MockedPostBadRequest
+    )
     request = rf.get("/comments/sent/")
-    response = views.sent(request)
+    response = commenting.sent(request)
     assert response.status_code == 400
     assert response.why == "Comment doesn't exist"
 
@@ -1574,13 +1662,13 @@ def test_redirect_to_sent__auth_comment__returns_comments_url(
     request = prepare_request_to_post_form(
         monkeypatch, rf, an_article, user=an_user
     )
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert response.status_code == 302
     assert response.url == "/comments/sent/?c=1"
 
     request = rf.get(response.url)
     request.user = an_user
-    response = views.sent(request)
+    response = commenting.sent(request)
     assert response.status_code == 302
     comment = InkComment.objects.get(pk=1)
     assert response.url == comment.get_absolute_url()
@@ -1591,14 +1679,16 @@ def test_redirect_to_sent__not_auth_comment__returns_posted_tmpl(
     monkeypatch, rf, an_article
 ):
     monkeypatch.setattr(
-        views.utils, "send_mail", lambda *args, **kwargs: Mock(*args, *kwargs)
+        commenting.utils,
+        "send_mail",
+        lambda *args, **kwargs: Mock(*args, *kwargs),
     )
     request = prepare_request_to_post_form(monkeypatch, rf, an_article)
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert response.status_code == 302
     assert response.url.startswith("/comments/sent/?c=")
     request = rf.get(response.url)
-    response = views.sent(request)
+    response = commenting.sent(request)
     assert response.status_code == 200
     assert (
         response.content.decode("utf-8").find("Comment confirmation requested")
@@ -1610,24 +1700,29 @@ def test_redirect_to_sent__not_auth_comment__returns_posted_tmpl(
 def test_redirect_to_sent__not_auth_comment__uses_posted_tmpl(
     monkeypatch, rf, an_article
 ):
-    monkeypatch.setattr(views, "render", lambda x, tmpl_list, y: tmpl_list)
+    monkeypatch.setattr(
+        PostCommentView,
+        "render_to_response",
+        lambda self, ctx: self.get_template_names(),
+    )
+    monkeypatch.setattr(commenting, "render", lambda x, tmpl_list, y: tmpl_list)
     request = prepare_request_to_post_form(monkeypatch, rf, an_article)
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert response.status_code == 302
     assert response.url.startswith("/comments/sent/?c=")
     request = rf.get(response.url)
-    template = views.sent(request)
+    template = commenting.sent(request)
     assert template == "comments/posted.html"
 
 
 @pytest.mark.django_db
 def test_redirect_to_sent__bad_key__returns_400(monkeypatch, rf, an_article):
     request = prepare_request_to_post_form(monkeypatch, rf, an_article)
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert response.status_code == 302
     assert response.url.startswith("/comments/sent/?c=")
     request = rf.get(response.url[:-1])  # Force malformed key.
-    response = views.sent(request)
+    response = commenting.sent(request)
     assert response.status_code == 400
     assert response.why == "Comment doesn't exist"
 
@@ -1637,21 +1732,21 @@ def test_redirect_to_sent__not_public_comment__comment_in_moderation(
     monkeypatch, rf, an_article, an_user
 ):
     def create_comment(tmp_comment):
-        tmp_comment.pop("page_number", None)
+        tmp_comment.pop("comments_page", None)
         comment = InkComment(**tmp_comment)
         comment.is_public = False  # To force rendering moderated_tmpl.
         comment.save()
         return comment
 
-    monkeypatch.setattr(views, "_create_comment", create_comment)
+    monkeypatch.setattr(commenting, "create_comment", create_comment)
     request = prepare_request_to_post_form(
         monkeypatch, rf, an_article, user=an_user
     )
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert response.status_code == 302
     assert response.url.startswith("/comments/sent/?c=")
     request = rf.get(response.url)
-    response = views.sent(request)
+    response = commenting.sent(request)
     assert response.status_code == 200
     assert (
         response.content.decode("utf-8").find("Your comment is in moderation.")
@@ -1664,25 +1759,32 @@ def test_redirect_to_sent__not_public_comment__uses_moderated_tmpl(
     monkeypatch, rf, an_article, an_user
 ):
     def create_comment(tmp_comment):
-        tmp_comment.pop("page_number", None)
+        tmp_comment.pop("comments_page", None)
         comment = InkComment(**tmp_comment)
         comment.is_public = False  # To force rendering moderated_tmpl.
         comment.save()
         return comment
 
     monkeypatch.setattr(
-        views.utils, "send_mail", lambda *args, **kwargs: Mock(*args, *kwargs)
+        PostCommentView,
+        "render_to_response",
+        lambda self, ctx: self.get_template_names(),
     )
-    monkeypatch.setattr(views, "_create_comment", create_comment)
-    monkeypatch.setattr(views, "render", lambda x, tmpl_list, y: tmpl_list)
+    monkeypatch.setattr(
+        commenting.utils,
+        "send_mail",
+        lambda *args, **kwargs: Mock(*args, *kwargs),
+    )
+    monkeypatch.setattr(commenting, "create_comment", create_comment)
+    monkeypatch.setattr(commenting, "render", lambda x, tmpl_list, y: tmpl_list)
     request = prepare_request_to_post_form(
         monkeypatch, rf, an_article, user=an_user
     )
-    response = views.post(request)
+    response = PostCommentView.as_view()(request)
     assert response.status_code == 302
     assert response.url.startswith("/comments/sent/?c=")
     request = rf.get(response.url)
-    template_list = views.sent(request)
+    template_list = commenting.sent(request)
     assert template_list == [
         "comments/tests/article/moderated.html",
         "comments/tests/moderated.html",
@@ -1704,14 +1806,14 @@ def test_GET_reply_without_input_allowed_raises(
             "object_reactions_enabled": False,
         }
 
-    monkeypatch.setattr(views.utils, "get_app_model_options", get_options)
+    monkeypatch.setattr(commenting.utils, "get_app_model_options", get_options)
 
     request = rf.get(
         reverse("comments-ink-reply", args=(an_articles_comment.pk,))
     )
     request.user = an_user
     try:
-        views.reply(request, an_articles_comment.pk)
+        ReplyCommentView.as_view()(request, an_articles_comment.pk)
     except Exception as exc:
         assert type(exc) == Http404
 
@@ -1724,14 +1826,14 @@ def test_GET_react_without_reactions_enabled_raises(
     def raise_PermissionDenied(*args, **kwargs):
         raise PermissionDenied(detail="Mee", code=status.HTTP_403_FORBIDDEN)
 
-    monkeypatch.setattr(views.utils, "check_option", raise_PermissionDenied)
+    monkeypatch.setattr(base.utils, "check_option", raise_PermissionDenied)
     request = rf.get(
         reverse("comments-ink-react", args=(an_articles_comment.pk,))
     )
     request.user = an_user
     # request._dont_enforce_csrf_checks = True
     try:
-        views.react(request, an_articles_comment.pk)
+        ReactToCommentView.as_view()(request, an_articles_comment.pk)
     except Exception as exc:
         assert exc.detail == ErrorDetail(string="Mee", code=403)
 
@@ -1743,23 +1845,26 @@ def test_GET_react_renders_react_tmpl(
     def fake_check_option(*args, **kwargs):
         return True
 
-    monkeypatch.setattr(views.utils, "check_option", fake_check_option)
-    monkeypatch.setattr(views, "render", lambda x, tmpl, ctx: (tmpl, ctx))
+    monkeypatch.setattr(base.utils, "check_option", fake_check_option)
+    monkeypatch.setattr(
+        ReactToCommentView,
+        "render_to_response",
+        lambda self, ctx: (self.get_template_names(), ctx),
+    )
     request = rf.get(
         reverse("comments-ink-react", args=(an_articles_comment.pk,))
     )
     request.user = an_user
-    template, context = views.react(request, an_articles_comment.pk)
-    assert template == "comments/react.html"
-    ctx_keys = [
-        "comment",
+    template, context = ReactToCommentView.as_view()(
+        request, an_articles_comment.pk
+    )
+    assert template == ["comments/react.html"]
+    for key in keys_in_SingleCommentView_context:
+        assert key in context
+    for key in [
         "user_reactions",
         "next",
-        "page_number",
-        "comments_page_qs_param",
-        "comments_fold_qs_param",
-    ]
-    for key in ctx_keys:
+    ]:
         assert key in context
 
 
@@ -1768,8 +1873,12 @@ def test_POST_react(monkeypatch, rf, an_user, an_articles_comment):
     def fake_check_option(*args, **kwargs):
         return True
 
-    monkeypatch.setattr(views.utils, "check_option", fake_check_option)
-    monkeypatch.setattr(views, "render", lambda x, tmpl, ctx: (tmpl, ctx))
+    monkeypatch.setattr(base.utils, "check_option", fake_check_option)
+    monkeypatch.setattr(
+        ReactToCommentDoneView,
+        "render_to_response",
+        lambda self, ctx: (self.get_template_names(), ctx),
+    )
     request = rf.post(
         reverse("comments-ink-react", args=(an_articles_comment.pk,)),
         data={"reaction": "+"},
@@ -1777,14 +1886,15 @@ def test_POST_react(monkeypatch, rf, an_user, an_articles_comment):
     )
     request.user = an_user
     request._dont_enforce_csrf_checks = True
-    response = views.react(request, an_articles_comment.pk)
+    response = ReactToCommentView.as_view()(request, an_articles_comment.pk)
     assert response.status_code == 302
     request = rf.get(response.url)
-    template, context = views.react_done(request)
-    assert template == "comments/reacted.html"
+    request.user = an_user
+    template, context = ReactToCommentDoneView.as_view()(request)
+    assert template == ["comments/reacted.html"]
     assert context["comment"] == an_articles_comment
-    assert context["cpage"] == 1
-    assert context["cfold"] == ""
+    for key in keys_in_SingleCommentView_context:
+        assert key in context
 
 
 @pytest.mark.django_db
@@ -1813,33 +1923,36 @@ def test_POST_react_two_users_add_same_reaction_2nd_user_withdraws_it(
         request._dont_enforce_csrf_checks = True
         return request
 
-    monkeypatch.setattr(views.utils, "check_option", fake_check_option)
+    monkeypatch.setattr(reacting.utils, "check_option", fake_check_option)
 
     # 1: an_user sends the "+" reaction to this comment.
     request = prepare_request(an_user)
-    response = views.react(request, an_articles_comment.pk)
+    response = ReactToCommentView.as_view()(request, an_articles_comment.pk)
     assert response.status_code == 302
     request = rf.get(response.url)
-    response = views.react_done(request)
+    request.user = an_user
+    response = ReactToCommentDoneView.as_view()(request)
     assert response.status_code == 200
     assert get_cr_counter() == 1
 
     # 2: an_user_2 sends the "+" reaction to this comment.
     request = prepare_request(an_user_2)
-    response = views.react(request, an_articles_comment.pk)
+    response = ReactToCommentView.as_view()(request, an_articles_comment.pk)
     assert response.status_code == 302
     request = rf.get(response.url)
-    response = views.react_done(request)
+    request.user = an_user
+    response = ReactToCommentDoneView.as_view()(request)
     assert response.status_code == 200
     assert get_cr_counter() == 2
 
     # 3: an_user_2 sends again the "+" reaction to this comment,
     # the effect is the withdrawal of the reaction.
     request = prepare_request(an_user_2)
-    response = views.react(request, an_articles_comment.pk)
+    response = ReactToCommentView.as_view()(request, an_articles_comment.pk)
     assert response.status_code == 302
     request = rf.get(response.url)
-    response = views.react_done(request)
+    request.user = an_user
+    response = ReactToCommentDoneView.as_view()(request)
     assert response.status_code == 200
     assert get_cr_counter() == 1
 
@@ -1847,10 +1960,11 @@ def test_POST_react_two_users_add_same_reaction_2nd_user_withdraws_it(
     # the effect is the deletion of the CommentReaction (as it's the last
     # author of the CommentReaction).
     request = prepare_request(an_user)
-    response = views.react(request, an_articles_comment.pk)
+    response = ReactToCommentView.as_view()(request, an_articles_comment.pk)
     assert response.status_code == 302
     request = rf.get(response.url)
-    response = views.react_done(request)
+    request.user = an_user
+    response = ReactToCommentDoneView.as_view()(request)
     assert response.status_code == 200
     with pytest.raises(CommentReaction.DoesNotExist):
         get_cr_counter()
@@ -1861,14 +1975,14 @@ def test_POST_react_js(monkeypatch, rf, an_user, an_articles_comment):
     def fake_check_option(*args, **kwargs):
         return True
 
-    monkeypatch.setattr(views.utils, "check_option", fake_check_option)
+    monkeypatch.setattr(reacting.utils, "check_option", fake_check_option)
     monkeypatch.setattr(
-        views,
-        "json_res",
-        lambda req, tmpl_list, ctx, **kwargs: (
+        ReactToCommentView,
+        "json_response",
+        lambda self, tmpl_list, context, status: (
             tmpl_list,
-            ctx,
-            kwargs["status"],
+            context,
+            status,
         ),
     )
     request = rf.post(
@@ -1879,15 +1993,18 @@ def test_POST_react_js(monkeypatch, rf, an_user, an_articles_comment):
     request.user = an_user
     request._dont_enforce_csrf_checks = True
     request.META["HTTP_X_REQUESTED_WITH"] = "XMLHttpRequest"
-    tmpl_list, context, status = views.react(request, an_articles_comment.pk)
+    tmpl_list, context, status = ReactToCommentView.as_view()(
+        request, an_articles_comment.pk
+    )
     assert status == 201
     assert tmpl_list == [
         "comments/tests/article/comment_reactions.html",
         "comments/tests/comment_reactions.html",
         "comments/comment_reactions.html",
     ]
-    assert "comment" in context
     assert context["comment"] == an_articles_comment
+    for key in keys_in_SingleCommentView_context:
+        assert key in context
 
 
 @pytest.mark.django_db
@@ -1902,12 +2019,13 @@ def test_GET_react_with_an_existing_comments_reaction(
     def fake_check_option(*args, **kwargs):
         return True
 
-    monkeypatch.setattr(views.utils, "check_option", fake_check_option)
+    monkeypatch.setattr(base.utils, "check_option", fake_check_option)
     request = rf.get(
         reverse("comments-ink-react", args=(an_articles_comment.pk,)),
     )
     request.user = an_user
-    response = views.react(request, an_articles_comment.pk)
+    response = ReactToCommentView.as_view()(request, an_articles_comment.pk)
+    response.render()
     assert response.status_code == 200
     html = response.content.replace(b"  ", b" ").replace(b"\n", b"")
     re_str = (  # This regexp matches the class="secondary active" in HTML.
@@ -1919,14 +2037,18 @@ def test_GET_react_with_an_existing_comments_reaction(
 
 
 @pytest.mark.django_db
-def test_react_done_raises_404_if_no_param_c_or_comment_does_not_exist(rf):
+def test_react_done_raises_404_if_no_param_c_or_comment_does_not_exist(
+    rf, an_user
+):
     request = rf.get(reverse("comments-ink-react-done"))
+    request.user = an_user
     with pytest.raises(Http404):
-        views.react_done(request)
+        ReactToCommentDoneView.as_view()(request)
 
     request = rf.get(reverse("comments-ink-react-done") + "?c=1")
+    request.user = an_user
     with pytest.raises(Http404):
-        views.react_done(request)
+        ReactToCommentDoneView.as_view()(request)
 
 
 # ---------------------------------------------------------------------
@@ -1941,7 +2063,7 @@ def test_get_inkcomment_url_without_page(rf, an_article, an_articles_comment):
         an_articles_comment.pk,
     )
     request = rf.get(reverse("comments-url-redirect", args=args))
-    response = views.get_inkcomment_url(request, *args)
+    response = CommentUrlView.as_view()(request, *args)
     assert response.status_code == 302
     assert response.url.endswith(an_article.get_absolute_url())
 
@@ -1957,7 +2079,7 @@ def test_get_inkcomment_url_with_bad_page(rf, an_articles_comment):
         reverse("comments-url-redirect", args=args), {"cpage": "bad"}
     )
     with pytest.raises(Http404):
-        views.get_inkcomment_url(request, *args)
+        CommentUrlView.as_view()(request, *args)
 
 
 @pytest.mark.django_db
@@ -1980,7 +2102,7 @@ def test_get_inkcomment_url_with_page(
     request = rf.get(
         reverse("comments-url-redirect", args=args), {"cpage": cpage}
     )
-    response = views.get_inkcomment_url(request, *args)
+    response = CommentUrlView.as_view()(request, *args)
     assert response.status_code == 302
     assert response.url.endswith(
         an_article.get_absolute_url() + f"?cpage={cpage}"
@@ -1997,7 +2119,7 @@ def test_get_inkcomment_url_with_fold(rf, an_article, an_articles_comment):
     request = rf.get(
         reverse("comments-url-redirect", args=args), {"cfold": "12,37"}
     )
-    response = views.get_inkcomment_url(request, *args)
+    response = CommentUrlView.as_view()(request, *args)
     assert response.status_code == 302
     assert response.url.endswith(
         an_article.get_absolute_url() + f"?cfold=12,37"
@@ -2015,7 +2137,7 @@ def test_get_inkcomment_url_with_fold_raises_Http404(rf, an_articles_comment):
         reverse("comments-url-redirect", args=args), {"cfold": "12,A"}
     )
     with pytest.raises(Http404):
-        views.get_inkcomment_url(request, *args)
+        CommentUrlView.as_view()(request, *args)
 
 
 # ---------------------------------------------------------------------
@@ -2034,7 +2156,7 @@ def test_POST_react_to_object_redirects_to_login(rf, an_article):
     )
     request.user = AnonymousUser()
     request._dont_enforce_csrf_checks = True
-    response = views.react_to_object(request, ctype.id, an_article.id)
+    response = ReactToObjectView.as_view()(request, ctype.id, an_article.id)
     assert response.url == settings.LOGIN_URL + "?next=" + react_url
     assert response.status_code == 302
 
@@ -2055,7 +2177,7 @@ def test_POST_react_to_an_article_is_not_enabled(rf, an_article, an_user):
     request.user = an_user
     request._dont_enforce_csrf_checks = True
     with pytest.raises(PermissionDenied):
-        views.react_to_object(request, ctype.id, an_article.id)
+        ReactToObjectView.as_view()(request, ctype.id, an_article.id)
 
 
 @pytest.mark.django_db
@@ -2079,7 +2201,7 @@ def test_POST_react_to_a_diary_entry_is_enabled(rf, a_diary_entry, an_user):
 
     request.user = an_user
     request._dont_enforce_csrf_checks = True
-    response = views.react_to_object(request, ctype.id, a_diary_entry.id)
+    response = ReactToObjectView.as_view()(request, ctype.id, a_diary_entry.id)
     assert response.url == a_diary_entry.get_absolute_url()
 
     # Assert the reaction has been added.
@@ -2107,11 +2229,11 @@ def test_POST_react_twice_to_a_diary_entry_with_same_reaction(
     # First reaction, will add the reaction.
     request.user = an_user
     request._dont_enforce_csrf_checks = True
-    response = views.react_to_object(request, ctype.id, a_diary_entry.id)
+    response = ReactToObjectView.as_view()(request, ctype.id, a_diary_entry.id)
     assert response.url == a_diary_entry.get_absolute_url()
 
     # Second same reaction, will withdraw the reaction.
-    response = views.react_to_object(request, ctype.id, a_diary_entry.id)
+    response = ReactToObjectView.as_view()(request, ctype.id, a_diary_entry.id)
     assert response.url == a_diary_entry.get_absolute_url()
 
     # Assert the reaction has been added.
@@ -2137,25 +2259,30 @@ def test_POST_react_three_times_to_a_diary_entry_with_same_reaction(
     react_url = reverse(
         "comments-ink-react-to-object", args=(ctype.id, a_diary_entry.id)
     )
-    request = rf.post(
-        react_url,
-        data={"reaction": "+", "next": a_diary_entry.get_absolute_url()},
-        follow=True,
-    )
+
+    def get_request(user):
+        request = rf.post(
+            react_url,
+            data={"reaction": "+", "next": a_diary_entry.get_absolute_url()},
+            follow=True,
+        )
+        request._dont_enforce_csrf_checks = True
+        request.user = user
+        return request
 
     # First reaction, will add the reaction.
-    request.user = an_user
-    request._dont_enforce_csrf_checks = True
-    response = views.react_to_object(request, ctype.id, a_diary_entry.id)
+    request = get_request(an_user)
+    response = ReactToObjectView.as_view()(request, ctype.id, a_diary_entry.id)
     assert response.url == a_diary_entry.get_absolute_url()
 
     # Second same reaction, with an_user_2.
-    request.user = an_user_2
-    response = views.react_to_object(request, ctype.id, a_diary_entry.id)
+    request = get_request(an_user_2)
+    response = ReactToObjectView.as_view()(request, ctype.id, a_diary_entry.id)
     assert response.url == a_diary_entry.get_absolute_url()
 
     # Third, send same reaction of an_user_2, will withdraw the reaction.
-    response = views.react_to_object(request, ctype.id, a_diary_entry.id)
+    request = get_request(an_user_2)
+    response = ReactToObjectView.as_view()(request, ctype.id, a_diary_entry.id)
     assert response.url == a_diary_entry.get_absolute_url()
 
     # Assert the reaction has been added.
@@ -2200,8 +2327,10 @@ def test_POST_react_to_object_with_cpage(
 
     request.user = an_user
     request._dont_enforce_csrf_checks = True
-    response = views.react_to_object(request, ctype.id, a_diary_entry.id)
-    assert response.url == a_diary_entry_url + expected_url_qstring
+    response = ReactToObjectView.as_view()(request, ctype.id, a_diary_entry.id)
+    assert response.url == (
+        a_diary_entry_url + "?" + urlencode(post_extra_params)
+    )
 
 
 @pytest.mark.django_db
@@ -2221,7 +2350,7 @@ def test_POST_react_to_a_diary_entry_with_anchor(rf, a_diary_entry, an_user):
 
     request.user = an_user
     request._dont_enforce_csrf_checks = True
-    response = views.react_to_object(request, ctype.id, a_diary_entry.id)
+    response = ReactToObjectView.as_view()(request, ctype.id, a_diary_entry.id)
     assert response.url == a_diary_entry.get_absolute_url() + "#reactions"
 
 
@@ -2238,7 +2367,7 @@ def test_POST_react_to_non_existing_content_type(rf, an_user):
     request.user = an_user
     request._dont_enforce_csrf_checks = True
     with pytest.raises(Http404):
-        views.react_to_object(request, 234, 1)
+        ReactToObjectView.as_view()(request, 234, 1)
 
 
 # ---------------------------------------------------------------------
@@ -2249,7 +2378,7 @@ def test_list_reacted_raises_Http404(
     args = (an_articles_comment.pk, a_comments_reaction.reaction)
     request = rf.get(reverse("comments-ink-list-reacted", args=args))
     try:
-        views.list_reacted(
+        ReactedToCommentUserListView.as_view()(
             request, an_articles_comment.pk, a_comments_reaction.reaction
         )
     except Exception as exc:
@@ -2260,17 +2389,23 @@ def test_list_reacted_raises_Http404(
 def test_list_reacted_does_work(
     monkeypatch, rf, an_articles_comment, a_comments_reaction_2
 ):
-    monkeypatch.setattr(views.settings, "COMMENTS_INK_MAX_USERS_IN_TOOLTIP", 1)
-    monkeypatch.setattr(views, "render", lambda x, tmpl, ctx: (tmpl, ctx))
+    monkeypatch.setattr(
+        reacting.settings, "COMMENTS_INK_MAX_USERS_IN_TOOLTIP", 1
+    )
+    monkeypatch.setattr(
+        ReactedToCommentUserListView,
+        "render_to_response",
+        lambda self, ctx: (self.get_template_names(), ctx),
+    )
     args = (an_articles_comment.pk, a_comments_reaction_2.reaction)
     request = rf.get(reverse("comments-ink-list-reacted", args=args))
-    tmpl_list, context = views.list_reacted(
+    tmpl_list, context = ReactedToCommentUserListView.as_view()(
         request, an_articles_comment.pk, a_comments_reaction_2.reaction
     )
     assert tmpl_list == [
-        "comments/tests/article/list_reacted.html",
-        "comments/tests/list_reacted.html",
-        "comments/list_reacted.html",
+        "comments/tests/article/users_reacted_to_comment.html",
+        "comments/tests/users_reacted_to_comment.html",
+        "comments/users_reacted_to_comment.html",
     ]
     assert "comment" in context
     assert context["comment"] == an_articles_comment
@@ -2287,7 +2422,7 @@ def test_list_reacted_to_object_raises_one_Http404(
     args = (9999, a_diary_entry.pk, an_object_reaction.reaction)
     request = rf.get(reverse("comments-ink-list-reacted-to-object", args=args))
     try:
-        views.list_reacted_to_object(
+        ReactedToObjectUserListView.as_view()(
             request, 9999, a_diary_entry.pk, an_object_reaction.reaction
         )
     except Exception as exc:
@@ -2302,7 +2437,7 @@ def test_list_reacted_to_object_raises_another_Http404(
     args = (ctype.pk, a_diary_entry.pk, an_object_reaction.reaction)
     request = rf.get(reverse("comments-ink-list-reacted-to-object", args=args))
     try:
-        views.list_reacted_to_object(
+        ReactedToObjectUserListView.as_view()(
             request, ctype.pk, a_diary_entry.pk, an_object_reaction.reaction
         )
     except Exception as exc:
@@ -2314,20 +2449,24 @@ def test_list_reacted_to_object_does_work(
     monkeypatch, rf, a_diary_entry, an_object_reaction_2
 ):
     ctype = ContentType.objects.get_for_model(a_diary_entry)
-    monkeypatch.setattr(views.settings, "COMMENTS_INK_MAX_USERS_IN_TOOLTIP", 1)
-    monkeypatch.setattr(views, "render", lambda x, tmpl, ctx: (tmpl, ctx))
+    monkeypatch.setattr(
+        reacting.settings, "COMMENTS_INK_MAX_USERS_IN_TOOLTIP", 1
+    )
+    monkeypatch.setattr(
+        ReactedToObjectUserListView,
+        "render_to_response",
+        lambda self, ctx: (self.get_template_names(), ctx),
+    )
     args = (ctype.pk, a_diary_entry.pk, an_object_reaction_2.reaction)
     request = rf.get(reverse("comments-ink-list-reacted-to-object", args=args))
-    tmpl_list, context = views.list_reacted_to_object(
+    tmpl_list, context = ReactedToObjectUserListView.as_view()(
         request, ctype.pk, a_diary_entry.pk, an_object_reaction_2.reaction
     )
     assert tmpl_list == [
-        "comments/tests/diary/list_reacted_to_object.html",
-        "comments/tests/list_reacted_to_object.html",
-        "comments/list_reacted_to_object.html",
+        "comments/tests/diary/users_reacted_to_object.html",
+        "comments/tests/users_reacted_to_object.html",
+        "comments/users_reacted_to_object.html",
     ]
-    assert "content_type" in context
-    assert context["content_type"] == ctype
     assert "object" in context
     assert context["object"] == a_diary_entry
     assert "reaction" in context
@@ -2343,14 +2482,14 @@ def test_GET_vote_without_comment_votes_enabled_raises(
     def raise_PermissionDenied(*args, **kwargs):
         raise PermissionDenied(detail="Mee", code=status.HTTP_403_FORBIDDEN)
 
-    monkeypatch.setattr(views.utils, "check_option", raise_PermissionDenied)
+    monkeypatch.setattr(base.utils, "check_option", raise_PermissionDenied)
     request = rf.get(
         reverse("comments-ink-vote", args=(an_articles_comment.pk,))
     )
     request.user = an_user
     # request._dont_enforce_csrf_checks = True
     try:
-        views.vote(request, an_articles_comment.pk)
+        VoteCommentView.as_view()(request, an_articles_comment.pk)
     except Exception as exc:
         assert exc.detail == ErrorDetail(string="Mee", code=403)
 
@@ -2368,15 +2507,15 @@ def test_GET_vote_without_input_allowed_raises(
             "object_reactions_enabled": False,
         }
 
-    monkeypatch.setattr(views.utils, "check_option", lambda *args, **kwds: True)
-    monkeypatch.setattr(views.utils, "get_app_model_options", get_options)
+    monkeypatch.setattr(base.utils, "check_option", lambda *args, **kwds: True)
+    monkeypatch.setattr(base.utils, "get_app_model_options", get_options)
 
     request = rf.get(
         reverse("comments-ink-vote", args=(an_articles_comment.pk,))
     )
     request.user = an_user
     try:
-        views.vote(request, an_articles_comment.pk)
+        VoteCommentView.as_view()(request, an_articles_comment.pk)
     except Exception as exc:
         assert type(exc) == Http404
 
@@ -2388,24 +2527,26 @@ def test_GET_vote_renders_vote_tmpl(
     def fake_check_option(*args, **kwargs):
         return True
 
-    monkeypatch.setattr(views.utils, "check_option", fake_check_option)
-    monkeypatch.setattr(views, "render", lambda x, tmpl, ctx: (tmpl, ctx))
+    monkeypatch.setattr(base.utils, "check_option", fake_check_option)
+    monkeypatch.setattr(
+        VoteCommentView,
+        "render_to_response",
+        lambda self, ctx: (self.get_template_names(), ctx),
+    )
     request = rf.get(
         reverse("comments-ink-vote", args=(an_articles_comment.pk,))
     )
     request.user = an_user
-    template, context = views.vote(request, an_articles_comment.pk)
-    assert template == "comments/vote.html"
-    ctx_keys = [
-        "comment",
+    template, context = VoteCommentView.as_view()(
+        request, an_articles_comment.pk
+    )
+    assert template == ["comments/vote.html"]
+    for key in keys_in_SingleCommentView_context:
+        assert key in context
+    for key in [
         "user_vote",
         "next",
-        "page_number",
-        "folded_comments",
-        "comments_page_qs_param",
-        "comments_fold_qs_param",
-    ]
-    for key in ctx_keys:
+    ]:
         assert key in context
 
 
@@ -2414,8 +2555,12 @@ def test_POST_vote(monkeypatch, rf, an_user, an_articles_comment):
     def fake_check_option(*args, **kwargs):
         return True
 
-    monkeypatch.setattr(views.utils, "check_option", fake_check_option)
-    monkeypatch.setattr(views, "render", lambda x, tmpl, ctx: (tmpl, ctx))
+    monkeypatch.setattr(base.utils, "check_option", fake_check_option)
+    monkeypatch.setattr(
+        VoteCommentDoneView,
+        "render_to_response",
+        lambda self, ctx: (self.get_template_names(), ctx),
+    )
     request = rf.post(
         reverse("comments-ink-vote", args=(an_articles_comment.pk,)),
         data={"vote": "+"},
@@ -2423,14 +2568,15 @@ def test_POST_vote(monkeypatch, rf, an_user, an_articles_comment):
     )
     request.user = an_user
     request._dont_enforce_csrf_checks = True
-    response = views.vote(request, an_articles_comment.pk)
+    response = VoteCommentView.as_view()(request, an_articles_comment.pk)
     assert response.status_code == 302
     request = rf.get(response.url)
-    template, context = views.vote_done(request)
-    assert template == "comments/voted.html"
+    request.user = an_user
+    template, context = VoteCommentDoneView.as_view()(request)
+    assert template == ["comments/voted.html"]
     assert context["comment"] == an_articles_comment
-    assert context["cpage"] == 1
-    assert context["cfold"] == ""
+    for key in keys_in_SingleCommentView_context:
+        assert key in context
 
 
 @pytest.mark.django_db
@@ -2453,24 +2599,26 @@ def test_POST_vote_user_votes_the_same_twice(
         request._dont_enforce_csrf_checks = True
         return request
 
-    monkeypatch.setattr(views.utils, "check_option", fake_check_option)
+    monkeypatch.setattr(base.utils, "check_option", fake_check_option)
 
     # 1: The an_user sends the "+" vote to this comment.
     request = prepare_request(an_user)
-    response = views.vote(request, an_articles_comment.pk)
+    response = VoteCommentView.as_view()(request, an_articles_comment.pk)
     assert response.status_code == 302
     request = rf.get(response.url)
-    response = views.vote_done(request)
+    request.user = an_user
+    response = VoteCommentDoneView.as_view()(request)
     assert response.status_code == 200
     assert get_thread_score() == 1
 
     # 2: The same an_user sends the "+" vote to this
     #    comment, what shall withdraw the vote.
     request = prepare_request(an_user)
-    response = views.vote(request, an_articles_comment.pk)
+    response = VoteCommentView.as_view()(request, an_articles_comment.pk)
     assert response.status_code == 302
     request = rf.get(response.url)
-    response = views.vote_done(request)
+    request.user = an_user
+    response = VoteCommentDoneView.as_view()(request)
     assert response.status_code == 200
     assert get_thread_score() == 0
 
@@ -2480,14 +2628,14 @@ def test_POST_vote_js(monkeypatch, rf, an_user, an_articles_comment):
     def fake_check_option(*args, **kwargs):
         return True
 
-    monkeypatch.setattr(views.utils, "check_option", fake_check_option)
+    monkeypatch.setattr(base.utils, "check_option", fake_check_option)
     monkeypatch.setattr(
-        views,
-        "json_res",
-        lambda req, tmpl_list, ctx, **kwargs: (
+        VoteCommentView,
+        "json_response",
+        lambda self, tmpl_list, ctx, status: (
             tmpl_list,
             ctx,
-            kwargs["status"],
+            status,
         ),
     )
     request = rf.post(
@@ -2498,7 +2646,9 @@ def test_POST_vote_js(monkeypatch, rf, an_user, an_articles_comment):
     request.user = an_user
     request._dont_enforce_csrf_checks = True
     request.META["HTTP_X_REQUESTED_WITH"] = "XMLHttpRequest"
-    tmpl_list, context, status = views.vote(request, an_articles_comment.pk)
+    tmpl_list, context, status = VoteCommentView.as_view()(
+        request, an_articles_comment.pk
+    )
     assert status == 201
     assert tmpl_list == [
         "comments/tests/article/comment_votes.html",
@@ -2507,3 +2657,5 @@ def test_POST_vote_js(monkeypatch, rf, an_user, an_articles_comment):
     ]
     assert "comment" in context
     assert context["comment"] == an_articles_comment
+    for key in keys_in_SingleCommentView_context:
+        assert key in context

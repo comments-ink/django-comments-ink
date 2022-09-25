@@ -44,7 +44,9 @@ class FakeRequest:
 
 class WriteCommentSerializerAsVisitorTestCase(TestCase):
     def setUp(self):
-        self.patcher = patch("django_comments_ink.views.utils.send_mail")
+        self.patcher = patch(
+            "django_comments_ink.views.commenting.utils.send_mail"
+        )
         self.mock_mailer = self.patcher.start()
         self.article = Article.objects.create(
             title="October", slug="october", body="What I did on October..."
@@ -99,7 +101,9 @@ class WriteCommentSerializerAsVisitorTestCase(TestCase):
 
 class WriteCommentSerializerTestCase(TestCase):
     def setUp(self):
-        self.patcher = patch("django_comments_ink.views.utils.send_mail")
+        self.patcher = patch(
+            "django_comments_ink.views.commenting.utils.send_mail"
+        )
         self.mock_mailer = self.patcher.start()
         self.user = User.objects.create_user(
             "joe", "joe@bloggs.com", "pwd", first_name="Joe", last_name="Bloggs"

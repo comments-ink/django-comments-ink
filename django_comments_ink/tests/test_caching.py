@@ -20,13 +20,13 @@ def test_get_cache_can_be_none(monkeypatch):
     assert cache == None
 
 
-def test_clear_cache_returns_False(monkeypatch):
+def test_clear_comment_cache_returns_False(monkeypatch):
     my_cache = {"dci": None}
     monkeypatch.setattr(caching, "dci_cache", None)
     monkeypatch.setattr(caching, "caches", my_cache)
-    assert caching.clear_cache(1, 2, 3) == False
+    assert caching.clear_comment_cache(1, 2, 3) == False
 
 
-def test_clear_cache_returns_True(monkeypatch):
+def test_clear_comment_cache_returns_True(monkeypatch):
     monkeypatch.setattr(caching, "dci_cache", None)
-    assert caching.clear_cache(1, 2, 3) == True
+    assert caching.clear_comment_cache(1, 2, 3) == True
