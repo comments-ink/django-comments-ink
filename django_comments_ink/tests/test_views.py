@@ -762,13 +762,13 @@ class HTMLDisabledMailTestCase(TestCase):
 
 # ---------------------------------------------------------------------
 # Test module level `_*_tmpl` variables. Verify that they include
-# the them (settings.COMMENTS_INK_THEME_DIR) in the path when that
+# the them (settings.COMMENTS_INK_THEME) in the path when that
 # setting is provided.
 
 
 def test_template_path_includes_theme(monkeypatch):
     monkeypatch.setattr(
-        templates.settings, "COMMENTS_INK_THEME_DIR", "avatar_in_header"
+        templates.settings, "COMMENTS_INK_THEME", "avatar_in_header"
     )
     monkeypatch.setattr(templates, "theme_dir", None)
     templates.check_theme()
@@ -777,7 +777,7 @@ def test_template_path_includes_theme(monkeypatch):
 
 
 def test_template_path_does_not_include_theme(monkeypatch):
-    monkeypatch.setattr(templates.settings, "COMMENTS_INK_THEME_DIR", "")
+    monkeypatch.setattr(templates.settings, "COMMENTS_INK_THEME", "")
     monkeypatch.setattr(templates, "theme_dir", None)
     templates.check_theme()
     assert templates.theme_dir == ""
