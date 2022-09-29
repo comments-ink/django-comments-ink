@@ -131,12 +131,12 @@ COMMENTS_INK_CSS_CUSTOM_SELECTOR = "dci"
 # By default there are 3 theme directories:
 #   'avatar_in_thread', 'avatar_in_header', 'twbs_5'.
 #
-# Use a theme by assigning any of those values to the COMMENTS_INK_THEME_DIR
+# Use a theme by assigning any of those values to the COMMENTS_INK_THEME
 # setting. You can create your own theme templates by adding a new theme
 # directory to your Django project template's directory,
 # under `comments/themes/<your-theme>`.
 #
-COMMENTS_INK_THEME_DIR = ""
+COMMENTS_INK_THEME = ""
 
 # Name of the entry in settings.CACHE to use for caching django-comments-ink.
 COMMENTS_INK_CACHE_NAME = "dci"

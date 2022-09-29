@@ -11,8 +11,8 @@ def check_theme():
     if theme_dir is not None and theme_dir_exists is not None:
         return
 
-    if len(settings.COMMENTS_INK_THEME_DIR) > 0:
-        theme_dir = f"themes/{settings.COMMENTS_INK_THEME_DIR}"
+    if len(settings.COMMENTS_INK_THEME) > 0:
+        theme_dir = f"themes/{settings.COMMENTS_INK_THEME}"
         theme_dir_exists = does_theme_dir_exist(f"comments/{theme_dir}")
     else:
         theme_dir = ""
