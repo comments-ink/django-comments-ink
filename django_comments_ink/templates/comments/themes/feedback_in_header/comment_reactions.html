@@ -3,7 +3,7 @@
 
 {% with creactions=comment.get_reactions %}
   {% if creactions.counter > 0 %}
-    <div class="active-reactions">
+    <div class="sep active-reactions">
       {% for reaction in creactions.list %}
         {% if reaction.counter > 0 %}
           <div class="reaction" data-reaction="{{ reaction.value }}">

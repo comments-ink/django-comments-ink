@@ -24,12 +24,14 @@
           </div>
           <div class="comment">
             <div class="header">
-              <div>{% if comment.url and not comment.is_removed %}<a href="{{ comment.url }}" target="_new">{{ comment.name }}</a>{% else %}{{ comment.name }}{% endif %}&nbsp;&sdot;&nbsp;<span class="muted">{{ comment.submit_date }}</span>&nbsp;&nbsp;<a class="permalink" title="comment permalink" href="{% get_inkcomment_permalink comment page_number %}">¶</a></div>
+              <div>{% if comment.url and not comment.is_removed %}<a href="{{ comment.url }}" target="_new">{{ comment.name }}</a>{% else %}{{ comment.name }}{% endif %}&nbsp;&sdot;&nbsp;<span class="muted">{{ comment.submit_date }}</span>&nbsp;&nbsp;<a class="permalink" title="comment permalink" href="{% get_inkcomment_permalink comment None comments_folded %}">¶</a></div>
             </div>
             <div class="body body-bordered">
               {{ comment.comment|linebreaks|escape }}
             </div>
-            <div class="feedback feedback-bordered"></div>
+            <div class="feedback feedback-bordered">
+              {% include "comments/comment_reactions.html" %}
+            </div>
           </div>
         </div>
 

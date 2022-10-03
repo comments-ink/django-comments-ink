@@ -22,7 +22,7 @@
       <div id="cm-feedback-{{ comment.id }}" class="feedback flex-col">
         {% if not comment.is_removed and comment_reactions_enabled %}
           <div class="flex-row-right">
-            <div class="sep reactions" id="cm-reactions-{{ comment.id }}">
+            <div class="reactions" id="cm-reactions-{{ comment.id }}">
               {% include "comments/themes/avatar_in_header/comment_reactions.html" %}
             </div>
             {% if is_input_allowed %}
@@ -35,19 +35,19 @@
 
         <div class="flex-row-right">
           {% if comment.level == 0 and comment.nested_count and not comment.is_removed %}
-            <div class="sep">
+            <div class="sepseq">
               <span id="comment-{{ comment.id}}-replies" data-dci="nreplies" data-comment="{{ comment.id }}" class="smaller">{% blocktrans count replies=comment.nested_count%}One reply{% plural %}{{ replies }} replies{% endblocktrans %}</span>
               {% if cfold|has_comment:comment %}<a href="?{% render_qs_params unfold comment %}#{{ anchor }}" class="rotate180">&mapstoup;</a>{% else %}<a href="?{% render_qs_params fold comment %}#{{ anchor }}" class="rotate180">&mapstodown;</a>{% endif %}
             </div>
           {% elif comment.level != 0 and comment.nested_count and not comment.is_removed %}
-            <div class="sep">
+            <div class="sepseq">
               <span id="comment-{{ comment.id}}-replies" data-dci="nreplies" data-comment="{{ comment.id }}" class="smaller">{% blocktrans count replies=comment.nested_count%}One reply{% plural %}{{ replies }} replies{% endblocktrans %}</span>
               <a href="#" id="fold-{{ comment.id}}" data-dci-action="fold" data-dci-replies="{{ comment.nested_count }}" class="rotate180 hide">&mapstodown;</a><a href="#" id="unfold-{{ comment.id}}" data-dci-action="unfold" data-dci-replies="{{ comment.nested_count }}" class="rotate180 hide">&mapstoup;</a>
             </div>
           {% endif %}
 
           {% if not comment.is_removed and comment_flagging_enabled and is_input_allowed %}
-            <div><a href="{% url 'comments-flag' comment.id %}" class="smaller">{% trans "Report" %}</a></div>
+            <div>{% include "comments/comment_flags.html" %}</div>
           {% endif %}
         </div>
       </div>

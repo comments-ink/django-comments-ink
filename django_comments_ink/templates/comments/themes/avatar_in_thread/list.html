@@ -15,6 +15,7 @@
   data-guest-user="{% if user.is_authenticated %}0{% else %}1{% endif %}"
   data-input-allowed="{% if is_input_allowed %}1{% else %}0{% endif %}"
   data-page-qs-param="{{ comments_page_qs_param }}"
+  data-fold-qs-param="{{ comments_folded_qs_param }}"
 >
   {% if is_paginated %}
     {% include "comments/pagination.html" %}

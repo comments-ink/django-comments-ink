@@ -585,6 +585,8 @@
 
 .dci .comment-box     .feedback DIV.sep::after,
 .dci .comment-box-img .feedback DIV.sep::after,
+.dci .comment-box     .feedback DIV.sepseq::after,
+.dci .comment-box-img .feedback DIV.sepseq::after,
 .dci .comment-box     .feedback > DIV.reactions > DIV:last-child::after,
 .dci .comment-box-img .feedback > DIV.reactions > DIV:last-child::after {
     content: "·";
@@ -592,8 +594,8 @@
     font-weight: 700;
 }
 
-.dci .comment-box     .feedback DIV.sep:last-child::after,
-.dci .comment-box-img .feedback DIV.sep:last-child::after {
+.dci .comment-box     .feedback DIV.sepseq:last-child::after,
+.dci .comment-box-img .feedback DIV.sepseq:last-child::after {
     content: "";
     padding: 0 1px;
 }
