@@ -1,11 +1,9 @@
 #  django-comments-ink &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![example workflow](https://github.com/comments-ink/django-comments-ink/workflows/tests/badge.svg)](https://github.com/comments-ink/django-comments-ink/actions/workflows/ci-pipeline.yml) [![Code Coverage](coverage.svg)]((https://github.com/comments-ink/django-comments-ink/actions/workflows/ci-pipeline.yml))
 
 
-**Don't use it yet**: It's still under migration from django-comments-xtd to django-comments-ink.
-
 A Django pluggable application that adds comments to your project.
 
-The current master branch represents is a work-in-progress towards v3.0.0. It has not been released yet as a package in PyPI. The current stable version is based on the branch [v2](https://github.com/danirus/django-comments-ink/tree/v2) and is [available at PyPI](https://pypi.org/project/django-comments-ink/).
+The current main branch is the result of the long lasting work-in-progress of the rel-3.0.0 branch of django-comments-xtd.
 
 <p align="center"><br/><img src="cover.png"><br/><br/></p>
 
@@ -24,8 +22,7 @@ It extends [django-contrib-comments](https://pypi.python.org/pypi/django-contrib
 
 Example sites and tests work under officially Django [supported versions](https://www.djangoproject.com/download/#supported-versions>):
 
-* Django 4.0, 3.2, 3.1
-* Python 3.10, 3.9, 3.8
+* Django 4.1, 4.0, 3.2
 
 Additional Dependencies:
 
