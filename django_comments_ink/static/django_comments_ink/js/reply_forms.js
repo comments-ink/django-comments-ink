@@ -7,7 +7,7 @@ export default class ReplyFormsHandler {
 
         for (const elem of document.querySelectorAll(qsReplyForms)) {
             // Extract the reply_to value from the current reply_form.
-            // Also, it if does exist, extract the comment's page number too.
+            // Also, if it does exist, extract the comment's page number too.
             // Then replace the content of elem with a copy of
             // this.replyFormBase and update the fields reply_to
             // and comment's page number.

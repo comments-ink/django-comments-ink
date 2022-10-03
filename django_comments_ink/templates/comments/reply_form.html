@@ -6,7 +6,7 @@
   {% for field in form %}
     {% if field.is_hidden %}{{ field }}{% endif %}
   {% endfor %}
-  <input type="hidden" name="{{ comments_page_qs_param }}" value="" />
+  <input type="hidden" name="{{ comments_page_qs_param }}" value="{{ comments_page }}">
   <div class="hide">{{ form.honeypot }}</div>
 
   {% if 'comment' in form.errors %}
