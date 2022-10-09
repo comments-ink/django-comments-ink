@@ -40,9 +40,11 @@ def clear_comment_cache(content_type_id, object_pk, site_id):
 
     keys = []
     for key_pattern in [
-        "comments_qs",
-        "comments_count",
+        "comment_qs",
+        "comment_count",
         "comments_paged",
+        "comment_list_auth",
+        "comment_list_anon",
     ]:
         key = settings.COMMENTS_INK_CACHE_KEYS[key_pattern].format(
             ctype_pk=content_type_id, object_pk=object_pk, site_id=site_id

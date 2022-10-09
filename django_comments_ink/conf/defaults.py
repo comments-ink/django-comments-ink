@@ -152,11 +152,17 @@ COMMENTS_INK_OVERRIDE_DRF_DEFAULTS = True
 
 # Format patterns used with cached keys.
 COMMENTS_INK_CACHE_KEYS = {
-    # The key 'comments_qs' holds the QuerySet by the given params.
-    "comments_qs": "/comments_qs/{ctype_pk}/{object_pk}/{site_id}",
-    # The key 'comments_count' stores the number of
+    # The rendered template fragment with the list of comments for the given
+    # combination of content_type, object_pk and site_id. There are two keys,
+    # one for when the user is authenticated, and another for when the user is
+    # is anonymous.
+    "comment_list_auth": "/comment_list/{ctype_pk}/{object_pk}/{site_id}/auth",
+    "comment_list_anon": "/comment_list/{ctype_pk}/{object_pk}/{site_id}/anon",
+    # The key 'comment_qs' holds the QuerySet of comments for the given params.
+    "comment_qs": "/comment_qs/{ctype_pk}/{object_pk}/{site_id}",
+    # The key 'comment_count' stores the number of
     # comments returned by the previous QuerySet.
-    "comments_count": "/comments_count/{ctype_pk}/{object_pk}/{site_id}",
+    "comment_count": "/comment_count/{ctype_pk}/{object_pk}/{site_id}",
     # The key 'comments_paged' stores a dictionary of k: v, where
     # keys are combinations of page number and folded comments, and
     # values are cache keys where to find the computed values that

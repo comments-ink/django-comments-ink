@@ -60,7 +60,7 @@ Example 3:
 import logging
 
 from django.apps import apps
-from django.core.paginator import Paginator
+from django.core.paginator import Page, Paginator
 from django.db.models.query import QuerySet
 from django.utils.functional import cached_property
 
@@ -69,6 +69,12 @@ from django_comments_ink.conf import settings
 
 
 logger = logging.getLogger(__name__)
+
+
+class CommentsPage(Page):
+    def __init__(self, object_list, number, paginator, cache_key):
+        super().__init__(object_list, number, paginator)
+        self.cache_key = cache_key
 
 
 class CommentsPaginator(Paginator):
@@ -102,7 +108,7 @@ class CommentsPaginator(Paginator):
             return
         # If the key <sub_ckey> does exist as a key in
         # the set stored in the <ckey_prefix> in the cache, then
-        # access the combinaned <self.ckey_prefix>/<sub_ckey>
+        # access the combined <self.ckey_prefix>/<sub_ckey>
         # to get the previously computed object_list.
         sub_keys_set = self.dci_cache.get(self.ckey_prefix)
         if sub_keys_set and subkey in sub_keys_set:
@@ -191,14 +197,22 @@ class CommentsPaginator(Paginator):
             logger.debug("in_page computed: %s", inpage)
         return inpage
 
+    def _get_page(self, *args, **kwargs):
+        """
+        Return an instance of a single page.
+
+        This hook can be used by subclasses to use an alternative to the
+        standard :cls:`Page` object.
+        """
+        return CommentsPage(*args, **kwargs)
+
     def page(self, number):
         number = self.validate_number(number)
-
         # See whether the object_list has been stored in the cache.
         sub_ckey = self.get_sub_ckey(number, self.comments_folded)
         object_list = self.get_subkey_cache(sub_ckey)
         if object_list != None:
-            return self._get_page(object_list, number, self)
+            return self._get_page(object_list, number, self, sub_ckey)
 
         if number == 1:
             bottom = 0
@@ -210,7 +224,7 @@ class CommentsPaginator(Paginator):
         # Store it in cache.
         self.set_subkey_cache(sub_ckey, object_list)
 
-        return self._get_page(object_list, number, self)
+        return self._get_page(object_list, number, self, sub_ckey)
 
     @cached_property
     def count(self):
