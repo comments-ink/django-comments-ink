@@ -77,7 +77,7 @@ class CommentThread(models.Model):
         super(CommentThread, self).save(*args, **kwargs)
         cm = InkComment.objects.get(pk=self.id)
         caching.clear_comment_cache(
-            cm.content_type.id, cm.object_pk, cm.site.pk
+            cm.content_type.pk, cm.object_pk, cm.site.pk
         )
 
 
@@ -309,7 +309,7 @@ def publish_or_withhold_on_pre_save(sender, instance, raw, using, **kwargs):
 
 
 def on_comment_deleted(sender, instance, using, **kwargs):
-    # Create the list of nested ink-comments that have to deleted too.
+    # Create the list of nested ink-comments that have to be deleted too.
     qs = get_model().norel_objects.filter(
         ~Q(pk=instance.id), parent_id=instance.id
     )
@@ -436,11 +436,22 @@ class CommentVote(models.Model):
         if dci_cache != None and key != "" and dci_cache.get(key):
             logger.debug("Delete cached list of comment votes in key %s" % key)
             dci_cache.delete(key)
+        caching.clear_comment_cache(
+            self.comment.content_type.pk,
+            self.comment.object_pk,
+            self.comment.site.pk,
+        )
 
     def save(self, *args, **kwargs):
         self.delete_from_cache()
         super(CommentVote, self).save(*args, **kwargs)
 
+
+def on_comment_vote_deleted(sender, instance, using, **kwargs):
+    instance.delete_from_cache()
+
+
+post_delete.connect(on_comment_vote_deleted, sender=CommentVote)
 
 # ----------------------------------------------------------------------
 class BlackListedDomain(models.Model):
@@ -534,6 +545,11 @@ class CommentReaction(models.Model):
                 "Delete cached list of comment reactions in key %s" % key
             )
             dci_cache.delete(key)
+        caching.clear_comment_cache(
+            self.comment.content_type.pk,
+            self.comment.object_pk,
+            self.comment.site.pk,
+        )
 
     def save(self, *args, **kwargs):
         self.delete_from_cache()
@@ -597,6 +613,13 @@ class ObjectReaction(models.Model):
         super(ObjectReaction, self).save(*args, **kwargs)
 
 
+def on_object_reaction_deleted(sender, instance, using, **kwargs):
+    instance.delete_from_cache()
+
+
+post_delete.connect(on_object_reaction_deleted, sender=ObjectReaction)
+
+
 class ObjectReactionAuthor(models.Model):
     reaction = models.ForeignKey(ObjectReaction, on_delete=models.CASCADE)
     author = models.ForeignKey(
@@ -606,6 +629,16 @@ class ObjectReactionAuthor(models.Model):
 
 def get_object_reactions(content_type, object_pk, site_id):
     """Returns list of dicts with object reactions and their counters."""
+    dci_cache = caching.get_cache()
+    key = settings.COMMENTS_INK_CACHE_KEYS["object_reactions"].format(
+        ctype_pk=content_type.pk, object_pk=object_pk, site_id=site_id
+    )
+    if dci_cache != None and key != "":
+        result = dci_cache.get(key)
+        if result != None:
+            logger.debug("Fetching %s from the cache", key)
+            return result
+
     max_users_listed = getattr(
         settings, "COMMENTS_INK_MAX_USERS_IN_TOOLTIP", 10
     )
@@ -642,4 +675,10 @@ def get_object_reactions(content_type, object_pk, site_id):
             }
         )
 
+    if dci_cache != None and key != "":
+        dci_cache.set(key, object_reactions, timeout=None)
+        logger.debug(
+            "Caching reactions for object with ctype_pk %d, object_pk %s, "
+            "site_id %d" % (content_type.pk, object_pk, site_id)
+        )
     return object_reactions

@@ -30,6 +30,7 @@ from django_comments_ink import (
     caching,
     get_comment_reactions_enum,
     get_model,
+    partial,
     utils,
 )
 from django_comments_ink.api import frontend
@@ -115,7 +116,7 @@ def paginate_queryset(queryset, context, ckey_prefix):
             page_number = paginator.num_pages
         else:
             raise Http404(
-                _("Page is not “last”, nor can it " "be converted to an int.")
+                _("Page is not “last”, nor can it be converted to an int.")
             )
 
     try:
@@ -127,6 +128,7 @@ def paginate_queryset(queryset, context, ckey_prefix):
             "comments_page_qs_param": cpage_qs_param,
             "comment_list": page.object_list,
             cpage_qs_param: page.number,
+            "cache_key": page.cache_key,
         }
     except InvalidPage as exc:
         raise Http404(
@@ -145,34 +147,62 @@ class BaseInkCommentNode(BaseCommentNode):
             "object_pk": object_pk,
             "site_id": site_id,
         }
-        comments_qs_ptn = settings.COMMENTS_INK_CACHE_KEYS["comments_qs"]
-        comments_count_ptn = settings.COMMENTS_INK_CACHE_KEYS["comments_count"]
+        comment_qs_ptn = settings.COMMENTS_INK_CACHE_KEYS["comment_qs"]
+        comment_count_ptn = settings.COMMENTS_INK_CACHE_KEYS["comment_count"]
         comments_paged_ptn = settings.COMMENTS_INK_CACHE_KEYS["comments_paged"]
-        self.ckey_comments_qs = comments_qs_ptn.format(**kwargs)
-        self.ckey_comments_count = comments_count_ptn.format(**kwargs)
+        self.ckey_comment_qs = comment_qs_ptn.format(**kwargs)
+        self.ckey_comment_count = comment_count_ptn.format(**kwargs)
         self.ckey_comments_paged = comments_paged_ptn.format(**kwargs)
 
         # Check whether there is already a qs in the dci cache.
         qs = None
         dci_cache = caching.get_cache()
-        if dci_cache != None and self.ckey_comments_qs != "":
-            cached = dci_cache.get(self.ckey_comments_qs)
+        if dci_cache != None and self.ckey_comment_qs != "":
+            cached = dci_cache.get(self.ckey_comment_qs)
             if cached:
-                logger.debug("Get %s from the cache", self.ckey_comments_qs)
+                logger.debug("Get %s from the cache", self.ckey_comment_qs)
                 qs = cached
 
         if not qs:
             mtl = utils.get_max_thread_level(ctype)
             qs = super().get_queryset(context).filter(level__lte=mtl)
 
-            if dci_cache != None and self.ckey_comments_qs != "":
-                logger.debug("Adding %s to the cache", self.ckey_comments_qs)
-                dci_cache.set(self.ckey_comments_qs, qs, timeout=None)
+            if dci_cache != None and self.ckey_comment_qs != "":
+                logger.debug("Adding %s to the cache", self.ckey_comment_qs)
+                dci_cache.set(self.ckey_comment_qs, qs, timeout=None)
 
         return qs
 
 
 class InkCommentListNode(BaseInkCommentNode):
+    comments_page_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
+    comments_folded_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
+
+    def init_partial_template(self, content_type, object_pk, context):
+        request = context.get("request", None)
+        site_id = utils.get_current_site_id(request)
+        if request:
+            cpage = request.GET.get(self.comments_page_param, 1)
+            cfolded = request.GET.get(self.comments_folded_param, "")
+            if request.user:
+                is_authenticated = request.user.is_authenticated
+            else:
+                is_authenticated = False
+        else:
+            cpage = 1
+            cfolded = ""
+            is_authenticated = False
+
+        partial_template = partial.PartialTemplate(
+            content_type=content_type,
+            object_pk=object_pk,
+            site_id=site_id,
+            cpage=cpage,
+            cfolded=cfolded,
+            is_authenticated=is_authenticated,
+        )
+        return partial_template
+
     def get_context_value_from_queryset(self, context, qs):
         return qs
 
@@ -211,39 +241,8 @@ class RenderInkCommentListNode(InkCommentListNode):
             # {% render_inkcomment_list for var_not_in_context %}
             return ""
 
-        mtl = utils.get_max_thread_level(ctype)
-        template_list = f_templates(
-            "list", app_label=ctype.app_label, model=ctype.model
-        )
-        qs = self.get_queryset(context)
-        qs = self.get_context_value_from_queryset(context, qs)
-        context_dict = context.flatten()
-        qs = filter_folded_comments(qs, context)
-        context_dict.update(folded_comments(context))
-        context_dict.update(
-            paginate_queryset(qs, context, self.ckey_comments_paged)
-        )
-
-        # Pass max_users_in_tooltip from the settings.
-        max_users_in_tooltip = settings.COMMENTS_INK_MAX_USERS_IN_TOOLTIP
-        context_dict.update(
-            {
-                "max_thread_level": mtl,
-                "reply_stack": [],  # List to control reply widget rendering.
-                "max_users_in_tooltip": max_users_in_tooltip,
-            }
-        )
-
-        options = utils.get_app_model_options(content_type=ctype)
-        check_input_allowed_str = options.pop("check_input_allowed")
-        check_func = import_string(check_input_allowed_str)
-        target_obj = ctype.get_object_for_this_type(pk=object_pk)
-
-        options["is_input_allowed"] = check_func(target_obj)
-        context_dict.update(options)
-
-        liststr = loader.render_to_string(template_list, context_dict)
-        return liststr
+        partial_template = self.init_partial_template(ctype, object_pk, context)
+        return partial_template.render(context)
 
 
 @register.tag
@@ -278,7 +277,7 @@ class InkCommentCountNode(BaseInkCommentNode):
 
         result = None
         dci_cache = caching.get_cache()
-        key = settings.COMMENTS_INK_CACHE_KEYS["comments_count"].format(
+        key = settings.COMMENTS_INK_CACHE_KEYS["comment_count"].format(
             ctype_pk=ctype.pk, object_pk=object_pk, site_id=site_id
         )
         if dci_cache != None and key != "":

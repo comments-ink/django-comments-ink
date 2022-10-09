@@ -68,7 +68,7 @@ class CommentsParamsMixin:
         if self.comments_folded == None:
             self.set_comments_folded(*args, **kwargs)
 
-    def get_comments_qs_params(self, *args, **kwargs):
+    def get_comment_qs_params(self, *args, **kwargs):
         qs_params = []
         self.read_comments_params(*args, **kwargs)
 
@@ -139,7 +139,7 @@ class CommentUrlView(CommentsParamsMixin, RedirectView):
             super().set_comments_page()
 
     def get_redirect_url(self, content_type_id, object_id, comment_id):
-        qs_params = self.get_comments_qs_params(comment_id)
+        qs_params = self.get_comment_qs_params(comment_id)
         response = shortcut(self.request, content_type_id, object_id)
 
         if len(qs_params):

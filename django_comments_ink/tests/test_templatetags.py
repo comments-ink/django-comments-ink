@@ -26,6 +26,7 @@ from django_comments_ink import (
 from django_comments_ink.conf import settings
 from django_comments_ink.models import (
     InkComment,
+    ObjectReaction,
     publish_or_withhold_on_pre_save,
 )
 from django_comments_ink.templatetags import comments_ink
@@ -665,15 +666,15 @@ def test_get_inkcomment_count_uses_cached_count(monkeypatch, an_article):
 
     result_1 = Template(t).render(Context({"object": an_article}))
     assert len(fake_cache.store) == 2
-    assert "/comments_qs/15/1/1" in fake_cache.store
-    assert "/comments_count/15/1/1" in fake_cache.store
-    assert fake_cache.found["/comments_count/15/1/1"] == False
+    assert "/comment_qs/15/1/1" in fake_cache.store
+    assert "/comment_count/15/1/1" in fake_cache.store
+    assert fake_cache.found["/comment_count/15/1/1"] == False
 
     result_2 = Template(t).render(Context({"object": an_article}))
     assert len(fake_cache.store) == 2
-    assert "/comments_qs/15/1/1" in fake_cache.store
-    assert "/comments_count/15/1/1" in fake_cache.store
-    assert fake_cache.found["/comments_count/15/1/1"] == True
+    assert "/comment_qs/15/1/1" in fake_cache.store
+    assert "/comment_count/15/1/1" in fake_cache.store
+    assert fake_cache.found["/comment_count/15/1/1"] == True
 
     assert result_1 == result_2 == "77"
 
@@ -701,7 +702,7 @@ def test_render_inkcomment_list_raises_TemplateSyntaxError(an_article):
 
 
 @pytest.mark.django_db
-def test_render_inkcomment_list_uses_cached_qs(monkeypatch, an_article):
+def test_render_inkcomment_list_uses_cached_list(monkeypatch, an_article):
     fake_cache = FakeCache()
     monkeypatch.setattr(comments_ink.caching, "get_cache", lambda: fake_cache)
     setup_paginator_example_1(an_article)
@@ -709,15 +710,15 @@ def test_render_inkcomment_list_uses_cached_qs(monkeypatch, an_article):
     t = "{% load comments_ink %}" "{% render_inkcomment_list for object %}"
 
     assert len(fake_cache.store) == 0
-    assert not "/comments_qs/15/1/1" in fake_cache.store
+    assert not "/comment_list/15/1/1/anon" in fake_cache.store
 
     result_1 = Template(t).render(Context({"object": an_article}))
-    assert "/comments_qs/15/1/1" in fake_cache.store
-    assert fake_cache.found["/comments_qs/15/1/1"] == False
+    assert "/comment_list/15/1/1/anon" in fake_cache.store
+    assert fake_cache.found["/comment_list/15/1/1/anon"] == False
 
     result_2 = Template(t).render(Context({"object": an_article}))
-    assert "/comments_qs/15/1/1" in fake_cache.store
-    assert fake_cache.found["/comments_qs/15/1/1"] == True
+    assert "/comment_list/15/1/1/anon" in fake_cache.store
+    assert fake_cache.found["/comment_list/15/1/1/anon"] == True
 
     assert result_1 == result_2
 
