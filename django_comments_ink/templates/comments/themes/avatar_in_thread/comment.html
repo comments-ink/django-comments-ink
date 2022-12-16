@@ -27,7 +27,7 @@
         <a class="permalink" title="comment permalink" href="{% get_inkcomment_permalink comment None cfold %}">¶</a>
       </div>
       {% if not comment.is_removed and comment_flagging_enabled and is_input_allowed %}
-        <div class="flex-row-right">
+        <div class="flex-row-right" id="cm-flags-{{ comment.id }}">
           {% include "comments/comment_flags.html" %}
         </div>
       {% endif %}
