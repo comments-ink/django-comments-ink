@@ -10,6 +10,7 @@
     {% if user.is_authenticated %}
       data-react-url="{% url 'comments-ink-react' 0 %}"
       data-vote-url="{% url 'comments-ink-vote' 0 %}"
+      data-flag-url="{% url 'comments-flag' 0 %}"
     {% else %}
       data-login-url="{% url 'login' %}"
     {% endif %}

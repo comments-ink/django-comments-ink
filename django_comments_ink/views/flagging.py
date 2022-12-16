@@ -22,6 +22,7 @@ decorators = [csrf_protect, login_required]
 class FlagCommentView(SingleCommentView):
     check_option = "comment_flagging_enabled"
     template_list = ["comments/flag.html"]
+    template_list_js = ["comments/comment_flags.html"]
     context_object_name = "comment"
 
     def perform_flag(self):
@@ -69,6 +70,12 @@ class FlagCommentView(SingleCommentView):
             self.perform_flag()
         except Exception as exc:
             logger.error(exc)
+
+        if request.META.get("HTTP_X_REQUESTED_WITH") == "XMLHttpRequest":
+            template_list = self.get_template_names(is_ajax=True)
+            context = self.get_context_data()
+            status = 200
+            return self.json_response(template_list, context, status)
 
         next_redirect_url = self.get_next_redirect_url(
             next or "comments-flag-done", c=self.object.pk

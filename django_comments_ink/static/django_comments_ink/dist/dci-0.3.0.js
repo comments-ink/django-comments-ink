@@ -208,6 +208,106 @@ function init_comments() {
 
 /***/ }),
 
+/***/ "./django_comments_ink/static/django_comments_ink/js/flagging.js":
+/*!***********************************************************************!*\
+  !*** ./django_comments_ink/static/django_comments_ink/js/flagging.js ***!
+  \***********************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ FlaggingHandler),
+/* harmony export */   "init_flagging": () => (/* binding */ init_flagging)
+/* harmony export */ });
+/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./utils */ "./django_comments_ink/static/django_comments_ink/js/utils.js");
+
+
+
+class FlaggingHandler {
+    constructor(configEl) {
+        this.cfg_el = configEl;
+
+        this.is_guest = this.cfg_el.dataset.guestUser === "1";
+        this.login_url = (0,_utils__WEBPACK_IMPORTED_MODULE_0__.get_login_url)(this.cfg_el, this.is_guest);
+        this.flag_url = (0,_utils__WEBPACK_IMPORTED_MODULE_0__.get_flag_url)(this.cfg_el, this.is_guest);
+
+        this.qs_flag = '[data-dci-action="flag"]';
+        const qs_flag = document.querySelectorAll(this.qs_flag);
+
+        this.on_click = this.on_click.bind(this);
+        qs_flag.forEach(el => el.addEventListener("click", this.on_click));
+    }
+
+    on_click(event) {
+        event.preventDefault();
+        const target = event.target;
+        if (!this.is_guest) {
+            this.comment_id = target.dataset.comment;
+            const flag_url = this.flag_url.replace("0", this.comment_id);
+            const code = target.dataset.code;
+            const form_data = new FormData();
+            form_data.append("flag", code);
+            form_data.append("csrfmiddlewaretoken", (0,_utils__WEBPACK_IMPORTED_MODULE_0__.get_cookie)("csrftoken"));
+
+            fetch(flag_url, {
+                method: "POST",
+                cache: "no-cache",
+                credentials: "same-origin",
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                body: form_data
+            }).then(response => this.handle_flag_response(response));
+        }
+        else {
+            const next_url = target.dataset.loginNext;
+            window.location.href = `${this.login_url}?next=${next_url}`;
+        }
+    }
+
+    async handle_flag_response(response) {
+        const data = await response.json();
+        if (response.status === 200 || response.status === 201) {
+            const cm_flags_qs = `#cm-flags-${this.comment_id}`;
+            const cm_flags_el = document.querySelector(cm_flags_qs);
+            if (cm_flags_el) {
+                cm_flags_el.innerHTML = data.html;
+                const qs_flags = cm_flags_el.querySelector(this.qs_flag);
+                if (qs_flags) {
+                    qs_flags.addEventListener("click", this.on_click);
+                }
+            }
+        } else if (response.status > 400) {
+            alert(
+                "Something went wrong and the flagging of the comment could not " +
+                "be processed. Please, reload the page and try again."
+            );
+        }
+    }
+}
+
+function init_flagging() {
+    const cfg = document.querySelector("[data-dci=config]");
+    if (cfg === null || window.djCommentsInk === null) {
+        return;
+    }
+
+    window.djCommentsInk.flagging_handler = null;
+
+    /* ----------------------------------------------
+     * Initialize flagging as inappropriate for comments with level == 0.
+     */
+    if (window.djCommentsInk.flagging_handler === null) {
+        window.djCommentsInk.flagging_handler = new FlaggingHandler(cfg);
+    }
+}
+
+
+
+
+
+/***/ }),
+
 /***/ "./django_comments_ink/static/django_comments_ink/js/folding.js":
 /*!**********************************************************************!*\
   !*** ./django_comments_ink/static/django_comments_ink/js/folding.js ***!
@@ -965,6 +1065,7 @@ class ReplyFormsHandler {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "get_cookie": () => (/* binding */ get_cookie),
+/* harmony export */   "get_flag_url": () => (/* binding */ get_flag_url),
 /* harmony export */   "get_login_url": () => (/* binding */ get_login_url),
 /* harmony export */   "get_obj_react_url": () => (/* binding */ get_obj_react_url),
 /* harmony export */   "get_react_url": () => (/* binding */ get_react_url),
@@ -1036,6 +1137,21 @@ function get_vote_url(configEl, isGuest) {
             console.info("Couldn't find the data-vote-url attribute, " +
                 "but the user is anonymous. She has to login first in " +
                 "order to vote for comments.");
+        }
+    }
+    return url;
+}
+
+function get_flag_url(configEl, isGuest) {
+    const url = configEl.getAttribute("data-flag-url");
+    if (url === null || url.length === 0) {
+        if (!isGuest) {
+            throw new Error("Cannot initialize comment flagging => The " +
+                "[data-flag-url] attribute does not exist or is empty.");
+        } else {
+            console.info("Couldn't find the data-flag-url attribute, " +
+                "but the user is anonymous. She has to login first in " +
+                "order to flag comments.");
         }
     }
     return url;
@@ -1196,17 +1312,21 @@ var __webpack_exports__ = {};
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _comments_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./comments.js */ "./django_comments_ink/static/django_comments_ink/js/comments.js");
 /* harmony import */ var _reactions_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./reactions.js */ "./django_comments_ink/static/django_comments_ink/js/reactions.js");
+/* harmony import */ var _flagging_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./flagging.js */ "./django_comments_ink/static/django_comments_ink/js/flagging.js");
+
 
 
 
 window.djCommentsInk = {
     init_comments: _comments_js__WEBPACK_IMPORTED_MODULE_0__.init_comments,
-    init_reactions: _reactions_js__WEBPACK_IMPORTED_MODULE_1__.init_reactions
+    init_reactions: _reactions_js__WEBPACK_IMPORTED_MODULE_1__.init_reactions,
+    init_flagging: _flagging_js__WEBPACK_IMPORTED_MODULE_2__.init_flagging
 };
 
 window.addEventListener("DOMContentLoaded", (_) => {
     (0,_comments_js__WEBPACK_IMPORTED_MODULE_0__.init_comments)();
     (0,_reactions_js__WEBPACK_IMPORTED_MODULE_1__.init_reactions)();
+    (0,_flagging_js__WEBPACK_IMPORTED_MODULE_2__.init_flagging)();
 });
 
 })();

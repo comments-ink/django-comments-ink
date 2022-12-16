@@ -44,7 +44,7 @@
           {% endif %}
 
           {% if not comment.is_removed and comment_flagging_enabled and is_input_allowed %}
-            <div>{% include "comments/comment_flags.html" %}</div>
+            <div id="cm-flags-{{ comment.id }}">{% include "comments/comment_flags.html" %}</div>
           {% endif %}
         </div>
       </div>

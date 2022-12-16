@@ -68,3 +68,18 @@ export function get_vote_url(configEl, isGuest) {
     }
     return url;
 }
+
+export function get_flag_url(configEl, isGuest) {
+    const url = configEl.getAttribute("data-flag-url");
+    if (url === null || url.length === 0) {
+        if (!isGuest) {
+            throw new Error("Cannot initialize comment flagging => The " +
+                "[data-flag-url] attribute does not exist or is empty.");
+        } else {
+            console.info("Couldn't find the data-flag-url attribute, " +
+                "but the user is anonymous. She has to login first in " +
+                "order to flag comments.");
+        }
+    }
+    return url;
+}
