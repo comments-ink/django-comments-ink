@@ -21,6 +21,7 @@ cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
 max_users_in_tooltip = settings.COMMENTS_INK_MAX_USERS_IN_TOOLTIP
 cache_keys = settings.COMMENTS_INK_CACHE_KEYS
 
+
 class PartialTemplate:
     def __init__(
         self, content_type, object_pk, site_id, cpage, cfolded, is_authenticated
