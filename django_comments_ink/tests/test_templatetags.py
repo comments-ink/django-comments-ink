@@ -453,8 +453,14 @@ class FakeRequest:
     def __init__(self, **kwargs):
         self.kwargs = kwargs
 
+    def __getattr__(self, name):
+        return self.kwargs.get(name, None)
+
     def get_property(self):
         return self.kwargs
+
+    def get_full_path(self):
+        return self.path if self.path else ""
 
     GET = property(get_property)
 
@@ -704,21 +710,28 @@ def test_render_inkcomment_list_raises_TemplateSyntaxError(an_article):
 @pytest.mark.django_db
 def test_render_inkcomment_list_uses_cached_list(monkeypatch, an_article):
     fake_cache = FakeCache()
+    fake_request = FakeRequest(
+        path="/comment_list/15/1/1", user=AnonymousUser()
+    )
     monkeypatch.setattr(comments_ink.caching, "get_cache", lambda: fake_cache)
     setup_paginator_example_1(an_article)
 
     t = "{% load comments_ink %}" "{% render_inkcomment_list for object %}"
 
     assert len(fake_cache.store) == 0
-    assert not "/comment_list/15/1/1/anon" in fake_cache.store
+    assert not "/comment_list/15/1/1|anon" in fake_cache.store
 
-    result_1 = Template(t).render(Context({"object": an_article}))
-    assert "/comment_list/15/1/1/anon" in fake_cache.store
-    assert fake_cache.found["/comment_list/15/1/1/anon"] == False
+    result_1 = Template(t).render(
+        Context({"request": fake_request, "object": an_article})
+    )
+    assert "/comment_list/15/1/1|anon" in fake_cache.store
+    assert fake_cache.found["/comment_list/15/1/1|anon"] == False
 
-    result_2 = Template(t).render(Context({"object": an_article}))
-    assert "/comment_list/15/1/1/anon" in fake_cache.store
-    assert fake_cache.found["/comment_list/15/1/1/anon"] == True
+    result_2 = Template(t).render(
+        Context({"request": fake_request, "object": an_article})
+    )
+    assert "/comment_list/15/1/1|anon" in fake_cache.store
+    assert fake_cache.found["/comment_list/15/1/1|anon"] == True
 
     assert result_1 == result_2
 
