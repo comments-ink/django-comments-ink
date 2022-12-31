@@ -19,7 +19,7 @@ num_orphans = settings.COMMENTS_INK_MAX_LAST_PAGE_ORPHANS
 cpage_qs_param = settings.COMMENTS_INK_PAGE_QUERY_STRING_PARAM
 cfold_qs_param = settings.COMMENTS_INK_FOLD_QUERY_STRING_PARAM
 max_users_in_tooltip = settings.COMMENTS_INK_MAX_USERS_IN_TOOLTIP
-
+cache_keys = settings.COMMENTS_INK_CACHE_KEYS
 
 class PartialTemplate:
     def __init__(
@@ -62,16 +62,15 @@ class PartialTemplate:
             "object_pk": self.object_pk,
             "site_id": self.site_id,
         }
-        comment_qs_ptn = settings.COMMENTS_INK_CACHE_KEYS["comment_qs"]
+        comment_qs_ptn = cache_keys["comment_qs"]
         self.ckey_comment_qs = comment_qs_ptn.format(**kwargs)
-        comments_paged_ptn = settings.COMMENTS_INK_CACHE_KEYS["comments_paged"]
+        comments_paged_ptn = cache_keys["comments_paged"]
         self.ckey_comments_paged = comments_paged_ptn.format(**kwargs)
         self.max_thread_level = utils.get_max_thread_level(self.content_type)
         if is_authenticated:
-            cmlist_ptn = settings.COMMENTS_INK_CACHE_KEYS["comment_list_auth"]
+            self.cmlist_ptn = cache_keys["comment_list_auth"]
         else:
-            cmlist_ptn = settings.COMMENTS_INK_CACHE_KEYS["comment_list_anon"]
-        self.ckey_cmlist = cmlist_ptn.format(**kwargs)
+            self.cmlist_ptn = cache_keys["comment_list_anon"]
 
         self.options = utils.get_app_model_options(
             content_type=self.content_type
@@ -171,11 +170,16 @@ class PartialTemplate:
         return context_dict
 
     def render(self, context):
+        ckey_cmlist = ""
+        req = context.get("request", None)
+        if req:
+            ckey_cmlist = self.cmlist_ptn.format(path=req.get_full_path())
+
         dci_cache = caching.get_cache()
-        if dci_cache != None and self.ckey_cmlist != "":
-            cached = dci_cache.get(self.ckey_cmlist)
+        if dci_cache != None and ckey_cmlist != "":
+            cached = dci_cache.get(ckey_cmlist)
             if cached:
-                logger.debug("Get %s from the cache", self.ckey_cmlist)
+                logger.debug("Get %s from the cache", ckey_cmlist)
                 return cached
 
         template_list = f_templates(
@@ -190,5 +194,5 @@ class PartialTemplate:
 
         context = self.get_context(context)
         result = loader.render_to_string(template_list, context)
-        dci_cache.set(self.ckey_cmlist, result, timeout=None)
+        dci_cache.set(ckey_cmlist, result, timeout=None)
         return result

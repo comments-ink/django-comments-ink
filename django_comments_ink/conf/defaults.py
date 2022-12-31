@@ -156,8 +156,8 @@ COMMENTS_INK_CACHE_KEYS = {
     # combination of content_type, object_pk and site_id. There are two keys,
     # one for when the user is authenticated, and another for when the user is
     # is anonymous.
-    "comment_list_auth": "/comment_list/{ctype_pk}/{object_pk}/{site_id}/auth",
-    "comment_list_anon": "/comment_list/{ctype_pk}/{object_pk}/{site_id}/anon",
+    "comment_list_auth": "{path}|auth",
+    "comment_list_anon": "{path}|anon",
     # The key 'comment_qs' holds the QuerySet of comments for the given params.
     "comment_qs": "/comment_qs/{ctype_pk}/{object_pk}/{site_id}",
     # The key 'comment_count' stores the number of
