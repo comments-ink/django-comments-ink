@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: coverage help tox syntax-check syntax-format pip-compile pip-install
+.PHONY: coverage help
 
 coverage:  ## Run tests with coverage.
 	coverage erase
@@ -8,28 +8,6 @@ coverage:  ## Run tests with coverage.
 		--omit=*migrations*,*tests* -m pytest -ra
 	coverage report -m
 	@sh ./ccsvg.sh ||:
-
-syntax-check:  ## Check syntax code (isort and black).
-	black --check django_comments_ink
-
-syntax-format:  ## Format syntax code (isort and black).
-	black django_comments_ink
-
-tox:  ## Run tox.
-	python -m tox
-
-pip-compile:  ## Generate requirements.txt and requirements-dev.txt files.
-	python -c "import piptools" > /dev/null 2>&1 || pip install pip-tools
-	pip-compile --generate-hashes --allow-unsafe \
-		--output-file requirements.txt requirements.in
-	pip-compile --allow-unsafe \
-		--output-file requirements-tests.txt requirements-tests.in
-	pip-compile --generate-hashes --allow-unsafe \
-		--output-file requirements-dev.txt requirements-dev.in
-
-pip-install:  ## Install dependencies listed in requirements-dev.txt.
-	pip install -r requirements.txt
-	pip install -r requirements-dev.txt
 
 help: ## Show help message
 	@IFS=$$'\n' ; \

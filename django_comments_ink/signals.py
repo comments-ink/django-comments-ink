@@ -1,6 +1,7 @@
 """
 Signals relating to django-comments-ink.
 """
+
 from django.dispatch import Signal
 
 

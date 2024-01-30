@@ -17,7 +17,6 @@ from django_comments_ink.models import (
 from django_comments_ink.tests.models import Article, Diary
 
 
-@pytest.mark.django_db
 @pytest.fixture
 def an_article():
     """Creates an article that can receive comments."""
@@ -28,7 +27,6 @@ def an_article():
     article.delete()
 
 
-@pytest.mark.django_db
 @pytest.fixture
 def a_diary_entry():
     """Creates a diary entry that can receive comments."""
@@ -37,7 +35,6 @@ def a_diary_entry():
     entry.delete()
 
 
-@pytest.mark.django_db
 @pytest.fixture
 def an_articles_comment(an_article):
     """Send a comment to the article."""
@@ -55,7 +52,6 @@ def an_articles_comment(an_article):
     comment.delete()
 
 
-@pytest.mark.django_db
 @pytest.fixture
 def an_user():
     """Add a user to the DB."""
@@ -66,7 +62,6 @@ def an_user():
     user.delete()
 
 
-@pytest.mark.django_db
 @pytest.fixture
 def an_user_2():
     """Add a user2 to the DB."""
@@ -81,7 +76,6 @@ def an_user_2():
     user2.delete()
 
 
-@pytest.mark.django_db
 @pytest.fixture
 def a_comments_reaction(an_articles_comment, an_user):
     """Send a comment reaction to a comment."""
@@ -95,7 +89,6 @@ def a_comments_reaction(an_articles_comment, an_user):
     cmr.delete()
 
 
-@pytest.mark.django_db
 @pytest.fixture
 def a_comments_reaction_2(an_user_2, a_comments_reaction):
     """Send another comment reaction to a comment."""
@@ -105,7 +98,6 @@ def a_comments_reaction_2(an_user_2, a_comments_reaction):
     return a_comments_reaction
 
 
-@pytest.mark.django_db
 @pytest.fixture
 def a_comments_flag(an_articles_comment, an_user):
     """Send a CommentFlag.SUGGEST_REMOVAL flag to a comment."""
@@ -118,7 +110,6 @@ def a_comments_flag(an_articles_comment, an_user):
     comment_flag.delete()
 
 
-@pytest.mark.django_db
 @pytest.fixture
 def an_object_reaction(a_diary_entry, an_user):
     """Send an object reaction to a diary entry."""
@@ -138,7 +129,6 @@ def an_object_reaction(a_diary_entry, an_user):
     objr.delete()
 
 
-@pytest.mark.django_db
 @pytest.fixture
 def an_object_reaction_2(an_user_2, an_object_reaction):
     """Send another object reaction to a diary entry."""

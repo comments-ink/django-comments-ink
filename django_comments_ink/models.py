@@ -453,6 +453,7 @@ def on_comment_vote_deleted(sender, instance, using, **kwargs):
 
 post_delete.connect(on_comment_vote_deleted, sender=CommentVote)
 
+
 # ----------------------------------------------------------------------
 class BlackListedDomain(models.Model):
     """
