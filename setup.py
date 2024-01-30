@@ -11,7 +11,7 @@ with open(BASE_DIR / "README.md", "r") as readme_file:
 
 
 requirements = []
-with open(BASE_DIR / "requirements.in", "r") as req_file:
+with open(BASE_DIR / "requirements.txt", "r") as req_file:
     for item in req_file:
         requirements.append(item)
 
