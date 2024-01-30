@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=60.2.0", "wheel"]
+requires = ["setuptools>=69.0.3", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.coverage.report]
@@ -12,7 +12,6 @@ exclude_lines = [
 
 [tool.black]
 line-length = 80
-extend-exclude = '''pqenv|psenv'''
 
 [tool.pytest]
 addopts = "--create-db"

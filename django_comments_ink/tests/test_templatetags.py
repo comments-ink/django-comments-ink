@@ -1,10 +1,10 @@
 import collections
 from datetime import datetime
-import importlib
 import json
 import re
 from unittest.mock import patch
 
+import django
 import pytest
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.contenttypes.models import ContentType
@@ -26,7 +26,6 @@ from django_comments_ink import (
 from django_comments_ink.conf import settings
 from django_comments_ink.models import (
     InkComment,
-    ObjectReaction,
     publish_or_withhold_on_pre_save,
 )
 from django_comments_ink.templatetags import comments_ink
@@ -1343,14 +1342,25 @@ def check_form_fields_in_output(output):
     assert match != None
 
     # Check field 'email':
-    match = re.search(
-        (
-            r'<input type="text" name="email" placeholder="mail address"'
-            r' class="form-control" required id="id_email">'
-        ),
-        output,
-    )
-    assert match != None
+    if django.VERSION[0] == 5:
+        match = re.search(
+            (
+                r'<input type="text" name="email" placeholder="mail address"'
+                r' class="form-control" required'
+                r' aria-describedby="id_email_helptext" id="id_email">'
+            ),
+            output,
+        )
+        assert match != None
+    else:
+        match = re.search(
+            (
+                r'<input type="text" name="email" placeholder="mail address"'
+                r' class="form-control" required id="id_email">'
+            ),
+            output,
+        )
+        assert match != None
 
     # Check field 'url':
     match = re.search(
