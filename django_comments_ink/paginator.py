@@ -57,6 +57,7 @@ Example 3:
   per_page + orphans, so the 2nd page will contain 18 comments.
 
 """
+
 import logging
 
 from django.apps import apps

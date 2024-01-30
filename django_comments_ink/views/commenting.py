@@ -216,7 +216,7 @@ def confirm(
         sender=TmpInkComment, comment=tmp_comment, request=request
     )
     # Check whether a signal receiver decides to discard the comment.
-    for (receiver, response) in responses:
+    for receiver, response in responses:
         if response is False:
             return render(request, template_discarded, {"comment": tmp_comment})
 
@@ -420,7 +420,7 @@ class PostCommentView(CommentsParamsMixin, JsonResponseMixin, FormView):
             sender=comment.__class__, comment=comment, request=self.request
         )
 
-        for (receiver, response) in responses:
+        for receiver, response in responses:
             if response is False:
                 msg = (
                     "comment_will_be_posted receiver %r killed the comment"

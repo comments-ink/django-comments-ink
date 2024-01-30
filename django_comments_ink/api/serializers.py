@@ -138,7 +138,7 @@ class WriteCommentSerializer(serializers.Serializer):
             sender=target.__class__, comment=target, request=self.request
         )
 
-        for (receiver, response) in responses:
+        for receiver, response in responses:
             if response is True:
                 # A positive response indicates that the POST request
                 # must be trusted. So inject the CommentSecurityForm values
@@ -183,7 +183,7 @@ class WriteCommentSerializer(serializers.Serializer):
         responses = comment_will_be_posted.send(
             sender=TmpInkComment, comment=resp["comment"], request=self.request
         )
-        for (receiver, response) in responses:
+        for receiver, response in responses:
             if response is False:
                 resp["code"] = 403  # Rejected.
                 return resp
