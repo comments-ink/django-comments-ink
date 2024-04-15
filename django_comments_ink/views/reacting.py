@@ -348,6 +348,8 @@ class ReactedToObjectUserListView(ListView):
             raise Http404(_("Not enough users"))
 
         context = self.get_context_data(
-            object=self.reaction.content_object, reaction=reaction_enum
+            object=self.reaction.content_object,
+            reaction=reaction_enum,
+            content_type=self.ctype,
         )
         return self.render_to_response(context)
