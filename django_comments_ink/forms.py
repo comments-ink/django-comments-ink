@@ -28,13 +28,13 @@ class InkCommentForm(CommentForm):
 
         self.fields["name"].label = _("Name")
         self.fields["name"].widget = forms.TextInput(
-            attrs={"placeholder": _("name"), "class": "form-control"}
+            attrs={"placeholder": _("Your name"), "class": "form-control"}
         )
 
-        self.fields["email"].label = _("Mail")
+        self.fields["email"].label = _("Email")
         self.fields["email"].help_text = _("Required for comment verification")
         self.fields["email"].widget = forms.TextInput(
-            attrs={"placeholder": _("mail address"), "class": "form-control"}
+            attrs={"placeholder": _("Email address"), "class": "form-control"}
         )
 
         self.fields["url"].label = _("Link")
